@@ -139,3 +139,119 @@ impl Timer {
         self.accumulated = Duration::ZERO;
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_timer_new() {
+        let timer = Timer::new(25, 5, 15);
+        assert_eq!(timer.state, TimerState::Work);
+        assert_eq!(timer.remaining_seconds, 25 * 60);
+        assert!(timer.is_paused);
+    }
+
+    #[test]
+    fn test_toggle_pause() {
+        let mut timer = Timer::new(25, 5, 15);
+        assert!(timer.is_paused);
+
+        timer.toggle_pause();
+        assert!(!timer.is_paused);
+
+        timer.toggle_pause();
+        assert!(timer.is_paused);
+    }
+
+    #[test]
+    fn test_toggle_pause_in_break_mode() {
+        let mut timer = Timer::new(25, 5, 15);
+        // Transition to break mode
+        timer.state = TimerState::ShortBreak;
+        timer.remaining_seconds = 5 * 60;
+        timer.is_paused = true;
+
+        // Should be able to unpause in break mode
+        timer.toggle_pause();
+        assert!(!timer.is_paused);
+
+        timer.toggle_pause();
+        assert!(timer.is_paused);
+    }
+
+    #[test]
+    fn test_reset() {
+        let mut timer = Timer::new(25, 5, 15);
+        timer.remaining_seconds = 100;
+        timer.is_paused = false;
+
+        timer.reset();
+        assert_eq!(timer.remaining_seconds, 25 * 60);
+        assert!(timer.is_paused);
+    }
+
+    #[test]
+    fn test_skip() {
+        let mut timer = Timer::new(25, 5, 15);
+        assert_eq!(timer.state, TimerState::Work);
+
+        timer.skip();
+        assert_eq!(timer.state, TimerState::ShortBreak);
+        assert_eq!(timer.remaining_seconds, 5 * 60);
+        assert!(timer.is_paused);
+    }
+
+    #[test]
+    fn test_skip_from_break_to_work() {
+        let mut timer = Timer::new(25, 5, 15);
+        timer.state = TimerState::ShortBreak;
+        timer.remaining_seconds = 5 * 60;
+
+        timer.skip();
+        assert_eq!(timer.state, TimerState::Work);
+        assert_eq!(timer.remaining_seconds, 25 * 60);
+    }
+
+    #[test]
+    fn test_progress_percent() {
+        let mut timer = Timer::new(25, 5, 15);
+        assert_eq!(timer.progress_percent(), 0.0);
+
+        timer.remaining_seconds = 25 * 30; // Half time remaining
+        let progress = timer.progress_percent();
+        assert!((progress - 50.0).abs() < 0.1);
+
+        timer.remaining_seconds = 0;
+        assert_eq!(timer.progress_percent(), 100.0);
+    }
+
+    #[test]
+    fn test_formatted_time() {
+        let mut timer = Timer::new(25, 5, 15);
+        assert_eq!(timer.formatted_time(), "25:00");
+
+        timer.remaining_seconds = 90; // 1:30
+        assert_eq!(timer.formatted_time(), "01:30");
+
+        timer.remaining_seconds = 0;
+        assert_eq!(timer.formatted_time(), "00:00");
+    }
+
+    #[test]
+    fn test_tick_while_paused() {
+        let mut timer = Timer::new(25, 5, 15);
+        let initial_seconds = timer.remaining_seconds;
+
+        // Timer is paused by default, tick should not change time
+        timer.tick();
+        assert_eq!(timer.remaining_seconds, initial_seconds);
+    }
+
+    #[test]
+    fn test_state_labels() {
+        assert_eq!(TimerState::Work.label(), "WORKING");
+        assert_eq!(TimerState::ShortBreak.label(), "SHORT BREAK");
+        assert_eq!(TimerState::LongBreak.label(), "LONG BREAK");
+    }
+}
