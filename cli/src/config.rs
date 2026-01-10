@@ -76,6 +76,10 @@ fn default_true() -> bool {
     true
 }
 
+// Note: We use manual Default implementations because the fields use
+// custom default functions via #[serde(default = "...")] for TOML deserialization.
+// These implementations ensure consistency between Default::default() and serde defaults.
+#[allow(clippy::derivable_impls)]
 impl Default for Config {
     fn default() -> Self {
         Self {
@@ -116,6 +120,7 @@ impl Default for NotificationsConfig {
     }
 }
 
+#[allow(clippy::derivable_impls)]
 impl Default for AccountConfig {
     fn default() -> Self {
         Self {

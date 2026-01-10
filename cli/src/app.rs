@@ -295,6 +295,7 @@ impl App {
         }
     }
 
+    #[allow(dead_code)]
     pub fn get_current_setting_value(&self) -> String {
         match SettingsItem::all()[self.settings_index] {
             SettingsItem::Theme => self.available_themes[self.theme_index].clone(),

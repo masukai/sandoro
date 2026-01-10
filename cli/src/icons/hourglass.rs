@@ -87,7 +87,7 @@ pub fn render_hourglass_with_direction(
     let (flow1, flow2) = if flowing {
         if is_upward {
             // Break mode: blinking upward
-            if frame % 2 == 0 {
+            if frame.is_multiple_of(2) {
                 ("↑", "°")
             } else {
                 ("°", "↑")
@@ -109,7 +109,7 @@ pub fn render_hourglass_with_direction(
     let (neck1, neck2) = if flowing {
         if is_upward {
             // Break mode
-            if frame % 2 == 0 {
+            if frame.is_multiple_of(2) {
                 ("·", "°")
             } else {
                 ("°", "·")

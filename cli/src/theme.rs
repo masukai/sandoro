@@ -2,6 +2,9 @@
 //!
 //! Defines color schemes for the TUI
 
+// TODO: Pro themes will be used in Pro tier
+#![allow(dead_code)]
+
 use ratatui::style::Color;
 use serde::{Deserialize, Serialize};
 

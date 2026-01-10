@@ -1,5 +1,8 @@
 //! Timer logic and state management
 
+// TODO: LongBreak will be used when session tracking is implemented
+#![allow(dead_code)]
+
 use std::time::{Duration, Instant};
 
 /// Timer states

@@ -1,5 +1,8 @@
 //! ASCII art icons for the timer
 
+// TODO: Pro icons and some methods will be used in future phases
+#![allow(dead_code)]
+
 pub mod coffee;
 pub mod hourglass;
 pub mod progress;
