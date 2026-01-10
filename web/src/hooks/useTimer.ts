@@ -7,6 +7,7 @@ interface UseTimerOptions {
   shortBreakDuration?: number;
   longBreakDuration?: number;
   sessionsUntilLongBreak?: number;
+  autoStart?: boolean;
 }
 
 const DEFAULT_WORK_DURATION = 25 * 60;
@@ -19,6 +20,7 @@ export function useTimer(options: UseTimerOptions = {}) {
   const shortBreakDuration = options.shortBreakDuration ?? DEFAULT_SHORT_BREAK;
   const longBreakDuration = options.longBreakDuration ?? DEFAULT_LONG_BREAK;
   const sessionsUntilLongBreak = options.sessionsUntilLongBreak ?? DEFAULT_SESSIONS;
+  const autoStart = options.autoStart ?? false;
 
   const [state, setState] = useState<TimerState>('work');
   const [remainingTime, setRemainingTime] = useState(workDuration);
@@ -45,6 +47,7 @@ export function useTimer(options: UseTimerOptions = {}) {
   const transitionRef = useRef<() => void>(() => {});
 
   const transitionToNextState = useCallback(() => {
+    // Pause first, then optionally restart if autoStart is enabled
     setIsRunning(false);
     setState((current) => {
       if (current === 'work') {
@@ -57,7 +60,12 @@ export function useTimer(options: UseTimerOptions = {}) {
       }
       return 'work';
     });
-  }, [sessionCount, sessionsUntilLongBreak]);
+    // If autoStart is enabled, restart the timer after transition
+    if (autoStart) {
+      // Use setTimeout to ensure state update completes first
+      setTimeout(() => setIsRunning(true), 0);
+    }
+  }, [sessionCount, sessionsUntilLongBreak, autoStart]);
 
   // Keep ref updated
   useEffect(() => {
@@ -110,6 +118,13 @@ export function useTimer(options: UseTimerOptions = {}) {
     transitionToNextState();
   }, [transitionToNextState]);
 
+  const fullReset = useCallback(() => {
+    setIsRunning(false);
+    setState('work');
+    setRemainingTime(workDuration);
+    setSessionCount(1);
+  }, [workDuration]);
+
   const formattedTime = `${String(Math.floor(remainingTime / 60)).padStart(2, '0')}:${String(remainingTime % 60).padStart(2, '0')}`;
 
   const totalDuration = getDurationForState(state);
@@ -125,5 +140,6 @@ export function useTimer(options: UseTimerOptions = {}) {
     togglePause,
     reset,
     skip,
+    fullReset,
   };
 }

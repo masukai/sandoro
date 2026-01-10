@@ -31,6 +31,7 @@ pub enum SettingsItem {
     WorkDuration,
     ShortBreak,
     LongBreak,
+    AutoStart,
     Back,
 }
 
@@ -42,6 +43,7 @@ impl SettingsItem {
             Self::WorkDuration,
             Self::ShortBreak,
             Self::LongBreak,
+            Self::AutoStart,
             Self::Back,
         ]
     }
@@ -53,6 +55,7 @@ impl SettingsItem {
             Self::WorkDuration => "Work Duration",
             Self::ShortBreak => "Short Break",
             Self::LongBreak => "Long Break",
+            Self::AutoStart => "Auto Start",
             Self::Back => "← Back to Timer",
         }
     }
@@ -132,7 +135,26 @@ impl App {
 
     pub fn tick(&mut self) {
         if self.view == AppView::Timer {
+            let was_running = !self.timer.is_paused;
+            let old_state = self.timer.state;
+
             self.timer.tick();
+
+            // Check if timer completed and transitioned
+            if was_running && self.timer.is_paused && self.timer.state != old_state {
+                // Update session number
+                if matches!(old_state, TimerState::Work) {
+                    // Completed a work session
+                } else if matches!(self.timer.state, TimerState::Work) {
+                    // Returning to work, increment session
+                    self.session_number = (self.session_number % self.sessions_until_long) + 1;
+                }
+
+                // Auto-start if enabled
+                if self.config.timer.auto_start {
+                    self.timer.toggle_pause();
+                }
+            }
 
             // Advance animation frame every 5 ticks (500ms at 100ms tick rate)
             self.animation_tick = (self.animation_tick + 1) % 5;
@@ -156,6 +178,12 @@ impl App {
 
     pub fn reset(&mut self) {
         self.timer.reset();
+    }
+
+    /// Full reset - back to session 1 and Work state
+    pub fn full_reset(&mut self) {
+        self.timer.full_reset();
+        self.session_number = 1;
     }
 
     pub fn skip(&mut self) {
@@ -205,6 +233,9 @@ impl App {
                         self.config.timer.long_break += 5;
                     }
                 }
+                SettingsItem::AutoStart => {
+                    self.config.timer.auto_start = !self.config.timer.auto_start;
+                }
                 _ => {}
             }
         } else if self.settings_index > 0 {
@@ -244,6 +275,9 @@ impl App {
                         self.config.timer.long_break -= 5;
                     }
                 }
+                SettingsItem::AutoStart => {
+                    self.config.timer.auto_start = !self.config.timer.auto_start;
+                }
                 _ => {}
             }
         } else if self.settings_index < SettingsItem::all().len() - 1 {
@@ -270,6 +304,11 @@ impl App {
                 } else {
                     self.editing = true;
                 }
+            }
+            SettingsItem::AutoStart => {
+                // Toggle auto-start directly (no editing mode needed)
+                self.config.timer.auto_start = !self.config.timer.auto_start;
+                self.apply_settings();
             }
         }
     }
@@ -312,6 +351,13 @@ impl App {
             SettingsItem::WorkDuration => format!("{} min", self.config.timer.work_duration),
             SettingsItem::ShortBreak => format!("{} min", self.config.timer.short_break),
             SettingsItem::LongBreak => format!("{} min", self.config.timer.long_break),
+            SettingsItem::AutoStart => {
+                if self.config.timer.auto_start {
+                    "ON".to_string()
+                } else {
+                    "OFF".to_string()
+                }
+            }
             SettingsItem::Back => String::new(),
         }
     }
@@ -351,6 +397,7 @@ pub fn run() -> Result<()> {
                         KeyCode::Char('q') => app.should_quit = true,
                         KeyCode::Char(' ') => app.toggle_pause(),
                         KeyCode::Char('r') => app.reset(),
+                        KeyCode::Char('R') => app.full_reset(),
                         KeyCode::Char('s') => app.skip(),
                         KeyCode::Tab => app.toggle_settings(),
                         _ => {}

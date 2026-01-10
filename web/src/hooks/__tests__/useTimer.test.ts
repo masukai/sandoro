@@ -175,4 +175,114 @@ describe('useTimer', () => {
 
     expect(result.current.remainingTime).toBe(5 * 60);
   });
+
+  it('should full reset timer, state, and session count', () => {
+    const { result } = renderHook(() =>
+      useTimer({
+        workDuration: 25 * 60,
+        shortBreakDuration: 5 * 60,
+      })
+    );
+
+    // Progress through some sessions
+    act(() => {
+      result.current.skip(); // work -> shortBreak
+    });
+    expect(result.current.state).toBe('shortBreak');
+    expect(result.current.sessionCount).toBe(2);
+
+    act(() => {
+      result.current.skip(); // shortBreak -> work
+    });
+    expect(result.current.state).toBe('work');
+    expect(result.current.sessionCount).toBe(2);
+
+    // Full reset should reset everything
+    act(() => {
+      result.current.fullReset();
+    });
+
+    expect(result.current.state).toBe('work');
+    expect(result.current.sessionCount).toBe(1);
+    expect(result.current.remainingTime).toBe(25 * 60);
+    expect(result.current.isRunning).toBe(false);
+  });
+
+  it('should full reset from long break', () => {
+    const { result } = renderHook(() =>
+      useTimer({
+        workDuration: 25 * 60,
+        longBreakDuration: 15 * 60,
+        sessionsUntilLongBreak: 1,
+      })
+    );
+
+    // Go to long break
+    act(() => {
+      result.current.skip(); // work -> longBreak
+    });
+    expect(result.current.state).toBe('longBreak');
+
+    // Full reset
+    act(() => {
+      result.current.fullReset();
+    });
+
+    expect(result.current.state).toBe('work');
+    expect(result.current.sessionCount).toBe(1);
+    expect(result.current.remainingTime).toBe(25 * 60);
+  });
+
+  it('should auto-restart with autoStart enabled on skip', async () => {
+    // autoStart option auto-restarts the timer after transition
+    const { result } = renderHook(() =>
+      useTimer({
+        autoStart: true,
+      })
+    );
+
+    expect(result.current.state).toBe('work');
+
+    // Start the timer
+    act(() => {
+      result.current.togglePause();
+    });
+    expect(result.current.isRunning).toBe(true);
+
+    // Skip - with autoStart, should restart after transition
+    act(() => {
+      result.current.skip();
+    });
+
+    expect(result.current.state).toBe('shortBreak');
+
+    // Wait for the setTimeout in transitionToNextState
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 10));
+    });
+
+    expect(result.current.isRunning).toBe(true);
+  });
+
+  it('should pause on skip when autoStart is disabled', () => {
+    const { result } = renderHook(() =>
+      useTimer({
+        autoStart: false,
+      })
+    );
+
+    // Start the timer
+    act(() => {
+      result.current.togglePause();
+    });
+    expect(result.current.isRunning).toBe(true);
+
+    // Skip to next state - should pause without autoStart
+    act(() => {
+      result.current.skip();
+    });
+
+    expect(result.current.state).toBe('shortBreak');
+    expect(result.current.isRunning).toBe(false);
+  });
 });

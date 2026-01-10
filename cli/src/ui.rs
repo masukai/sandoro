@@ -80,6 +80,13 @@ fn draw_settings_view(f: &mut Frame, app: &App) {
                 SettingsItem::WorkDuration => format!("{} min", app.config.timer.work_duration),
                 SettingsItem::ShortBreak => format!("{} min", app.config.timer.short_break),
                 SettingsItem::LongBreak => format!("{} min", app.config.timer.long_break),
+                SettingsItem::AutoStart => {
+                    if app.config.timer.auto_start {
+                        "ON".to_string()
+                    } else {
+                        "OFF".to_string()
+                    }
+                }
                 SettingsItem::Back => String::new(),
             };
 

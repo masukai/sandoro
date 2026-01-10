@@ -141,6 +141,23 @@ impl Timer {
         self.is_paused = true;
         self.accumulated = Duration::ZERO;
     }
+
+    /// Transition to next state with auto-start option
+    pub fn transition_to_next_state_with_auto_start(&mut self, auto_start: bool) {
+        self.transition_to_next_state();
+        if auto_start {
+            self.is_paused = false;
+            self.last_tick = Instant::now();
+        }
+    }
+
+    /// Full reset - back to session 1 and Work state
+    pub fn full_reset(&mut self) {
+        self.state = TimerState::Work;
+        self.remaining_seconds = self.work_duration * 60;
+        self.is_paused = true;
+        self.accumulated = Duration::ZERO;
+    }
 }
 
 #[cfg(test)]
@@ -256,5 +273,33 @@ mod tests {
         assert_eq!(TimerState::Work.label(), "WORKING");
         assert_eq!(TimerState::ShortBreak.label(), "SHORT BREAK");
         assert_eq!(TimerState::LongBreak.label(), "LONG BREAK");
+    }
+
+    #[test]
+    fn test_full_reset() {
+        let mut timer = Timer::new(25, 5, 15);
+        // Set to short break with some time elapsed
+        timer.state = TimerState::ShortBreak;
+        timer.remaining_seconds = 100;
+        timer.is_paused = false;
+
+        timer.full_reset();
+        assert_eq!(timer.state, TimerState::Work);
+        assert_eq!(timer.remaining_seconds, 25 * 60);
+        assert!(timer.is_paused);
+    }
+
+    #[test]
+    fn test_full_reset_from_long_break() {
+        let mut timer = Timer::new(25, 5, 15);
+        // Set to long break
+        timer.state = TimerState::LongBreak;
+        timer.remaining_seconds = 10 * 60;
+        timer.is_paused = false;
+
+        timer.full_reset();
+        assert_eq!(timer.state, TimerState::Work);
+        assert_eq!(timer.remaining_seconds, 25 * 60);
+        assert!(timer.is_paused);
     }
 }

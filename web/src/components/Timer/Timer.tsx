@@ -8,6 +8,7 @@ interface TimerProps {
   longBreakDuration?: number;
   sessionsUntilLongBreak?: number;
   icon?: IconType;
+  autoStart?: boolean;
 }
 
 export function Timer({
@@ -16,15 +17,17 @@ export function Timer({
   longBreakDuration,
   sessionsUntilLongBreak = 4,
   icon,
+  autoStart = false,
 }: TimerProps) {
   const { settings } = useSettings();
   const iconType = icon || settings.icon || 'hourglass';
-  const { state, formattedTime, isRunning, progress, sessionCount, togglePause, reset, skip } =
+  const { state, formattedTime, isRunning, progress, sessionCount, togglePause, reset, skip, fullReset } =
     useTimer({
       workDuration,
       shortBreakDuration,
       longBreakDuration,
       sessionsUntilLongBreak,
+      autoStart,
     });
 
   const stateLabel = {
@@ -65,8 +68,16 @@ export function Timer({
         <button
           onClick={reset}
           className="px-6 py-3 border border-sandoro-secondary rounded-lg hover:bg-sandoro-secondary/20 transition-colors"
+          title="Reset current timer"
         >
           Reset
+        </button>
+        <button
+          onClick={fullReset}
+          className="px-6 py-3 border border-red-500 text-red-500 rounded-lg hover:bg-red-500/20 transition-colors"
+          title="Reset timer and session count"
+        >
+          Full Reset
         </button>
         <button
           onClick={skip}

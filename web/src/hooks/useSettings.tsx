@@ -8,6 +8,7 @@ export interface TimerSettings {
   longBreak: number;
   sessionsUntilLongBreak: number;
   icon: IconType;
+  autoStart: boolean;
 }
 
 const STORAGE_KEY = 'sandoro-settings';
@@ -18,6 +19,7 @@ const DEFAULT_SETTINGS: TimerSettings = {
   longBreak: 15,
   sessionsUntilLongBreak: 4,
   icon: 'hourglass',
+  autoStart: false,
 };
 
 function getStoredSettings(): TimerSettings {

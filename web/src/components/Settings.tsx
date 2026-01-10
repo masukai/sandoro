@@ -159,6 +159,20 @@ export function Settings() {
             unit=""
             onChange={(v) => setSettings({ sessionsUntilLongBreak: v })}
           />
+          <div className="flex items-center justify-between">
+            <span className="text-sm" style={{ color: 'var(--sandoro-fg)' }}>Auto Start</span>
+            <button
+              onClick={() => setSettings({ autoStart: !settings.autoStart })}
+              className="px-4 py-1 text-sm rounded-md transition-colors"
+              style={{
+                backgroundColor: settings.autoStart ? 'var(--sandoro-primary)' : 'var(--sandoro-secondary)',
+                color: settings.autoStart ? 'var(--sandoro-bg)' : 'var(--sandoro-fg)',
+                fontWeight: settings.autoStart ? 'bold' : 'normal',
+              }}
+            >
+              {settings.autoStart ? 'ON' : 'OFF'}
+            </button>
+          </div>
         </div>
       </div>
 

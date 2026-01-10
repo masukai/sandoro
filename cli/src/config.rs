@@ -29,6 +29,8 @@ pub struct TimerConfig {
     pub long_break: u32,
     #[serde(default = "default_sessions_until_long")]
     pub sessions_until_long: u32,
+    #[serde(default)]
+    pub auto_start: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -98,6 +100,7 @@ impl Default for TimerConfig {
             short_break: default_short_break(),
             long_break: default_long_break(),
             sessions_until_long: default_sessions_until_long(),
+            auto_start: false,
         }
     }
 }
