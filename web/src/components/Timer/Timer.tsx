@@ -50,7 +50,9 @@ export function Timer({
       <div className="timer-display">{formattedTime}</div>
 
       {/* State Label */}
-      <div className={`text-lg font-bold ${stateColor}`}>[ {stateLabel} ]</div>
+      <div className={`text-lg font-bold ${isRunning ? stateColor : 'text-yellow-500'}`}>
+        [ {stateLabel}{!isRunning ? ' - PAUSED' : ''} ]
+      </div>
 
       {/* Controls */}
       <div className="flex gap-4">
