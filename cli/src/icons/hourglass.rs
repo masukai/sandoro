@@ -15,7 +15,11 @@ pub fn render_hourglass(percent: f32, animation_frame: u8) -> Vec<String> {
 }
 
 /// Render hourglass with flow direction control
-pub fn render_hourglass_with_direction(percent: f32, animation_frame: u8, is_break: bool) -> Vec<String> {
+pub fn render_hourglass_with_direction(
+    percent: f32,
+    animation_frame: u8,
+    is_break: bool,
+) -> Vec<String> {
     const ROWS: usize = 6;
     const MAX_LEVEL: usize = 18; // 6 rows × 3 gradient steps
     const W: usize = 10;
@@ -45,14 +49,22 @@ pub fn render_hourglass_with_direction(percent: f32, animation_frame: u8, is_bre
                 ' '
             } else if fill_amount >= units_per_row {
                 // Gradient: denser at bottom
-                if row_from_bottom <= 1 { '▓' }
-                else if row_from_bottom <= 3 { '▒' }
-                else { '░' }
+                if row_from_bottom <= 1 {
+                    '▓'
+                } else if row_from_bottom <= 3 {
+                    '▒'
+                } else {
+                    '░'
+                }
             } else {
                 // Partial fill (boundary row)
-                if fill_amount == 1 { '░' }
-                else if fill_amount == 2 { '▒' }
-                else { '▓' }
+                if fill_amount == 1 {
+                    '░'
+                } else if fill_amount == 2 {
+                    '▒'
+                } else {
+                    '▓'
+                }
             };
 
             rows.push(ch.to_string().repeat(W));
@@ -75,7 +87,11 @@ pub fn render_hourglass_with_direction(percent: f32, animation_frame: u8, is_bre
     let (flow1, flow2) = if flowing {
         if is_upward {
             // Break mode: blinking upward
-            if frame % 2 == 0 { ("↑", "°") } else { ("°", "↑") }
+            if frame % 2 == 0 {
+                ("↑", "°")
+            } else {
+                ("°", "↑")
+            }
         } else {
             // Work mode: 4-phase falling animation
             match frame {
@@ -93,7 +109,11 @@ pub fn render_hourglass_with_direction(percent: f32, animation_frame: u8, is_bre
     let (neck1, neck2) = if flowing {
         if is_upward {
             // Break mode
-            if frame % 2 == 0 { ("·", "°") } else { ("°", "·") }
+            if frame % 2 == 0 {
+                ("·", "°")
+            } else {
+                ("°", "·")
+            }
         } else {
             // Work mode: cycling gradient
             match frame {
@@ -115,14 +135,14 @@ pub fn render_hourglass_with_direction(percent: f32, animation_frame: u8, is_bre
         format!(" ║{}║ ", top_sand[1]),
         format!(" ║{}║ ", top_sand[2]),
         format!(" ║{}║ ", top_sand[3]),
-        format!("  ╲{}╱  ", slice_chars(&top_sand[4], 1, W-1)),
-        format!("   ╲{}╱   ", slice_chars(&top_sand[5], 2, W-2)),
+        format!("  ╲{}╱  ", slice_chars(&top_sand[4], 1, W - 1)),
+        format!("   ╲{}╱   ", slice_chars(&top_sand[5], 2, W - 2)),
         format!("    ╲ {}{} ╱    ", flow1, flow2),
         format!("     ╲{}{}╱     ", neck1, neck2),
         format!("     ╱{}{}╲     ", neck2, neck1),
         format!("    ╱ {}{} ╲    ", flow2, flow1),
-        format!("   ╱{}╲   ", slice_chars(&bot_sand[0], 2, W-2)),
-        format!("  ╱{}╲  ", slice_chars(&bot_sand[1], 1, W-1)),
+        format!("   ╱{}╲   ", slice_chars(&bot_sand[0], 2, W - 2)),
+        format!("  ╱{}╲  ", slice_chars(&bot_sand[1], 1, W - 1)),
         format!(" ║{}║ ", bot_sand[2]),
         format!(" ║{}║ ", bot_sand[3]),
         format!(" ║{}║ ", bot_sand[4]),

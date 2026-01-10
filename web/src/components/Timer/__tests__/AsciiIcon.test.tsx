@@ -55,7 +55,7 @@ describe('AsciiIcon', () => {
       render(<AsciiIcon type="tomato" progress={50} isBreak={true} />);
       const icon = screen.getByTestId('ascii-icon');
       // Break mode shows sun with rays or brackets
-      expect(icon.textContent).toMatch(/[\[\]]/);
+      expect(icon.textContent).toMatch(/[[\]]/);
     });
 
     it('should render work mode without sun', () => {

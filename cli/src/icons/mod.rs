@@ -1,9 +1,9 @@
 //! ASCII art icons for the timer
 
-pub mod hourglass;
-pub mod tomato;
 pub mod coffee;
+pub mod hourglass;
 pub mod progress;
+pub mod tomato;
 
 /// Icon types available in the app
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -157,10 +157,22 @@ impl IconState {
     pub fn render_with_direction(&self, is_break: bool) -> Vec<String> {
         match self.icon_type {
             IconType::None => vec![],
-            IconType::Progress => progress::render_progress_with_direction(self.percent, self.animation_frame, is_break),
-            IconType::Hourglass => hourglass::render_hourglass_with_direction(self.percent, self.animation_frame, is_break),
-            IconType::Tomato => tomato::render_tomato_with_direction(self.percent, self.animation_frame, is_break),
-            IconType::Coffee => coffee::render_coffee_with_direction(self.percent, self.animation_frame, is_break),
+            IconType::Progress => progress::render_progress_with_direction(
+                self.percent,
+                self.animation_frame,
+                is_break,
+            ),
+            IconType::Hourglass => hourglass::render_hourglass_with_direction(
+                self.percent,
+                self.animation_frame,
+                is_break,
+            ),
+            IconType::Tomato => {
+                tomato::render_tomato_with_direction(self.percent, self.animation_frame, is_break)
+            }
+            IconType::Coffee => {
+                coffee::render_coffee_with_direction(self.percent, self.animation_frame, is_break)
+            }
             _ => vec!["[Icon not implemented]".to_string()],
         }
     }

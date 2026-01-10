@@ -25,9 +25,9 @@ fn draw_timer_view(f: &mut Frame, app: &App) {
         .direction(Direction::Vertical)
         .margin(1)
         .constraints([
-            Constraint::Length(3),  // Header
-            Constraint::Min(10),    // Main content (flexible)
-            Constraint::Length(3),  // Footer
+            Constraint::Length(3), // Header
+            Constraint::Min(10),   // Main content (flexible)
+            Constraint::Length(3), // Footer
         ])
         .split(f.area());
 
@@ -46,16 +46,19 @@ fn draw_settings_view(f: &mut Frame, app: &App) {
         .direction(Direction::Vertical)
         .margin(1)
         .constraints([
-            Constraint::Length(3),  // Header
-            Constraint::Min(10),    // Settings list
-            Constraint::Length(3),  // Footer
+            Constraint::Length(3), // Header
+            Constraint::Min(10),   // Settings list
+            Constraint::Length(3), // Footer
         ])
         .split(f.area());
 
     // Header
     let header = Paragraph::new(Line::from(vec![
         Span::styled("  ", Style::default()),
-        Span::styled("Settings", Style::default().add_modifier(Modifier::BOLD).fg(fg)),
+        Span::styled(
+            "Settings",
+            Style::default().add_modifier(Modifier::BOLD).fg(fg),
+        ),
     ]))
     .block(Block::default().borders(Borders::TOP | Borders::LEFT | Borders::RIGHT));
     f.render_widget(header, chunks[0]);
@@ -103,8 +106,7 @@ fn draw_settings_view(f: &mut Frame, app: &App) {
         })
         .collect();
 
-    let list = List::new(items)
-        .block(Block::default().borders(Borders::LEFT | Borders::RIGHT));
+    let list = List::new(items).block(Block::default().borders(Borders::LEFT | Borders::RIGHT));
     f.render_widget(list, chunks[1]);
 
     draw_footer(f, chunks[2], app, true);
@@ -116,7 +118,10 @@ fn draw_header(f: &mut Frame, area: Rect, app: &App) {
 
     let header = Paragraph::new(Line::from(vec![
         Span::styled("  ", Style::default()),
-        Span::styled("sandoro", Style::default().add_modifier(Modifier::BOLD).fg(fg)),
+        Span::styled(
+            "sandoro",
+            Style::default().add_modifier(Modifier::BOLD).fg(fg),
+        ),
         Span::styled(" v0.1.0", Style::default().fg(secondary)),
     ]))
     .block(Block::default().borders(Borders::TOP | Borders::LEFT | Borders::RIGHT));
@@ -156,12 +161,12 @@ fn draw_main_content(f: &mut Frame, area: Rect, app: &App) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(icon_height),  // Icon area (exact fit)
-            Constraint::Length(1),  // Spacer
-            Constraint::Length(2),  // Timer display
-            Constraint::Length(2),  // Status
-            Constraint::Length(1),  // Session info
-            Constraint::Min(0),     // Absorb remaining space
+            Constraint::Length(icon_height), // Icon area (exact fit)
+            Constraint::Length(1),           // Spacer
+            Constraint::Length(2),           // Timer display
+            Constraint::Length(2),           // Status
+            Constraint::Length(1),           // Session info
+            Constraint::Min(0),              // Absorb remaining space
         ])
         .split(area);
 
@@ -177,8 +182,7 @@ fn draw_main_content(f: &mut Frame, area: Rect, app: &App) {
     f.render_widget(icon_widget, chunks[0]);
 
     // Spacer (chunks[1]) - just draw borders
-    let spacer = Paragraph::new("")
-        .block(Block::default().borders(Borders::LEFT | Borders::RIGHT));
+    let spacer = Paragraph::new("").block(Block::default().borders(Borders::LEFT | Borders::RIGHT));
     f.render_widget(spacer, chunks[1]);
 
     // Draw timer (chunks[2])
@@ -191,7 +195,11 @@ fn draw_main_content(f: &mut Frame, area: Rect, app: &App) {
     // Draw status (chunks[3])
     let (status_color, status_text) = match app.timer.state {
         TimerState::Work => {
-            let color = if app.timer.is_paused { Color::Yellow } else { work_color };
+            let color = if app.timer.is_paused {
+                Color::Yellow
+            } else {
+                work_color
+            };
             let text = if app.timer.is_paused {
                 format!("[ {} - PAUSED ]", app.timer.state.label())
             } else {
@@ -200,7 +208,11 @@ fn draw_main_content(f: &mut Frame, area: Rect, app: &App) {
             (color, text)
         }
         TimerState::ShortBreak => {
-            let color = if app.timer.is_paused { Color::Yellow } else { short_break_color };
+            let color = if app.timer.is_paused {
+                Color::Yellow
+            } else {
+                short_break_color
+            };
             let text = if app.timer.is_paused {
                 format!("[ {} - PAUSED ]", app.timer.state.label())
             } else {
@@ -209,7 +221,11 @@ fn draw_main_content(f: &mut Frame, area: Rect, app: &App) {
             (color, text)
         }
         TimerState::LongBreak => {
-            let color = if app.timer.is_paused { Color::Yellow } else { long_break_color };
+            let color = if app.timer.is_paused {
+                Color::Yellow
+            } else {
+                long_break_color
+            };
             let text = if app.timer.is_paused {
                 format!("[ {} - PAUSED ]", app.timer.state.label())
             } else {
@@ -236,8 +252,7 @@ fn draw_main_content(f: &mut Frame, area: Rect, app: &App) {
     f.render_widget(session_info, chunks[4]);
 
     // Fill remaining space with borders (chunks[5])
-    let filler = Paragraph::new("")
-        .block(Block::default().borders(Borders::LEFT | Borders::RIGHT));
+    let filler = Paragraph::new("").block(Block::default().borders(Borders::LEFT | Borders::RIGHT));
     f.render_widget(filler, chunks[5]);
 }
 

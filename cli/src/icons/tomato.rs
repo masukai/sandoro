@@ -10,7 +10,11 @@ pub fn render_tomato(percent: f32) -> Vec<String> {
 }
 
 /// Render tomato with flow direction control
-pub fn render_tomato_with_direction(percent: f32, animation_frame: u8, is_break: bool) -> Vec<String> {
+pub fn render_tomato_with_direction(
+    percent: f32,
+    animation_frame: u8,
+    is_break: bool,
+) -> Vec<String> {
     // During break, progress shows recovery (0→100 means empty→full)
     let effective_progress = if is_break { 100.0 - percent } else { percent };
 
@@ -84,7 +88,8 @@ pub fn render_tomato_with_direction(percent: f32, animation_frame: u8, is_break:
             for line in &base_tomatoes {
                 let chars: Vec<char> = line.chars().collect();
                 let len = chars.len();
-                let shifted: String = " ".to_string() + &chars[..len.saturating_sub(1)].iter().collect::<String>();
+                let shifted: String =
+                    " ".to_string() + &chars[..len.saturating_sub(1)].iter().collect::<String>();
                 result.push(shifted);
             }
         }

@@ -9,7 +9,11 @@ pub fn render_progress(percent: f32) -> Vec<String> {
 }
 
 /// Render progress bar with direction control
-pub fn render_progress_with_direction(percent: f32, animation_frame: u8, is_break: bool) -> Vec<String> {
+pub fn render_progress_with_direction(
+    percent: f32,
+    animation_frame: u8,
+    is_break: bool,
+) -> Vec<String> {
     let width = 20;
 
     // During break, progress shows refill (0→100 means empty→full)
@@ -18,27 +22,24 @@ pub fn render_progress_with_direction(percent: f32, animation_frame: u8, is_brea
     let filled = ((effective_progress / 100.0) * width as f32).round() as usize;
     let empty = width - filled;
 
-    let bar = format!(
-        "[{}{}]",
-        "█".repeat(filled),
-        "░".repeat(empty)
-    );
+    let bar = format!("[{}{}]", "█".repeat(filled), "░".repeat(empty));
 
     // Refill animation during break (blinking arrow)
     let is_refilling = is_break && percent > 0.0 && percent < 100.0;
     let anim_frame = animation_frame % 2;
 
     if is_refilling {
-        let arrow = if anim_frame == 0 { "◀━━" } else { "◄──" };
+        let arrow = if anim_frame == 0 {
+            "◀━━"
+        } else {
+            "◄──"
+        };
         vec![
             format!("{} ← REFILL", bar),
             format!("{:>3}% {}", effective_progress.round() as i32, arrow),
         ]
     } else {
-        vec![
-            bar,
-            format!("{:>3}%", effective_progress.round() as i32),
-        ]
+        vec![bar, format!("{:>3}%", effective_progress.round() as i32)]
     }
 }
 

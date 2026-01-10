@@ -68,14 +68,46 @@ impl Theme {
     pub fn nord() -> Self {
         Self {
             name: "nord".to_string(),
-            background: ThemeColor::Rgb { r: 46, g: 52, b: 64 },
-            foreground: ThemeColor::Rgb { r: 236, g: 239, b: 244 },
-            primary: ThemeColor::Rgb { r: 136, g: 192, b: 208 },
-            secondary: ThemeColor::Rgb { r: 76, g: 86, b: 106 },
-            accent: ThemeColor::Rgb { r: 235, g: 203, b: 139 },
-            work: ThemeColor::Rgb { r: 163, g: 190, b: 140 },
-            short_break: ThemeColor::Rgb { r: 136, g: 192, b: 208 },
-            long_break: ThemeColor::Rgb { r: 129, g: 161, b: 193 },
+            background: ThemeColor::Rgb {
+                r: 46,
+                g: 52,
+                b: 64,
+            },
+            foreground: ThemeColor::Rgb {
+                r: 236,
+                g: 239,
+                b: 244,
+            },
+            primary: ThemeColor::Rgb {
+                r: 136,
+                g: 192,
+                b: 208,
+            },
+            secondary: ThemeColor::Rgb {
+                r: 76,
+                g: 86,
+                b: 106,
+            },
+            accent: ThemeColor::Rgb {
+                r: 235,
+                g: 203,
+                b: 139,
+            },
+            work: ThemeColor::Rgb {
+                r: 163,
+                g: 190,
+                b: 140,
+            },
+            short_break: ThemeColor::Rgb {
+                r: 136,
+                g: 192,
+                b: 208,
+            },
+            long_break: ThemeColor::Rgb {
+                r: 129,
+                g: 161,
+                b: 193,
+            },
         }
     }
 
@@ -83,14 +115,46 @@ impl Theme {
     pub fn dracula() -> Self {
         Self {
             name: "dracula".to_string(),
-            background: ThemeColor::Rgb { r: 40, g: 42, b: 54 },
-            foreground: ThemeColor::Rgb { r: 248, g: 248, b: 242 },
-            primary: ThemeColor::Rgb { r: 189, g: 147, b: 249 },
-            secondary: ThemeColor::Rgb { r: 68, g: 71, b: 90 },
-            accent: ThemeColor::Rgb { r: 255, g: 121, b: 198 },
-            work: ThemeColor::Rgb { r: 80, g: 250, b: 123 },
-            short_break: ThemeColor::Rgb { r: 139, g: 233, b: 253 },
-            long_break: ThemeColor::Rgb { r: 189, g: 147, b: 249 },
+            background: ThemeColor::Rgb {
+                r: 40,
+                g: 42,
+                b: 54,
+            },
+            foreground: ThemeColor::Rgb {
+                r: 248,
+                g: 248,
+                b: 242,
+            },
+            primary: ThemeColor::Rgb {
+                r: 189,
+                g: 147,
+                b: 249,
+            },
+            secondary: ThemeColor::Rgb {
+                r: 68,
+                g: 71,
+                b: 90,
+            },
+            accent: ThemeColor::Rgb {
+                r: 255,
+                g: 121,
+                b: 198,
+            },
+            work: ThemeColor::Rgb {
+                r: 80,
+                g: 250,
+                b: 123,
+            },
+            short_break: ThemeColor::Rgb {
+                r: 139,
+                g: 233,
+                b: 253,
+            },
+            long_break: ThemeColor::Rgb {
+                r: 189,
+                g: 147,
+                b: 249,
+            },
         }
     }
 

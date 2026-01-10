@@ -6,10 +6,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use ratatui::{
-    backend::CrosstermBackend,
-    Terminal,
-};
+use ratatui::{backend::CrosstermBackend, Terminal};
 use std::io;
 use std::time::Duration;
 
@@ -98,8 +95,12 @@ pub struct App {
 impl App {
     pub fn new(config: Config) -> Self {
         let theme = Theme::by_name(&config.appearance.theme);
-        let available_themes: Vec<String> = Theme::free_themes().iter().map(|s| s.to_string()).collect();
-        let theme_index = available_themes.iter().position(|t| t == &config.appearance.theme).unwrap_or(0);
+        let available_themes: Vec<String> =
+            Theme::free_themes().iter().map(|s| s.to_string()).collect();
+        let theme_index = available_themes
+            .iter()
+            .position(|t| t == &config.appearance.theme)
+            .unwrap_or(0);
 
         let available_icons = IconType::free_icons();
         let icon_index = IconType::from_str(&config.appearance.icon)
@@ -257,8 +258,11 @@ impl App {
                 self.view = AppView::Timer;
                 self.editing = false;
             }
-            SettingsItem::Theme | SettingsItem::Icon | SettingsItem::WorkDuration |
-            SettingsItem::ShortBreak | SettingsItem::LongBreak => {
+            SettingsItem::Theme
+            | SettingsItem::Icon
+            | SettingsItem::WorkDuration
+            | SettingsItem::ShortBreak
+            | SettingsItem::LongBreak => {
                 if self.editing {
                     // Apply changes
                     self.editing = false;
@@ -336,36 +340,32 @@ pub fn run() -> Result<()> {
         if event::poll(tick_rate)? {
             if let Event::Key(key) = event::read()? {
                 match app.view {
-                    AppView::Timer => {
-                        match key.code {
-                            KeyCode::Char('q') => app.should_quit = true,
-                            KeyCode::Char(' ') => app.toggle_pause(),
-                            KeyCode::Char('r') => app.reset(),
-                            KeyCode::Char('s') => app.skip(),
-                            KeyCode::Tab => app.toggle_settings(),
-                            _ => {}
-                        }
-                    }
-                    AppView::Settings => {
-                        match key.code {
-                            KeyCode::Char('q') => {
-                                if !app.editing {
-                                    app.should_quit = true;
-                                }
+                    AppView::Timer => match key.code {
+                        KeyCode::Char('q') => app.should_quit = true,
+                        KeyCode::Char(' ') => app.toggle_pause(),
+                        KeyCode::Char('r') => app.reset(),
+                        KeyCode::Char('s') => app.skip(),
+                        KeyCode::Tab => app.toggle_settings(),
+                        _ => {}
+                    },
+                    AppView::Settings => match key.code {
+                        KeyCode::Char('q') => {
+                            if !app.editing {
+                                app.should_quit = true;
                             }
-                            KeyCode::Tab | KeyCode::Esc => {
-                                if app.editing {
-                                    app.editing = false;
-                                } else {
-                                    app.toggle_settings();
-                                }
-                            }
-                            KeyCode::Up | KeyCode::Char('k') => app.settings_up(),
-                            KeyCode::Down | KeyCode::Char('j') => app.settings_down(),
-                            KeyCode::Enter | KeyCode::Char(' ') => app.settings_select(),
-                            _ => {}
                         }
-                    }
+                        KeyCode::Tab | KeyCode::Esc => {
+                            if app.editing {
+                                app.editing = false;
+                            } else {
+                                app.toggle_settings();
+                            }
+                        }
+                        KeyCode::Up | KeyCode::Char('k') => app.settings_up(),
+                        KeyCode::Down | KeyCode::Char('j') => app.settings_down(),
+                        KeyCode::Enter | KeyCode::Char(' ') => app.settings_select(),
+                        _ => {}
+                    },
                 }
             }
         }

@@ -4,7 +4,7 @@
 
 use anyhow::Result;
 use chrono::{DateTime, Utc};
-use rusqlite::{Connection, params};
+use rusqlite::{params, Connection};
 use std::path::PathBuf;
 
 use crate::config::Config;
@@ -122,12 +122,11 @@ impl Database {
         let mut stmt = self.conn.prepare(
             "SELECT COALESCE(SUM(duration_seconds), 0), COUNT(*)
              FROM sessions
-             WHERE date(started_at) = ?1 AND type = 'work' AND completed = TRUE"
+             WHERE date(started_at) = ?1 AND type = 'work' AND completed = TRUE",
         )?;
 
-        let (total_seconds, count): (i32, i32) = stmt.query_row(params![today], |row| {
-            Ok((row.get(0)?, row.get(1)?))
-        })?;
+        let (total_seconds, count): (i32, i32) =
+            stmt.query_row(params![today], |row| Ok((row.get(0)?, row.get(1)?)))?;
 
         Ok(DailyStats {
             date: today,

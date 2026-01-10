@@ -54,13 +54,27 @@ pub struct AccountConfig {
 }
 
 // Default value functions
-fn default_work_duration() -> u32 { 25 }
-fn default_short_break() -> u32 { 5 }
-fn default_long_break() -> u32 { 15 }
-fn default_sessions_until_long() -> u32 { 4 }
-fn default_icon() -> String { "hourglass".to_string() }
-fn default_theme() -> String { "default".to_string() }
-fn default_true() -> bool { true }
+fn default_work_duration() -> u32 {
+    25
+}
+fn default_short_break() -> u32 {
+    5
+}
+fn default_long_break() -> u32 {
+    15
+}
+fn default_sessions_until_long() -> u32 {
+    4
+}
+fn default_icon() -> String {
+    "hourglass".to_string()
+}
+fn default_theme() -> String {
+    "default".to_string()
+}
+fn default_true() -> bool {
+    true
+}
 
 impl Default for Config {
     fn default() -> Self {

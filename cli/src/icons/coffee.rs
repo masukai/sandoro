@@ -9,7 +9,11 @@ pub fn render_coffee(percent: f32, animation_frame: u8) -> Vec<String> {
 }
 
 /// Render coffee with flow direction control
-pub fn render_coffee_with_direction(percent: f32, animation_frame: u8, is_break: bool) -> Vec<String> {
+pub fn render_coffee_with_direction(
+    percent: f32,
+    animation_frame: u8,
+    is_break: bool,
+) -> Vec<String> {
     const ROWS: usize = 6;
     const MAX_LEVEL: usize = 18;
     const W: usize = 8;
@@ -18,7 +22,8 @@ pub fn render_coffee_with_direction(percent: f32, animation_frame: u8, is_break:
     let effective_progress = if is_break { 100.0 - percent } else { percent };
 
     // Remaining coffee level
-    let remaining_level = ((100.0 - effective_progress) / 100.0 * MAX_LEVEL as f32).round() as usize;
+    let remaining_level =
+        ((100.0 - effective_progress) / 100.0 * MAX_LEVEL as f32).round() as usize;
 
     // Steam shows when cup is more than 40% full (60% of timer remaining)
     let show_steam = effective_progress < 60.0;
@@ -44,9 +49,13 @@ pub fn render_coffee_with_direction(percent: f32, animation_frame: u8, is_break:
                 ' '
             } else if fill_amount >= units_per_row {
                 // Gradient: denser at bottom
-                if row_from_bottom <= 1 { '▓' }
-                else if row_from_bottom <= 3 { '▒' }
-                else { '░' }
+                if row_from_bottom <= 1 {
+                    '▓'
+                } else if row_from_bottom <= 3 {
+                    '▒'
+                } else {
+                    '░'
+                }
             } else {
                 // Boundary row (surface) = wave
                 '~'
