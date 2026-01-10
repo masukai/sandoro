@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
-type TimerState = 'work' | 'shortBreak' | 'longBreak';
+export type TimerState = 'work' | 'shortBreak' | 'longBreak';
 
 interface UseTimerOptions {
   workDuration?: number; // in seconds
@@ -8,6 +8,9 @@ interface UseTimerOptions {
   longBreakDuration?: number;
   sessionsUntilLongBreak?: number;
   autoStart?: boolean;
+  onSessionStart?: (state: TimerState) => void;
+  onSessionComplete?: (state: TimerState, durationSeconds: number) => void;
+  onSessionCancel?: () => void;
 }
 
 const DEFAULT_WORK_DURATION = 25 * 60;
@@ -21,6 +24,9 @@ export function useTimer(options: UseTimerOptions = {}) {
   const longBreakDuration = options.longBreakDuration ?? DEFAULT_LONG_BREAK;
   const sessionsUntilLongBreak = options.sessionsUntilLongBreak ?? DEFAULT_SESSIONS;
   const autoStart = options.autoStart ?? false;
+  const onSessionStart = options.onSessionStart;
+  const onSessionComplete = options.onSessionComplete;
+  const onSessionCancel = options.onSessionCancel;
 
   const [state, setState] = useState<TimerState>('work');
   const [remainingTime, setRemainingTime] = useState(workDuration);
@@ -30,6 +36,19 @@ export function useTimer(options: UseTimerOptions = {}) {
   const intervalRef = useRef<number | null>(null);
   // Track if this is an automatic transition (vs settings change)
   const isAutoTransition = useRef(false);
+  // Track if session recording has started
+  const sessionStartedRef = useRef(false);
+
+  // Refs for callbacks to avoid stale closures
+  const onSessionStartRef = useRef(onSessionStart);
+  const onSessionCompleteRef = useRef(onSessionComplete);
+  const onSessionCancelRef = useRef(onSessionCancel);
+
+  useEffect(() => {
+    onSessionStartRef.current = onSessionStart;
+    onSessionCompleteRef.current = onSessionComplete;
+    onSessionCancelRef.current = onSessionCancel;
+  }, [onSessionStart, onSessionComplete, onSessionCancel]);
 
   const getDurationForState = useCallback(
     (s: TimerState) => {
@@ -73,6 +92,18 @@ export function useTimer(options: UseTimerOptions = {}) {
     const currentState = stateRef.current;
     const currentSessionCount = sessionCountRef.current;
 
+    // Call session complete callback if session was started
+    if (sessionStartedRef.current) {
+      const duration =
+        currentState === 'work'
+          ? workDuration
+          : currentState === 'shortBreak'
+            ? shortBreakDuration
+            : longBreakDuration;
+      onSessionCompleteRef.current?.(currentState, duration);
+      sessionStartedRef.current = false;
+    }
+
     if (currentState === 'work') {
       // Check if we should go to long break after this session
       if (currentSessionCount >= sessionsUntilLongBreak) {
@@ -89,7 +120,7 @@ export function useTimer(options: UseTimerOptions = {}) {
       setSessionCount(1);
       setState('work');
     }
-  }, [sessionsUntilLongBreak, autoStart]);
+  }, [sessionsUntilLongBreak, autoStart, workDuration, shortBreakDuration, longBreakDuration]);
 
   // Keep ref updated
   useEffect(() => {
@@ -134,10 +165,22 @@ export function useTimer(options: UseTimerOptions = {}) {
   }, [isRunning]);
 
   const togglePause = useCallback(() => {
-    setIsRunning((r) => !r);
+    setIsRunning((r) => {
+      // If starting timer and session not yet started, call onSessionStart
+      if (!r && !sessionStartedRef.current) {
+        sessionStartedRef.current = true;
+        onSessionStartRef.current?.(stateRef.current);
+      }
+      return !r;
+    });
   }, []);
 
   const reset = useCallback(() => {
+    // Cancel current session if started
+    if (sessionStartedRef.current) {
+      onSessionCancelRef.current?.();
+      sessionStartedRef.current = false;
+    }
     setIsRunning(false);
     setRemainingTime(getDurationForState(state));
   }, [state, getDurationForState]);
@@ -147,6 +190,11 @@ export function useTimer(options: UseTimerOptions = {}) {
   }, [transitionToNextState]);
 
   const fullReset = useCallback(() => {
+    // Cancel current session if started
+    if (sessionStartedRef.current) {
+      onSessionCancelRef.current?.();
+      sessionStartedRef.current = false;
+    }
     setIsRunning(false);
     setState('work');
     setRemainingTime(workDuration);

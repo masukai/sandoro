@@ -1,5 +1,7 @@
+import { useRef, useCallback } from 'react';
 import { useTimer } from '../../hooks/useTimer';
 import { useSettings, IconType } from '../../hooks/useSettings';
+import { useSessionStorage } from '../../hooks/useSessionStorage';
 import { AsciiIcon } from './AsciiIcon';
 
 interface TimerProps {
@@ -21,6 +23,36 @@ export function Timer({
 }: TimerProps) {
   const { settings } = useSettings();
   const iconType = icon || settings.icon || 'hourglass';
+  const { startSession, completeSession, cancelSession, getTodayStats } =
+    useSessionStorage();
+
+  // Track current session ID
+  const currentSessionIdRef = useRef<string | null>(null);
+
+  const handleSessionStart = useCallback(
+    (state: 'work' | 'shortBreak' | 'longBreak') => {
+      currentSessionIdRef.current = startSession(state);
+    },
+    [startSession]
+  );
+
+  const handleSessionComplete = useCallback(
+    (_state: 'work' | 'shortBreak' | 'longBreak', durationSeconds: number) => {
+      if (currentSessionIdRef.current) {
+        completeSession(currentSessionIdRef.current, durationSeconds);
+        currentSessionIdRef.current = null;
+      }
+    },
+    [completeSession]
+  );
+
+  const handleSessionCancel = useCallback(() => {
+    if (currentSessionIdRef.current) {
+      cancelSession(currentSessionIdRef.current);
+      currentSessionIdRef.current = null;
+    }
+  }, [cancelSession]);
+
   const { state, formattedTime, isRunning, progress, sessionCount, togglePause, reset, skip, fullReset } =
     useTimer({
       workDuration,
@@ -28,7 +60,13 @@ export function Timer({
       longBreakDuration,
       sessionsUntilLongBreak,
       autoStart,
+      onSessionStart: handleSessionStart,
+      onSessionComplete: handleSessionComplete,
+      onSessionCancel: handleSessionCancel,
     });
+
+  // Get today's stats for display
+  const todayStats = getTodayStats();
 
   const stateLabel = {
     work: 'WORKING',
@@ -89,7 +127,10 @@ export function Timer({
 
       {/* Session Info */}
       <div className="text-sm text-sandoro-secondary">
-        Session: {sessionCount}/{sessionsUntilLongBreak} | Today: 0h 0m
+        Session: {sessionCount}/{sessionsUntilLongBreak} | Today:{' '}
+        {todayStats.totalWorkSeconds >= 3600
+          ? `${Math.floor(todayStats.totalWorkSeconds / 3600)}h ${Math.floor((todayStats.totalWorkSeconds % 3600) / 60)}m`
+          : `${Math.floor(todayStats.totalWorkSeconds / 60)}m`}
       </div>
     </div>
   );

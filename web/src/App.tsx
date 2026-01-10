@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Timer } from './components/Timer/Timer';
 import { Settings } from './components/Settings';
+import { Stats } from './components/Stats';
 import { IconPreview } from './components/IconPreview';
 import { useTheme } from './hooks/useTheme';
 import { useSettings } from './hooks/useSettings';
@@ -43,7 +44,7 @@ function App() {
                 autoStart={settings.autoStart}
               />
             </div>
-            {view === 'stats' && <div>Stats (coming soon)</div>}
+            {view === 'stats' && <Stats />}
             {view === 'settings' && <Settings />}
           </>
         )}
