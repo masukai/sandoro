@@ -1,196 +1,273 @@
-# sandoro
+<div align="center">
+
+# 🏜️ sandoro
 
 **砂時計アニメーションが特徴的なポモドーロタイマー**
 
-[![CI](https://github.com/USERNAME/sandoro/actions/workflows/ci.yml/badge.svg)](https://github.com/USERNAME/sandoro/actions/workflows/ci.yml)
+[![CI](https://github.com/masukai/sandoro/actions/workflows/ci.yml/badge.svg)](https://github.com/masukai/sandoro/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Rust](https://img.shields.io/badge/Rust-1.83+-orange?logo=rust)](https://www.rust-lang.org/)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev/)
 
-## 特徴
+<br />
 
-- **リッチなアスキーアートアニメーション**: Unicode文字（░▒▓）によるグラデーション表現
-- **4種類のアニメーションアイコン**:
-  - 砂時計: 4フェーズの砂落下アニメーション、ボトルネック砂表現
-  - トマト: 2つのチェリートマトが揺れるアニメーション
-  - コーヒー: 4フェーズの湯気上昇アニメーション
-  - プログレスバー: シンプルな進捗表示
-- **作業/休憩モードの視覚的演出**:
-  - 作業中: 砂が落下、トマトが揺れる、湯気が上昇
-  - 休憩中: 砂が上昇（逆流）、太陽が輝く、コーヒーが注がれる
-- **カラーテーマ**: Nord, Dracula など人気テーマに対応
-- **統計機能**: 日次/週次/月次の作業記録
-- **CLI & Web**: ターミナルでもブラウザでも使える
-- **PWA対応**: オフラインでも動作
+<img src="docs/assets/demo.gif" alt="sandoro demo" width="600">
 
-```
-┌────────────────────────────────────────────────────────────────┐
-│  sandoro                                               v0.1.0  │
-├────────────────────────────────────────────────────────────────┤
-│                                                                │
-│                        ╔══════════╗                            │
-│                        ║▄▄▄▄▄▄▄▄▄▄║                            │
-│                        ║░░░░░░░░░░║  ← 砂 (薄い)               │
-│                        ║░░░░░░░░░░║                            │
-│                        ║▒▒▒▒▒▒▒▒▒▒║  ← 砂 (中間)               │
-│                        ║▒▒▒▒▒▒▒▒▒▒║                            │
-│                         ╲▓▓▓▓▓▓▓▓╱   ← 砂 (濃い)               │
-│                          ╲▓▓▓▓▓▓╱                              │
-│                           ╲ ▒░ ╱     ← 落下する砂              │
-│                            ╲  ╱                                │
-│                            ╱  ╲                                │
-│                           ╱ ░▒ ╲                               │
-│                          ╱      ╲                              │
-│                         ╱        ╲                             │
-│                        ║          ║                            │
-│                        ║          ║                            │
-│                        ║          ║                            │
-│                        ║          ║                            │
-│                        ║▀▀▀▀▀▀▀▀▀▀║                            │
-│                        ╚══════════╝                            │
-│                                                                │
-│                           12:30                                │
-│                        [ WORKING ]                             │
-│                                                                │
-│   作業中: 砂が4フェーズで落下 ▼·  休憩中: 砂が上昇 ↑°          │
-│                                                                │
-├────────────────────────────────────────────────────────────────┤
-│    [Space] Start/Pause  [r] Reset  [s] Skip  [q] Quit          │
-└────────────────────────────────────────────────────────────────┘
-```
+*CLI & Web 両対応 • リッチなASCIIアートアニメーション • オフライン対応*
 
-## インストール
+[Web版を試す](https://sandoro.app) · [リリース](https://github.com/masukai/sandoro/releases) · [ドキュメント](docs/)
+
+</div>
+
+---
+
+## ✨ 特徴
+
+<table>
+<tr>
+<td width="50%">
+
+### 🎨 リッチなアニメーション
+
+Unicode文字（`░▒▓`）によるグラデーション表現と4フェーズのスムーズなアニメーション
+
+</td>
+<td width="50%">
+
+### 🖥️ CLI & Web
+
+ターミナルでもブラウザでも同じ体験。PWA対応でオフラインでも動作
+
+</td>
+</tr>
+<tr>
+<td>
+
+### 🎯 4種類のアイコン
+
+- ⏳ **砂時計**: 砂が落下/上昇するアニメーション
+- 🍅 **トマト**: 2つのチェリートマトが揺れる
+- ☕ **コーヒー**: 湯気が立ち上る/注がれる
+- 📊 **プログレス**: シンプルな進捗バー
+
+</td>
+<td>
+
+### 🎨 カラーテーマ
+
+Nord, Dracula など人気テーマに対応。お好みの配色で作業できます
+
+</td>
+</tr>
+</table>
+
+---
+
+## 🖼️ スクリーンショット
 
 ### CLI版
 
-#### macOS / Linux (Homebrew)
+```
+╔══════════════════════════════════════════════════════════════════════════╗
+║  sandoro                                                         v0.1.0  ║
+╠══════════════════════════════════════════════════════════════════════════╣
+║                                                                          ║
+║                           ╔════════════╗                                 ║
+║                           ║░░░░░░░░░░░░║                                 ║
+║                           ║░░░░░░░░░░░░║                                 ║
+║                           ║▒▒▒▒▒▒▒▒▒▒▒▒║                                 ║
+║                           ║▒▒▒▒▒▒▒▒▒▒▒▒║                                 ║
+║                            ╲▓▓▓▓▓▓▓▓▓▓╱                                  ║
+║                             ╲▓▓▓▓▓▓▓▓╱                                   ║
+║                              ╲  ▼·  ╱    ← 落下する砂                    ║
+║                               ╲    ╱                                     ║
+║                               ╱    ╲                                     ║
+║                              ╱  ░▒  ╲                                    ║
+║                             ╱        ╲                                   ║
+║                            ╱          ╲                                  ║
+║                           ║            ║                                 ║
+║                           ║            ║                                 ║
+║                           ║            ║                                 ║
+║                           ║▀▀▀▀▀▀▀▀▀▀▀▀║                                 ║
+║                           ╚════════════╝                                 ║
+║                                                                          ║
+║                              24:35                                       ║
+║                           [ WORKING ]                                    ║
+║                                                                          ║
+║                        Session 1/4 │ Today: 2h 30m                       ║
+║                                                                          ║
+╠══════════════════════════════════════════════════════════════════════════╣
+║   [Space] Start/Pause   [r] Reset   [s] Skip   [Tab] Settings   [q] Quit ║
+╚══════════════════════════════════════════════════════════════════════════╝
+```
+
+<details>
+<summary>🍅 トマトアイコン</summary>
+
+```
+              ~~~~  ~~~~
+             (    )(    )
+              \  /  \  /
+          ═══════════════════
+               🍅    🍅
+            ╭──────────────╮
+            │ ◉  ◉    ◉  ◉ │
+            │   🌱      🌱  │
+            ╰──────────────╯
+```
+
+</details>
+
+<details>
+<summary>☕ コーヒーアイコン</summary>
+
+```
+            ～  ～  ～
+             ～  ～
+              ～
+          ╭──────────╮
+          │▓▓▓▓▓▓▓▓▓▓│──╮
+          │▓▓▓▓▓▓▓▓▓▓│  │
+          │▒▒▒▒▒▒▒▒▒▒│──╯
+          │░░░░░░░░░░│
+          ╰──────────╯
+         ══════════════
+```
+
+</details>
+
+---
+
+## 🚀 インストール
+
+### CLI版
+
+<details open>
+<summary><strong>macOS / Linux (Homebrew)</strong></summary>
 
 ```bash
-brew tap USERNAME/sandoro
+brew tap masukai/sandoro
 brew install sandoro
 ```
 
-#### Rust (Cargo)
+</details>
+
+<details>
+<summary><strong>Rust (Cargo)</strong></summary>
 
 ```bash
 cargo install sandoro
 ```
 
-#### 直接ダウンロード
+</details>
 
-[GitHub Releases](https://github.com/USERNAME/sandoro/releases) から最新のバイナリをダウンロード
+<details>
+<summary><strong>直接ダウンロード</strong></summary>
+
+[GitHub Releases](https://github.com/masukai/sandoro/releases) から最新のバイナリをダウンロード
+
+| OS | Architecture | ダウンロード |
+|----|--------------|-------------|
+| macOS | Apple Silicon | `sandoro-darwin-arm64` |
+| macOS | Intel | `sandoro-darwin-amd64` |
+| Linux | x86_64 | `sandoro-linux-amd64` |
+
+</details>
 
 ### Web版
 
-[sandoro.app](https://sandoro.app) にアクセス（インストール不要）
+👉 **[sandoro.app](https://sandoro.app)** にアクセス（インストール不要）
 
-#### PWAとしてインストール
+PWAとしてインストールすれば、デスクトップアプリのように使えます。
 
-1. [sandoro.app](https://sandoro.app) にアクセス
-2. ブラウザのアドレスバーにある「インストール」アイコンをクリック
-3. デスクトップ/ホーム画面にアプリとして追加される
+---
 
-## 使い方
+## 📖 使い方
 
-### CLI
+### 基本操作
 
 ```bash
-# デフォルト設定でタイマーを開始
+# タイマーを開始
 sandoro
 
 # カスタム設定で開始
-sandoro start --work 30 --short-break 10
-
-# 統計を表示
-sandoro stats --day
-sandoro stats --week
-sandoro stats --month
-
-# 設定を変更
-sandoro config --icon tomato --theme nord
+sandoro start --work 30 --short-break 10 --long-break 20
 ```
 
 ### キーボードショートカット
 
 | キー | 操作 |
-|------|------|
-| `Space` | 開始/一時停止 |
+|:----:|------|
+| `Space` | 開始 / 一時停止 |
 | `r` | リセット |
 | `s` | スキップ |
+| `Tab` | 設定画面 |
 | `q` | 終了 |
 
-## 開発
+### 設定
+
+```bash
+# アイコンとテーマを変更
+sandoro config --icon tomato --theme dracula
+
+# 統計を表示
+sandoro stats --week
+```
+
+---
+
+## 🛠️ 開発
 
 ### 必要なツール
 
 - [mise](https://mise.jdx.dev/) - ツールバージョン管理
-- Rust 1.92+
-- Node.js 24+
-- pnpm 10+
-
-### セットアップ
 
 ```bash
-# ツールをインストール
+# 全ての開発ツールをインストール
 mise install
-
-# CLI版を開発モードで実行
-mise run dev-cli
-
-# Web版を開発モードで実行
-mise run install-web
-mise run dev-web
 ```
 
-### テスト
+### 開発コマンド
 
 ```bash
-# CLI版のテスト
-mise run test-cli
+# CLI版
+cd cli
+cargo run        # 実行
+cargo test       # テスト
+cargo clippy     # リント
 
-# Web版のテスト
-mise run test-web
-
-# 全体のテスト
-mise run test
+# Web版
+cd web
+pnpm install     # 依存関係インストール
+pnpm dev         # 開発サーバー起動
+pnpm test        # テスト
+pnpm build       # ビルド
 ```
 
-## プロジェクト構成
+---
+
+## 📁 プロジェクト構成
 
 ```
 sandoro/
-├── cli/                # Rust CLI
-│   ├── Cargo.toml
-│   └── src/
-├── web/                # React Web
-│   ├── package.json
-│   └── src/
-├── shared/             # 共有リソース
-│   ├── themes/
-│   └── schema.sql
-├── docs/               # ドキュメント
-└── homebrew/           # Homebrew Formula
+├── cli/          # 🦀 Rust CLI (ratatui)
+├── web/          # ⚛️  React Web (Vite + TailwindCSS)
+├── shared/       # 📦 共有リソース
+└── docs/         # 📚 ドキュメント
 ```
 
-## Pro版
+---
 
-月額 ¥500 で以下の機能がアンロック:
+## 📄 ライセンス
 
-- **10+ アスキーアートアイコン** (Target, Fire, Star, Moon, Rocket など)
-- **10+ カラーテーマ** (Solarized, Monokai, Gruvbox, Tokyo Night など)
-- **カスタムテーマ作成**
-- **無制限の統計履歴**
-- **クラウド同期** (CLI/Web間でデータ共有)
-- **データエクスポート** (CSV/JSON)
+[MIT License](LICENSE) © 2025 masukai
 
-## ドキュメント
+---
 
-- [PLAN.md](PLAN.md) - プロジェクト計画と設計書
-- [RUNBOOK.md](RUNBOOK.md) - 運用ルールと手順
-- [CONTRIBUTING.md](CONTRIBUTING.md) - 開発フローとレビュープロセス
+<div align="center">
 
-## ライセンス
+**[⬆ トップに戻る](#-sandoro)**
 
-MIT License - 詳細は [LICENSE](LICENSE) を参照
+Made with ❤️ and ☕
 
-## コントリビューション
-
-[CONTRIBUTING.md](CONTRIBUTING.md) を参照してください。
+</div>

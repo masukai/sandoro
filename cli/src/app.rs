@@ -282,12 +282,18 @@ impl App {
         // Apply icon
         self.config.appearance.icon = self.available_icons[self.icon_index].to_string();
 
-        // Apply timer settings (recreate timer with new durations)
-        self.timer = Timer::new(
-            self.config.timer.work_duration,
-            self.config.timer.short_break,
-            self.config.timer.long_break,
-        );
+        // Only recreate timer if duration settings changed
+        let duration_changed = self.timer.work_duration != self.config.timer.work_duration
+            || self.timer.short_break_duration != self.config.timer.short_break
+            || self.timer.long_break_duration != self.config.timer.long_break;
+
+        if duration_changed {
+            self.timer = Timer::new(
+                self.config.timer.work_duration,
+                self.config.timer.short_break,
+                self.config.timer.long_break,
+            );
+        }
 
         // Save config
         if let Err(e) = self.config.save() {
