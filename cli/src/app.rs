@@ -11,9 +11,10 @@ use std::io;
 use std::time::Duration;
 
 use crate::config::Config;
+use crate::db::{Database, SessionType};
 use crate::icons::IconType;
 use crate::theme::Theme;
-use crate::timer::Timer;
+use crate::timer::{Timer, TimerState};
 use crate::ui;
 
 /// Current view/screen
@@ -89,6 +90,14 @@ pub struct App {
     pub animation_frame: u8,
     /// Tick counter for animation timing (animate every N ticks)
     animation_tick: u8,
+    /// Database for session recording
+    db: Option<Database>,
+    /// Current session ID being recorded
+    current_session_id: Option<i64>,
+    /// Today's total work time in seconds
+    pub today_work_seconds: i32,
+    /// Today's completed sessions count
+    pub today_sessions: i32,
 }
 
 impl App {
@@ -105,6 +114,14 @@ impl App {
         let icon_index = IconType::from_str(&config.appearance.icon)
             .and_then(|icon| available_icons.iter().position(|i| *i == icon))
             .unwrap_or(2); // Default to Hourglass (index 2)
+
+        // Open database and get today's stats
+        let db = Database::open().ok();
+        let (today_work_seconds, today_sessions) = db
+            .as_ref()
+            .and_then(|d| d.get_today_stats().ok())
+            .map(|s| (s.total_work_seconds, s.sessions_completed))
+            .unwrap_or((0, 0));
 
         Self {
             timer: Timer::with_sessions(
@@ -125,6 +142,10 @@ impl App {
             editing: false,
             animation_frame: 0,
             animation_tick: 0,
+            db,
+            current_session_id: None,
+            today_work_seconds,
+            today_sessions,
         }
     }
 
@@ -135,8 +156,12 @@ impl App {
 
             self.timer.tick();
 
-            // Check if timer completed and transitioned - auto-start if enabled
+            // Check if timer completed and transitioned
             if was_running && self.timer.is_paused && self.timer.state != old_state {
+                // Record session completion
+                self.record_session_complete(old_state, true);
+
+                // Auto-start if enabled
                 if self.config.timer.auto_start {
                     self.timer.toggle_pause();
                 }
@@ -159,20 +184,69 @@ impl App {
     }
 
     pub fn toggle_pause(&mut self) {
+        let was_paused = self.timer.is_paused;
         self.timer.toggle_pause();
+
+        // Start recording session when timer starts
+        if was_paused && !self.timer.is_paused {
+            self.start_session_recording();
+        }
     }
 
     pub fn reset(&mut self) {
+        // Cancel current session if running
+        self.current_session_id = None;
         self.timer.reset();
     }
 
     /// Full reset - back to session 1 and Work state
     pub fn full_reset(&mut self) {
+        // Cancel current session if running
+        self.current_session_id = None;
         self.timer.full_reset();
     }
 
     pub fn skip(&mut self) {
+        let old_state = self.timer.state;
         self.timer.skip();
+        // Record skipped session (not completed)
+        self.record_session_complete(old_state, false);
+    }
+
+    /// Start recording a new session
+    fn start_session_recording(&mut self) {
+        if let Some(ref db) = self.db {
+            let session_type = match self.timer.state {
+                TimerState::Work => SessionType::Work,
+                TimerState::ShortBreak => SessionType::ShortBreak,
+                TimerState::LongBreak => SessionType::LongBreak,
+            };
+            if let Ok(id) = db.start_session(session_type) {
+                self.current_session_id = Some(id);
+            }
+        }
+    }
+
+    /// Record session completion
+    fn record_session_complete(&mut self, state: TimerState, completed: bool) {
+        if let (Some(ref db), Some(session_id)) = (&self.db, self.current_session_id) {
+            let duration = match state {
+                TimerState::Work => self.config.timer.work_duration * 60,
+                TimerState::ShortBreak => self.config.timer.short_break * 60,
+                TimerState::LongBreak => self.config.timer.long_break * 60,
+            };
+
+            if completed {
+                let _ = db.complete_session(session_id, duration as i32);
+
+                // Update today's stats for work sessions
+                if state == TimerState::Work {
+                    self.today_work_seconds += duration as i32;
+                    self.today_sessions += 1;
+                }
+            }
+        }
+        self.current_session_id = None;
     }
 
     pub fn toggle_settings(&mut self) {

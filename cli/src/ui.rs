@@ -249,9 +249,16 @@ fn draw_main_content(f: &mut Frame, area: Rect, app: &App) {
     f.render_widget(status, chunks[3]);
 
     // Draw session info (chunks[4])
+    let hours = app.today_work_seconds / 3600;
+    let minutes = (app.today_work_seconds % 3600) / 60;
+    let today_display = if hours > 0 {
+        format!("{}h {}m", hours, minutes)
+    } else {
+        format!("{}m", minutes)
+    };
     let session_info = Paragraph::new(format!(
-        "Session: {}/{}                      Today: 0h 0m",
-        app.timer.session_count, app.timer.sessions_until_long_break
+        "Session: {}/{}                      Today: {}",
+        app.timer.session_count, app.timer.sessions_until_long_break, today_display
     ))
     .style(Style::default().fg(secondary))
     .alignment(Alignment::Center)
