@@ -1,35 +1,52 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 
 interface AsciiIconProps {
   type: 'none' | 'progress' | 'hourglass' | 'tomato' | 'coffee';
   progress: number; // 0-100
   isBreak?: boolean; // 休憩中は砂が上に戻る演出
+  isPaused?: boolean; // 一時停止中はアニメーション停止
 }
 
-export function AsciiIcon({ type, progress, isBreak = false }: AsciiIconProps) {
+export function AsciiIcon({ type, progress, isBreak = false, isPaused = false }: AsciiIconProps) {
+  // アニメーションフレーム（CLIと同じく500msで更新）
+  const [animationFrame, setAnimationFrame] = useState(0);
+
+  useEffect(() => {
+    // 一時停止中またはアイコンなしの場合はアニメーションしない
+    if (isPaused || type === 'none') {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setAnimationFrame((prev) => (prev + 1) % 4);
+    }, 500); // 500msごとにフレーム更新
+
+    return () => clearInterval(interval);
+  }, [isPaused, type]);
+
   const ascii = useMemo(() => {
     switch (type) {
       case 'none':
         return ''; // アイコンなし
       case 'progress':
-        return renderProgressBar(progress, isBreak);
+        return renderProgressBar(progress, isBreak, animationFrame);
       case 'hourglass':
-        return renderHourglass(progress, isBreak);
+        return renderHourglass(progress, isBreak, animationFrame);
       case 'tomato':
-        return renderTomato(progress, isBreak);
+        return renderTomato(progress, isBreak, animationFrame);
       case 'coffee':
-        return renderCoffee(progress, isBreak);
+        return renderCoffee(progress, isBreak, animationFrame);
       default:
         return '';
     }
-  }, [type, progress, isBreak]);
+  }, [type, progress, isBreak, animationFrame]);
 
   if (type === 'none') return <pre data-testid="ascii-icon" className="text-sandoro-primary"></pre>;
 
   return <pre data-testid="ascii-icon" className="text-sandoro-primary">{ascii}</pre>;
 }
 
-function renderProgressBar(progress: number, isBreak: boolean): string {
+function renderProgressBar(progress: number, isBreak: boolean, animationFrame: number): string {
   // シンプルなプログレスバー
   // 作業中: 左から右へ塗りつぶし
   // 休憩中: 右から左へ戻る（矢印で補充中を表現）
@@ -43,9 +60,6 @@ function renderProgressBar(progress: number, isBreak: boolean): string {
   // 休憩中かつ進行中 = 補充中の演出
   const isRefilling = isBreak && progress > 0 && progress < 100;
 
-  // チカチカ用フレーム（下の矢印のみ）
-  const frame = Math.floor(progress / 5) % 2;
-
   // すべての行を同じ幅（32文字）に揃える
   const LINE_WIDTH = 32;
   const barLine = `[${bar}]`;  // 22文字
@@ -54,7 +68,7 @@ function renderProgressBar(progress: number, isBreak: boolean): string {
   const barPadLeft = Math.floor((LINE_WIDTH - barWithRefill.length) / 2);
   const barPadRight = LINE_WIDTH - barWithRefill.length - barPadLeft;
 
-  const percentArrow = frame === 0 ? '◀━━' : '◄──';
+  const percentArrow = animationFrame % 2 === 0 ? '◀━━' : '◄──';
   const percentText = isRefilling
     ? `${String(Math.round(effectiveProgress)).padStart(3, ' ')}% ${percentArrow}`
     : `${String(Math.round(effectiveProgress)).padStart(3, ' ')}%`;
@@ -69,7 +83,7 @@ function renderProgressBar(progress: number, isBreak: boolean): string {
   ].join('\n');
 }
 
-function renderHourglass(progress: number, isBreak: boolean): string {
+function renderHourglass(progress: number, isBreak: boolean, animationFrame: number): string {
   // 作業中: 砂が上から下へ落ちる（progress: 0%→100%）
   // 休憩中: 砂が下から上へ戻る（progress: 0%→100% だが表示は逆）
   //
@@ -162,7 +176,7 @@ function renderHourglass(progress: number, isBreak: boolean): string {
   const bot = generateBottomSand(bottomLevel);
 
   // 流れる砂のアニメーション（4段階でより細かい表現）
-  const frame = Math.floor(progress / 3) % 4;
+  const frame = animationFrame % 4;
   let flow1 = ' ', flow2 = ' ';
   if (flowing) {
     if (flowDirection === 'down') {
@@ -227,7 +241,7 @@ function renderHourglass(progress: number, isBreak: boolean): string {
   return hourglassArt.join('\n');
 }
 
-function renderTomato(progress: number, isBreak: boolean): string {
+function renderTomato(progress: number, isBreak: boolean, animationFrame: number): string {
   // プチトマト2個 - 各トマトが5段階で減っていく（合計10段階）
   // 作業中: 右トマトが先に減り、次に左トマトが減る
   // 休憩中: 逆に増えていく
@@ -248,7 +262,7 @@ function renderTomato(progress: number, isBreak: boolean): string {
 
   // 作業中かつ進行中 = 揺れる演出
   const isWorking = !isBreak && progress > 0 && progress < 100;
-  const workFrame = Math.floor(progress / 5) % 2;
+  const workFrame = animationFrame % 2;
 
   // トマトの中身を生成（レベル0-5で塗りつぶし量が変わる）
   // レベル5=満タン, 0=空
@@ -311,7 +325,7 @@ function renderTomato(progress: number, isBreak: boolean): string {
 
   // 休憩中の太陽演出（チカチカ）
   if (isGrowing) {
-    const frame = Math.floor(progress / 5) % 2;
+    const frame = animationFrame % 2;
     const sun = frame === 0 ? [
       '         \\   |   /         ',
       '          \\  |  /          ',
@@ -334,7 +348,7 @@ function renderTomato(progress: number, isBreak: boolean): string {
   return stemAndTomatoes.join('\n');
 }
 
-function renderCoffee(progress: number, isBreak: boolean): string {
+function renderCoffee(progress: number, isBreak: boolean, animationFrame: number): string {
   // コーヒーカップ - 飲み進めると中身が減る
   // 作業中: コーヒーが減っていく
   // 休憩中: コーヒーが補充されていく（おかわり）+ 上から注ぐアニメーション
@@ -357,7 +371,7 @@ function renderCoffee(progress: number, isBreak: boolean): string {
 
   // 作業中かつ進行中 = 湯気が動く演出（4段階で上昇）
   const isWorking = !isBreak && progress > 0 && progress < 100;
-  const workFrame = Math.floor(progress / 3) % 4;
+  const workFrame = animationFrame % 4;
 
   // コーヒーの中身を生成
   const generateCoffeeFill = (level: number): string[] => {
@@ -413,7 +427,7 @@ function renderCoffee(progress: number, isBreak: boolean): string {
   }
 
   // 注いでいる演出（上から注ぐ）- チカチカ
-  const animFrame = Math.floor(progress / 5) % 2;
+  const animFrame = animationFrame % 2;
   const pour1 = animFrame === 0 ? '  │││  ' : '  │ │  ';
   const pour2 = animFrame === 0 ? '  ╲│╱  ' : '  ╲ ╱  ';
   const pour3 = animFrame === 0 ? '   ▼   ' : '   ▽   ';

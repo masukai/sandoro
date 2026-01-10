@@ -43,7 +43,7 @@ export function Timer({
     <div className="flex flex-col items-center gap-8 py-8">
       {/* ASCII Art Icon */}
       <div className="ascii-art text-center">
-        <AsciiIcon type={iconType} progress={progress} isBreak={state !== 'work'} />
+        <AsciiIcon type={iconType} progress={progress} isBreak={state !== 'work'} isPaused={!isRunning} />
       </div>
 
       {/* Timer Display */}
