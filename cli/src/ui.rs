@@ -273,7 +273,7 @@ fn draw_footer(f: &mut Frame, area: Rect, app: &App, is_settings: bool) {
             "  [↑↓/jk] Navigate  [Enter] Select  [Tab] Back  [q] Quit"
         }
     } else {
-        "  [Space] Start/Pause  [r] Reset  [s] Skip  [Tab] Settings  [q] Quit"
+        "  [Space] Start/Pause  [r] Reset  [R] Full Reset  [s] Skip  [Tab] Settings  [q] Quit"
     };
 
     let footer = Paragraph::new(help_text)
