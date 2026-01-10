@@ -251,7 +251,7 @@ fn draw_main_content(f: &mut Frame, area: Rect, app: &App) {
     // Draw session info (chunks[4])
     let session_info = Paragraph::new(format!(
         "Session: {}/{}                      Today: 0h 0m",
-        app.session_number, app.sessions_until_long
+        app.timer.session_count, app.timer.sessions_until_long_break
     ))
     .style(Style::default().fg(secondary))
     .alignment(Alignment::Center)

@@ -89,21 +89,23 @@ describe('useTimer', () => {
     expect(result.current.formattedTime).toBe('01:05');
   });
 
-  it('should increment session count after work period', () => {
+  it('should keep session count during break, increment on return to work', () => {
     const { result } = renderHook(() => useTimer());
 
     expect(result.current.sessionCount).toBe(1);
 
+    // work -> shortBreak (session count unchanged, still in session 1)
     act(() => {
-      result.current.skip(); // work -> shortBreak
+      result.current.skip();
     });
+    expect(result.current.state).toBe('shortBreak');
+    expect(result.current.sessionCount).toBe(1);
 
-    expect(result.current.sessionCount).toBe(2);
-
+    // shortBreak -> work (now starting session 2)
     act(() => {
-      result.current.skip(); // shortBreak -> work
+      result.current.skip();
     });
-
+    expect(result.current.state).toBe('work');
     expect(result.current.sessionCount).toBe(2);
   });
 
@@ -113,24 +115,35 @@ describe('useTimer', () => {
     );
 
     expect(result.current.state).toBe('work');
+    expect(result.current.sessionCount).toBe(1);
 
-    // First work session -> short break
+    // Session 1: work -> short break
     act(() => {
       result.current.skip();
     });
     expect(result.current.state).toBe('shortBreak');
+    expect(result.current.sessionCount).toBe(1); // Still session 1
 
-    // Short break -> work
+    // Short break -> work (now session 2)
     act(() => {
       result.current.skip();
     });
     expect(result.current.state).toBe('work');
+    expect(result.current.sessionCount).toBe(2);
 
-    // Second work session -> long break (because sessionsUntilLongBreak = 2)
+    // Session 2: work -> long break (session_count == 2 == sessionsUntilLongBreak)
     act(() => {
       result.current.skip();
     });
     expect(result.current.state).toBe('longBreak');
+    expect(result.current.sessionCount).toBe(2); // Still session 2 during long break
+
+    // Long break -> work (reset to session 1)
+    act(() => {
+      result.current.skip();
+    });
+    expect(result.current.state).toBe('work');
+    expect(result.current.sessionCount).toBe(1);
   });
 
   it('should reset session count after long break', () => {
@@ -138,14 +151,14 @@ describe('useTimer', () => {
       useTimer({ sessionsUntilLongBreak: 1 })
     );
 
-    // First session -> long break
+    // Session 1: work -> long break (sessionsUntilLongBreak = 1)
     act(() => {
       result.current.skip();
     });
     expect(result.current.state).toBe('longBreak');
-    expect(result.current.sessionCount).toBe(1); // Reset to 1
+    expect(result.current.sessionCount).toBe(1); // Still session 1 during long break
 
-    // Long break -> work
+    // Long break -> work (reset to session 1)
     act(() => {
       result.current.skip();
     });
@@ -189,10 +202,10 @@ describe('useTimer', () => {
       result.current.skip(); // work -> shortBreak
     });
     expect(result.current.state).toBe('shortBreak');
-    expect(result.current.sessionCount).toBe(2);
+    expect(result.current.sessionCount).toBe(1); // Still session 1 during break
 
     act(() => {
-      result.current.skip(); // shortBreak -> work
+      result.current.skip(); // shortBreak -> work (now session 2)
     });
     expect(result.current.state).toBe('work');
     expect(result.current.sessionCount).toBe(2);

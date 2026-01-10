@@ -13,7 +13,7 @@ use std::time::Duration;
 use crate::config::Config;
 use crate::icons::IconType;
 use crate::theme::Theme;
-use crate::timer::{Timer, TimerState};
+use crate::timer::Timer;
 use crate::ui;
 
 /// Current view/screen
@@ -67,10 +67,6 @@ pub struct App {
     pub timer: Timer,
     /// Whether the app should quit
     pub should_quit: bool,
-    /// Current session number (1-4)
-    pub session_number: u32,
-    /// Total sessions until long break
-    pub sessions_until_long: u32,
     /// Current view
     pub view: AppView,
     /// Settings menu selected index
@@ -111,14 +107,13 @@ impl App {
             .unwrap_or(2); // Default to Hourglass (index 2)
 
         Self {
-            timer: Timer::new(
+            timer: Timer::with_sessions(
                 config.timer.work_duration,
                 config.timer.short_break,
                 config.timer.long_break,
+                config.timer.sessions_until_long,
             ),
             should_quit: false,
-            session_number: 1,
-            sessions_until_long: config.timer.sessions_until_long,
             view: AppView::Timer,
             settings_index: 0,
             theme,
@@ -140,17 +135,8 @@ impl App {
 
             self.timer.tick();
 
-            // Check if timer completed and transitioned
+            // Check if timer completed and transitioned - auto-start if enabled
             if was_running && self.timer.is_paused && self.timer.state != old_state {
-                // Update session number
-                if matches!(old_state, TimerState::Work) {
-                    // Completed a work session
-                } else if matches!(self.timer.state, TimerState::Work) {
-                    // Returning to work, increment session
-                    self.session_number = (self.session_number % self.sessions_until_long) + 1;
-                }
-
-                // Auto-start if enabled
                 if self.config.timer.auto_start {
                     self.timer.toggle_pause();
                 }
@@ -183,14 +169,10 @@ impl App {
     /// Full reset - back to session 1 and Work state
     pub fn full_reset(&mut self) {
         self.timer.full_reset();
-        self.session_number = 1;
     }
 
     pub fn skip(&mut self) {
         self.timer.skip();
-        if matches!(self.timer.state, TimerState::Work) {
-            self.session_number = (self.session_number % self.sessions_until_long) + 1;
-        }
     }
 
     pub fn toggle_settings(&mut self) {
@@ -324,13 +306,15 @@ impl App {
         // Only recreate timer if duration settings changed
         let duration_changed = self.timer.work_duration != self.config.timer.work_duration
             || self.timer.short_break_duration != self.config.timer.short_break
-            || self.timer.long_break_duration != self.config.timer.long_break;
+            || self.timer.long_break_duration != self.config.timer.long_break
+            || self.timer.sessions_until_long_break != self.config.timer.sessions_until_long;
 
         if duration_changed {
-            self.timer = Timer::new(
+            self.timer = Timer::with_sessions(
                 self.config.timer.work_duration,
                 self.config.timer.short_break,
                 self.config.timer.long_break,
+                self.config.timer.sessions_until_long,
             );
         }
 

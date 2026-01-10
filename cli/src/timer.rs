@@ -1,8 +1,5 @@
 //! Timer logic and state management
 
-// TODO: LongBreak will be used when session tracking is implemented
-#![allow(dead_code)]
-
 use std::time::{Duration, Instant};
 
 /// Timer states
@@ -37,6 +34,10 @@ pub struct Timer {
     pub short_break_duration: u32,
     /// Long break duration in minutes
     pub long_break_duration: u32,
+    /// Number of sessions until long break
+    pub sessions_until_long_break: u32,
+    /// Current session count (1-based)
+    pub session_count: u32,
     /// Last tick time
     last_tick: Instant,
     /// Accumulated time since last second
@@ -44,7 +45,17 @@ pub struct Timer {
 }
 
 impl Timer {
+    #[allow(dead_code)]
     pub fn new(work_minutes: u32, short_break_minutes: u32, long_break_minutes: u32) -> Self {
+        Self::with_sessions(work_minutes, short_break_minutes, long_break_minutes, 4)
+    }
+
+    pub fn with_sessions(
+        work_minutes: u32,
+        short_break_minutes: u32,
+        long_break_minutes: u32,
+        sessions_until_long_break: u32,
+    ) -> Self {
         Self {
             state: TimerState::Work,
             remaining_seconds: work_minutes * 60,
@@ -52,6 +63,8 @@ impl Timer {
             work_duration: work_minutes,
             short_break_duration: short_break_minutes,
             long_break_duration: long_break_minutes,
+            sessions_until_long_break,
+            session_count: 1,
             last_tick: Instant::now(),
             accumulated: Duration::ZERO,
         }
@@ -133,9 +146,24 @@ impl Timer {
 
     fn transition_to_next_state(&mut self) {
         self.state = match self.state {
-            TimerState::Work => TimerState::ShortBreak, // TODO: Track sessions for long break
-            TimerState::ShortBreak => TimerState::Work,
-            TimerState::LongBreak => TimerState::Work,
+            TimerState::Work => {
+                // Check if we should go to long break after this session
+                if self.session_count >= self.sessions_until_long_break {
+                    TimerState::LongBreak
+                } else {
+                    TimerState::ShortBreak
+                }
+            }
+            TimerState::ShortBreak => {
+                // Increment session when returning to work from short break
+                self.session_count += 1;
+                TimerState::Work
+            }
+            TimerState::LongBreak => {
+                // Reset session count when returning to work from long break
+                self.session_count = 1;
+                TimerState::Work
+            }
         };
         self.remaining_seconds = self.duration_for_state(self.state) * 60;
         self.is_paused = true;
@@ -143,6 +171,7 @@ impl Timer {
     }
 
     /// Transition to next state with auto-start option
+    #[allow(dead_code)]
     pub fn transition_to_next_state_with_auto_start(&mut self, auto_start: bool) {
         self.transition_to_next_state();
         if auto_start {
@@ -157,6 +186,7 @@ impl Timer {
         self.remaining_seconds = self.work_duration * 60;
         self.is_paused = true;
         self.accumulated = Duration::ZERO;
+        self.session_count = 1;
     }
 }
 
@@ -301,5 +331,123 @@ mod tests {
         assert_eq!(timer.state, TimerState::Work);
         assert_eq!(timer.remaining_seconds, 25 * 60);
         assert!(timer.is_paused);
+    }
+
+    #[test]
+    fn test_session_count_initial() {
+        let timer = Timer::new(25, 5, 15);
+        assert_eq!(timer.session_count, 1);
+        assert_eq!(timer.sessions_until_long_break, 4);
+    }
+
+    #[test]
+    fn test_session_count_with_custom_sessions() {
+        let timer = Timer::with_sessions(25, 5, 15, 2);
+        assert_eq!(timer.session_count, 1);
+        assert_eq!(timer.sessions_until_long_break, 2);
+    }
+
+    #[test]
+    fn test_session_count_unchanged_during_break() {
+        let mut timer = Timer::new(25, 5, 15);
+        assert_eq!(timer.session_count, 1);
+
+        // work -> short break (session_count unchanged, still in session 1)
+        timer.skip();
+        assert_eq!(timer.state, TimerState::ShortBreak);
+        assert_eq!(timer.session_count, 1);
+
+        // short break -> work (now starting session 2)
+        timer.skip();
+        assert_eq!(timer.state, TimerState::Work);
+        assert_eq!(timer.session_count, 2);
+    }
+
+    #[test]
+    fn test_long_break_after_configured_sessions() {
+        let mut timer = Timer::with_sessions(25, 5, 15, 2);
+        assert_eq!(timer.session_count, 1);
+
+        // Session 1: work -> short break
+        timer.skip();
+        assert_eq!(timer.state, TimerState::ShortBreak);
+        assert_eq!(timer.session_count, 1); // Still session 1
+
+        // short break -> work (now session 2)
+        timer.skip();
+        assert_eq!(timer.state, TimerState::Work);
+        assert_eq!(timer.session_count, 2);
+
+        // Session 2: work -> long break (session_count == 2 == sessions_until_long)
+        timer.skip();
+        assert_eq!(timer.state, TimerState::LongBreak);
+        assert_eq!(timer.session_count, 2); // Still session 2 during long break
+
+        // long break -> work (reset to session 1)
+        timer.skip();
+        assert_eq!(timer.state, TimerState::Work);
+        assert_eq!(timer.session_count, 1);
+    }
+
+    #[test]
+    fn test_full_reset_resets_session_count() {
+        let mut timer = Timer::new(25, 5, 15);
+        timer.skip(); // work -> short break
+        timer.skip(); // short break -> work, session_count = 2
+        timer.skip(); // work -> short break
+
+        assert_eq!(timer.session_count, 2);
+
+        timer.full_reset();
+        assert_eq!(timer.session_count, 1);
+        assert_eq!(timer.state, TimerState::Work);
+    }
+
+    #[test]
+    fn test_long_break_after_four_sessions() {
+        // Default is sessions_until_long_break = 4
+        let mut timer = Timer::new(25, 5, 15);
+        assert_eq!(timer.sessions_until_long_break, 4);
+        assert_eq!(timer.session_count, 1);
+
+        // Session 1: work -> short break
+        timer.skip();
+        assert_eq!(timer.state, TimerState::ShortBreak);
+        assert_eq!(timer.session_count, 1);
+
+        // short break -> work (now session 2)
+        timer.skip();
+        assert_eq!(timer.state, TimerState::Work);
+        assert_eq!(timer.session_count, 2);
+
+        // Session 2: work -> short break
+        timer.skip();
+        assert_eq!(timer.state, TimerState::ShortBreak);
+        assert_eq!(timer.session_count, 2);
+
+        // short break -> work (now session 3)
+        timer.skip();
+        assert_eq!(timer.state, TimerState::Work);
+        assert_eq!(timer.session_count, 3);
+
+        // Session 3: work -> short break
+        timer.skip();
+        assert_eq!(timer.state, TimerState::ShortBreak);
+        assert_eq!(timer.session_count, 3);
+
+        // short break -> work (now session 4)
+        timer.skip();
+        assert_eq!(timer.state, TimerState::Work);
+        assert_eq!(timer.session_count, 4);
+
+        // Session 4: work -> LONG BREAK (session_count == 4 == sessions_until_long_break)
+        timer.skip();
+        assert_eq!(timer.state, TimerState::LongBreak);
+        assert_eq!(timer.session_count, 4);
+
+        // long break -> work (reset to session 1)
+        timer.skip();
+        assert_eq!(timer.state, TimerState::Work);
+        assert_eq!(timer.session_count, 1);
     }
 }

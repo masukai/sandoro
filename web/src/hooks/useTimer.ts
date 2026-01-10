@@ -28,6 +28,8 @@ export function useTimer(options: UseTimerOptions = {}) {
   const [sessionCount, setSessionCount] = useState(1);
 
   const intervalRef = useRef<number | null>(null);
+  // Track if this is an automatic transition (vs settings change)
+  const isAutoTransition = useRef(false);
 
   const getDurationForState = useCallback(
     (s: TimerState) => {
@@ -46,26 +48,48 @@ export function useTimer(options: UseTimerOptions = {}) {
   // Use ref to avoid recreating interval when transitionToNextState changes
   const transitionRef = useRef<() => void>(() => {});
 
+  // Use ref for session count to avoid stale closure issues
+  const sessionCountRef = useRef(sessionCount);
+  useEffect(() => {
+    sessionCountRef.current = sessionCount;
+  }, [sessionCount]);
+
+  // Use ref for state to read current value synchronously
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
   const transitionToNextState = useCallback(() => {
-    // Pause first, then optionally restart if autoStart is enabled
-    setIsRunning(false);
-    setState((current) => {
-      if (current === 'work') {
-        if (sessionCount >= sessionsUntilLongBreak) {
-          setSessionCount(1);
-          return 'longBreak';
-        }
-        setSessionCount((c) => c + 1);
-        return 'shortBreak';
-      }
-      return 'work';
-    });
-    // If autoStart is enabled, restart the timer after transition
-    if (autoStart) {
-      // Use setTimeout to ensure state update completes first
-      setTimeout(() => setIsRunning(true), 0);
+    // Mark this as an automatic transition for the state change effect
+    isAutoTransition.current = autoStart;
+
+    // Pause first (unless autoStart will keep it running)
+    if (!autoStart) {
+      setIsRunning(false);
     }
-  }, [sessionCount, sessionsUntilLongBreak, autoStart]);
+
+    // Read current values from refs to avoid stale closures
+    const currentState = stateRef.current;
+    const currentSessionCount = sessionCountRef.current;
+
+    if (currentState === 'work') {
+      // Check if we should go to long break after this session
+      if (currentSessionCount >= sessionsUntilLongBreak) {
+        setState('longBreak');
+      } else {
+        setState('shortBreak');
+      }
+    } else if (currentState === 'shortBreak') {
+      // Increment session when returning to work from short break
+      setSessionCount(currentSessionCount + 1);
+      setState('work');
+    } else {
+      // Long break -> reset session count
+      setSessionCount(1);
+      setState('work');
+    }
+  }, [sessionsUntilLongBreak, autoStart]);
 
   // Keep ref updated
   useEffect(() => {
@@ -75,8 +99,12 @@ export function useTimer(options: UseTimerOptions = {}) {
   // Update remaining time when state changes or durations change
   useEffect(() => {
     setRemainingTime(getDurationForState(state));
-    setIsRunning(false); // Stop timer when settings change
-  }, [state, getDurationForState]);
+    // Only stop timer if this is NOT an auto-transition with autoStart enabled
+    if (!(isAutoTransition.current && autoStart)) {
+      setIsRunning(false);
+    }
+    isAutoTransition.current = false;
+  }, [state, getDurationForState, autoStart]);
 
   // Timer tick
   useEffect(() => {
