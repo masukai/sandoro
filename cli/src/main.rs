@@ -72,6 +72,81 @@ enum Commands {
     Login,
 }
 
+fn format_duration(seconds: i32) -> String {
+    let hours = seconds / 3600;
+    let minutes = (seconds % 3600) / 60;
+    if hours > 0 {
+        format!("{}h {}m", hours, minutes)
+    } else {
+        format!("{}m", minutes)
+    }
+}
+
+fn show_stats(_day: bool, week: bool, month: bool) -> Result<()> {
+    let db = db::Database::open()?;
+
+    println!();
+    println!("  📊 sandoro Statistics");
+    println!("  ─────────────────────");
+    println!();
+
+    if month {
+        // Monthly stats (last 30 days)
+        let stats = db.get_month_stats()?;
+        println!("  📅 Last 30 Days");
+        println!("     Total time:  {}", format_duration(stats.total_work_seconds));
+        println!("     Sessions:    {}", stats.sessions_completed);
+        println!();
+
+        // Daily breakdown
+        let daily = db.get_daily_stats(30)?;
+        if !daily.is_empty() {
+            println!("  Daily breakdown:");
+            for s in daily.iter().take(10) {
+                println!(
+                    "     {} │ {} │ {} sessions",
+                    s.date,
+                    format_duration(s.total_work_seconds),
+                    s.sessions_completed
+                );
+            }
+            if daily.len() > 10 {
+                println!("     ... and {} more days", daily.len() - 10);
+            }
+        }
+    } else if week {
+        // Weekly stats (last 7 days)
+        let stats = db.get_week_stats()?;
+        println!("  📅 Last 7 Days");
+        println!("     Total time:  {}", format_duration(stats.total_work_seconds));
+        println!("     Sessions:    {}", stats.sessions_completed);
+        println!();
+
+        // Daily breakdown
+        let daily = db.get_daily_stats(7)?;
+        if !daily.is_empty() {
+            println!("  Daily breakdown:");
+            for s in &daily {
+                println!(
+                    "     {} │ {} │ {} sessions",
+                    s.date,
+                    format_duration(s.total_work_seconds),
+                    s.sessions_completed
+                );
+            }
+        }
+    } else {
+        // Default: Today's stats (day flag or no flag)
+        let stats = db.get_today_stats()?;
+        println!("  📅 Today ({})", stats.date);
+        println!("     Total time:  {}", format_duration(stats.total_work_seconds));
+        println!("     Sessions:    {}", stats.sessions_completed);
+    }
+
+    println!();
+    Ok(())
+}
+
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
@@ -85,16 +160,7 @@ fn main() -> Result<()> {
             app::run()?;
         }
         Some(Commands::Stats { day, week, month }) => {
-            if day {
-                println!("Showing daily stats...");
-            } else if week {
-                println!("Showing weekly stats...");
-            } else if month {
-                println!("Showing monthly stats...");
-            } else {
-                println!("Showing daily stats (default)...");
-            }
-            // TODO: Implement stats display
+            show_stats(day, week, month)?;
         }
         Some(Commands::Config { icon, theme }) => {
             if let Some(icon) = icon {

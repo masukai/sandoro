@@ -138,4 +138,76 @@ impl Database {
             longest_streak: 0, // TODO: Calculate streak
         })
     }
+
+    /// Get stats for the last N days
+    pub fn get_daily_stats(&self, days: i32) -> Result<Vec<DailyStats>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT date(started_at) as date,
+                    COALESCE(SUM(duration_seconds), 0) as total_seconds,
+                    COUNT(*) as sessions
+             FROM sessions
+             WHERE date(started_at) >= date('now', ?1)
+               AND type = 'work'
+               AND completed = TRUE
+             GROUP BY date(started_at)
+             ORDER BY date(started_at) DESC",
+        )?;
+
+        let offset = format!("-{} days", days);
+        let stats = stmt
+            .query_map(params![offset], |row| {
+                Ok(DailyStats {
+                    date: row.get(0)?,
+                    total_work_seconds: row.get(1)?,
+                    sessions_completed: row.get(2)?,
+                    longest_streak: 0,
+                })
+            })?
+            .filter_map(|r| r.ok())
+            .collect();
+
+        Ok(stats)
+    }
+
+    /// Get weekly total (last 7 days)
+    pub fn get_week_stats(&self) -> Result<DailyStats> {
+        let mut stmt = self.conn.prepare(
+            "SELECT COALESCE(SUM(duration_seconds), 0), COUNT(*)
+             FROM sessions
+             WHERE date(started_at) >= date('now', '-7 days')
+               AND type = 'work'
+               AND completed = TRUE",
+        )?;
+
+        let (total_seconds, count): (i32, i32) =
+            stmt.query_row([], |row| Ok((row.get(0)?, row.get(1)?)))?;
+
+        Ok(DailyStats {
+            date: "Last 7 days".to_string(),
+            total_work_seconds: total_seconds,
+            sessions_completed: count,
+            longest_streak: 0,
+        })
+    }
+
+    /// Get monthly total (last 30 days)
+    pub fn get_month_stats(&self) -> Result<DailyStats> {
+        let mut stmt = self.conn.prepare(
+            "SELECT COALESCE(SUM(duration_seconds), 0), COUNT(*)
+             FROM sessions
+             WHERE date(started_at) >= date('now', '-30 days')
+               AND type = 'work'
+               AND completed = TRUE",
+        )?;
+
+        let (total_seconds, count): (i32, i32) =
+            stmt.query_row([], |row| Ok((row.get(0)?, row.get(1)?)))?;
+
+        Ok(DailyStats {
+            date: "Last 30 days".to_string(),
+            total_work_seconds: total_seconds,
+            sessions_completed: count,
+            longest_streak: 0,
+        })
+    }
 }
