@@ -1,0 +1,18 @@
+# sandoro Dracula Theme
+# Based on https://draculatheme.com/
+
+[theme]
+name = "dracula"
+description = "A dark theme for vampires"
+
+[colors]
+background = "#282a36"
+foreground = "#f8f8f2"
+primary = "#bd93f9"     # Purple
+secondary = "#44475a"
+accent = "#ff79c6"      # Pink
+
+[colors.states]
+work = "#50fa7b"        # Green
+short_break = "#8be9fd" # Cyan
+long_break = "#bd93f9"  # Purple

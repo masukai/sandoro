@@ -1,0 +1,69 @@
+# mise.toml - sandoro プロジェクト設定
+#
+# ポモドーロタイマー (CLI版: Rust, Web版: React)
+
+min_version = "2025.10.0"
+
+# ==========================================
+# ツール定義
+# ==========================================
+
+[tools]
+# === 必須ツール ===
+gh = "2.81.0"        # GitHub CLI
+
+# === CLI版 (Rust) ===
+rust = "1.92"        # Rust 言語（2026-01現在の最新安定版）
+
+# === Web版 (React) ===
+node = "24"          # Node.js Active LTS（EOL: 2028-04）
+pnpm = "10"          # パッケージマネージャー最新版
+
+# ==========================================
+# 環境変数
+# ==========================================
+
+[env]
+SANDORO_ENV = "development"
+
+# ==========================================
+# タスク定義
+# ==========================================
+
+[tasks]
+
+# === GitHub CLI ===
+"gh:auth" = "gh auth status || gh auth login"
+"gh:pr"   = "gh pr create --base main --web"
+
+# === CLI版 (Rust) ===
+"dev-cli"   = { run = "cargo run", dir = "cli", description = "Run CLI in development" }
+"build-cli" = { run = "cargo build --release", dir = "cli", description = "Build CLI release" }
+"test-cli"  = { run = "cargo test", dir = "cli", description = "Run CLI tests" }
+"lint-cli"  = { run = "cargo clippy -- -D warnings", dir = "cli", description = "Run Clippy linter" }
+"fmt-cli"   = { run = "cargo fmt", dir = "cli", description = "Format Rust code" }
+
+# === Web版 (React) ===
+"dev-web"   = { run = "pnpm dev", dir = "web", description = "Run Web in development" }
+"build-web" = { run = "pnpm build", dir = "web", description = "Build Web for production" }
+"test-web"  = { run = "pnpm test", dir = "web", description = "Run Web tests" }
+"lint-web"  = { run = "pnpm lint", dir = "web", description = "Run ESLint" }
+"install-web" = { run = "pnpm install", dir = "web", description = "Install Web dependencies" }
+
+# === 全体 ===
+"test" = """
+cd cli && cargo test && \
+cd ../web && pnpm test
+"""
+
+"lint" = """
+cd cli && cargo clippy -- -D warnings && \
+cd ../web && pnpm lint
+"""
+
+# === リリースビルド ===
+"release" = """
+cd cli && \
+cargo build --release --target x86_64-apple-darwin && \
+cargo build --release --target aarch64-apple-darwin
+"""

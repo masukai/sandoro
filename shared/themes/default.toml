@@ -1,0 +1,17 @@
+# sandoro Default Theme
+
+[theme]
+name = "default"
+description = "Default sandoro theme"
+
+[colors]
+background = "#1a1a2e"
+foreground = "#eaeaea"
+primary = "#00d9ff"
+secondary = "#4a4a6a"
+accent = "#ffd700"
+
+[colors.states]
+work = "#00ff88"
+short_break = "#00d9ff"
+long_break = "#7b68ee"

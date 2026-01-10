@@ -1,0 +1,58 @@
+[package]
+name = "sandoro"
+version = "0.1.0"
+edition = "2021"
+authors = ["Your Name <your.email@example.com>"]
+description = "Terminal-first Pomodoro timer with ASCII art animations"
+license = "MIT"
+repository = "https://github.com/USERNAME/sandoro"
+homepage = "https://sandoro.app"
+keywords = ["pomodoro", "timer", "tui", "terminal", "productivity"]
+categories = ["command-line-utilities"]
+
+[dependencies]
+# TUI framework
+ratatui = "0.28"
+crossterm = "0.28"
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# Configuration
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+
+# Database
+rusqlite = { version = "0.32", features = ["bundled"] }
+
+# CLI parsing
+clap = { version = "4", features = ["derive"] }
+
+# Error handling
+anyhow = "1"
+thiserror = "1"
+
+# Time handling
+chrono = { version = "0.4", features = ["serde"] }
+
+# Directories (for config/data paths)
+dirs = "5"
+
+# Notifications (optional)
+notify-rust = { version = "4", optional = true }
+
+[features]
+default = ["notifications"]
+notifications = ["notify-rust"]
+
+[dev-dependencies]
+tempfile = "3"
+
+[[bin]]
+name = "sandoro"
+path = "src/main.rs"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true

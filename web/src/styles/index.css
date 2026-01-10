@@ -1,0 +1,116 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1.5;
+    font-weight: 400;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+
+    /* Default: Dark theme */
+    --sandoro-bg: #1a1a2e;
+    --sandoro-fg: #eaeaea;
+    --sandoro-primary: #00d9ff;
+    --sandoro-secondary: #4a4a6a;
+    --sandoro-accent: #ffd700;
+    --sandoro-work: #00ff88;
+    --sandoro-short-break: #00d9ff;
+    --sandoro-long-break: #7b68ee;
+  }
+
+  /* Light theme */
+  [data-theme='light'] {
+    --sandoro-bg: #f5f5f5;
+    --sandoro-fg: #1a1a2e;
+    --sandoro-primary: #0077aa;
+    --sandoro-secondary: #888899;
+    --sandoro-accent: #cc8800;
+    --sandoro-work: #008844;
+    --sandoro-short-break: #0077aa;
+    --sandoro-long-break: #6655bb;
+  }
+
+  /* Dark theme (explicit) */
+  [data-theme='dark'] {
+    --sandoro-bg: #1a1a2e;
+    --sandoro-fg: #eaeaea;
+    --sandoro-primary: #00d9ff;
+    --sandoro-secondary: #4a4a6a;
+    --sandoro-accent: #ffd700;
+    --sandoro-work: #00ff88;
+    --sandoro-short-break: #00d9ff;
+    --sandoro-long-break: #7b68ee;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--sandoro-fg);
+    background-color: var(--sandoro-bg);
+  }
+}
+
+#root {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+/* ASCII art container */
+.ascii-art {
+  font-family: 'JetBrains Mono', monospace;
+  white-space: pre;
+  line-height: 1.2;
+  font-size: 14px;
+  text-align: center;
+}
+
+.ascii-art pre {
+  display: inline-block;
+  text-align: left;
+}
+
+@media (min-width: 640px) {
+  .ascii-art {
+    font-size: 16px;
+  }
+}
+
+/* Timer display */
+.timer-display {
+  font-size: 3rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+@media (min-width: 640px) {
+  .timer-display {
+    font-size: 4rem;
+  }
+}
+
+/* Animations */
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse 2s ease-in-out infinite;
+}

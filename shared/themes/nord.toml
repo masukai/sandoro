@@ -1,0 +1,18 @@
+# sandoro Nord Theme
+# Based on https://www.nordtheme.com/
+
+[theme]
+name = "nord"
+description = "An arctic, north-bluish color palette"
+
+[colors]
+background = "#2e3440"  # Nord0
+foreground = "#eceff4"  # Nord6
+primary = "#88c0d0"     # Nord8
+secondary = "#4c566a"   # Nord3
+accent = "#ebcb8b"      # Nord13
+
+[colors.states]
+work = "#a3be8c"        # Nord14 (green)
+short_break = "#88c0d0" # Nord8 (cyan)
+long_break = "#81a1c1"  # Nord9 (blue)
