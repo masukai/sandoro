@@ -35,7 +35,7 @@ function App() {
             {/* Timerは常にレンダリングし、非表示時はhiddenにして状態を保持 */}
             <div className={view === 'timer' ? '' : 'hidden'}>
               <Timer
-                key={`${settings.workDuration}-${settings.shortBreak}-${settings.longBreak}-${settings.sessionsUntilLongBreak}-${settings.autoStart}`}
+                key={`${settings.workDuration}-${settings.shortBreak}-${settings.longBreak}-${settings.sessionsUntilLongBreak}`}
                 workDuration={settings.workDuration * 60}
                 shortBreakDuration={settings.shortBreak * 60}
                 longBreakDuration={settings.longBreak * 60}
