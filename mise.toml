@@ -38,6 +38,9 @@ SANDORO_ENV = "development"
 
 # === CLI版 (Rust) ===
 "dev-cli"   = { run = "cargo run", dir = "cli", description = "Run CLI in development" }
+"stats-cli" = { run = "cargo run -- stats", dir = "cli", description = "Show CLI stats (today)" }
+"stats-cli:week" = { run = "cargo run -- stats --week", dir = "cli", description = "Show CLI stats (week)" }
+"stats-cli:month" = { run = "cargo run -- stats --month", dir = "cli", description = "Show CLI stats (month)" }
 "build-cli" = { run = "cargo build --release", dir = "cli", description = "Build CLI release" }
 "test-cli"  = { run = "cargo test", dir = "cli", description = "Run CLI tests" }
 "lint-cli"  = { run = "cargo clippy -- -D warnings", dir = "cli", description = "Run Clippy linter" }
