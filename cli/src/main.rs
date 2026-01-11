@@ -94,7 +94,10 @@ fn show_stats(_day: bool, week: bool, month: bool) -> Result<()> {
         // Monthly stats (last 30 days)
         let stats = db.get_month_stats()?;
         println!("  📅 Last 30 Days");
-        println!("     Total time:  {}", format_duration(stats.total_work_seconds));
+        println!(
+            "     Total time:  {}",
+            format_duration(stats.total_work_seconds)
+        );
         println!("     Sessions:    {}", stats.sessions_completed);
         println!();
 
@@ -118,7 +121,10 @@ fn show_stats(_day: bool, week: bool, month: bool) -> Result<()> {
         // Weekly stats (last 7 days)
         let stats = db.get_week_stats()?;
         println!("  📅 Last 7 Days");
-        println!("     Total time:  {}", format_duration(stats.total_work_seconds));
+        println!(
+            "     Total time:  {}",
+            format_duration(stats.total_work_seconds)
+        );
         println!("     Sessions:    {}", stats.sessions_completed);
         println!();
 
@@ -139,7 +145,10 @@ fn show_stats(_day: bool, week: bool, month: bool) -> Result<()> {
         // Default: Today's stats (day flag or no flag)
         let stats = db.get_today_stats()?;
         println!("  📅 Today ({})", stats.date);
-        println!("     Total time:  {}", format_duration(stats.total_work_seconds));
+        println!(
+            "     Total time:  {}",
+            format_duration(stats.total_work_seconds)
+        );
         println!("     Sessions:    {}", stats.sessions_completed);
     }
 

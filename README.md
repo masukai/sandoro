@@ -140,14 +140,58 @@ sandoro start --work 30 --short-break 10 --long-break 20
 | Sessions until long | 長い休憩までのセッション数 | 4 |
 | Auto Start | 次のセッションを自動開始 | OFF |
 
-### コマンドライン
+### CLI コマンド一覧
 
 ```bash
-# アイコンとテーマを変更
-sandoro config --icon tomato --theme dracula
+sandoro [COMMAND] [OPTIONS]
+```
 
-# 統計を表示
+| コマンド | 説明 |
+|----------|------|
+| `sandoro` | タイマーを開始（デフォルト） |
+| `sandoro start` | タイマーを開始（オプション指定可能） |
+| `sandoro stats` | 統計を表示 |
+| `sandoro help` | ヘルプを表示 |
+
+#### `sandoro start` オプション
+
+```bash
+sandoro start [OPTIONS]
+```
+
+| オプション | 短縮 | 説明 | デフォルト |
+|------------|------|------|-----------|
+| `--work <分>` | `-w` | 作業時間（分） | 25 |
+| `--short-break <分>` | `-s` | 短い休憩時間（分） | 5 |
+| `--long-break <分>` | `-l` | 長い休憩時間（分） | 15 |
+| `--sessions <数>` | `-n` | 長い休憩までのセッション数 | 4 |
+| `--icon <種類>` | `-i` | アイコン（hourglass/tomato/coffee/progress） | hourglass |
+| `--theme <テーマ>` | `-t` | テーマ（default/nord/dracula/solarized/gruvbox/monokai/tokyonight） | default |
+| `--auto-start` | `-a` | 次のセッションを自動開始 | OFF |
+
+#### `sandoro stats` オプション
+
+```bash
+sandoro stats [OPTIONS]
+```
+
+| オプション | 短縮 | 説明 |
+|------------|------|------|
+| `--day` | `-d` | 今日の統計を表示（デフォルト） |
+| `--week` | `-w` | 過去7日間の統計を表示 |
+| `--month` | `-m` | 過去30日間の統計を表示 |
+
+**使用例:**
+
+```bash
+# 今日の統計
+sandoro stats
+
+# 週間統計
 sandoro stats --week
+
+# 月間統計
+sandoro stats -m
 ```
 
 ---
