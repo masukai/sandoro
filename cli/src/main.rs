@@ -290,6 +290,7 @@ fn show_heatmap(db: &db::Database, weeks: i32) -> Result<()> {
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 fn show_stats(
     _day: bool,
     week: bool,
@@ -636,6 +637,7 @@ fn show_comparison(db: &db::Database) -> Result<()> {
 }
 
 /// Interactive heatmap navigation using arrow keys
+#[allow(clippy::type_complexity)]
 fn run_interactive_heatmap(db: &db::Database, initial_weeks: i32) -> Result<()> {
     use chrono::{Datelike, Duration, Local, NaiveDate};
     use crossterm::{
@@ -783,9 +785,7 @@ fn run_interactive_heatmap(db: &db::Database, initial_weeks: i32) -> Result<()> 
         )?;
 
         // Calculate viewport range (scroll to keep selected week visible)
-        let scroll_offset = if num_weeks <= viewport_weeks {
-            0
-        } else if selected_week < viewport_weeks / 2 {
+        let scroll_offset = if num_weeks <= viewport_weeks || selected_week < viewport_weeks / 2 {
             0
         } else if selected_week > num_weeks - viewport_weeks / 2 {
             num_weeks - viewport_weeks
@@ -821,12 +821,12 @@ fn run_interactive_heatmap(db: &db::Database, initial_weeks: i32) -> Result<()> 
         let is_rainbow = accent == "rainbow";
 
         // Draw heatmap with grid (only visible portion)
-        for day in 0..7usize {
+        for (day, day_label) in day_labels.iter().enumerate() {
             // Day label
             if day == selected_day {
-                write!(stdout, "  {}{}{} │", accent_color, day_labels[day], reset)?;
+                write!(stdout, "  {}{}{} │", accent_color, day_label, reset)?;
             } else {
-                write!(stdout, "  {}{}{} │", dim, day_labels[day], reset)?;
+                write!(stdout, "  {}{}{} │", dim, day_label, reset)?;
             }
 
             for week in visible_start..visible_end {
@@ -964,9 +964,7 @@ fn run_interactive_heatmap(db: &db::Database, initial_weeks: i32) -> Result<()> 
             match code {
                 KeyCode::Char('q') | KeyCode::Esc => break,
                 KeyCode::Left | KeyCode::Char('h') => {
-                    if selected_week > 0 {
-                        selected_week -= 1;
-                    }
+                    selected_week = selected_week.saturating_sub(1);
                 }
                 KeyCode::Right | KeyCode::Char('l') => {
                     if selected_week < num_weeks - 1 {
@@ -982,9 +980,7 @@ fn run_interactive_heatmap(db: &db::Database, initial_weeks: i32) -> Result<()> 
                     }
                 }
                 KeyCode::Up | KeyCode::Char('k') => {
-                    if selected_day > 0 {
-                        selected_day -= 1;
-                    }
+                    selected_day = selected_day.saturating_sub(1);
                 }
                 KeyCode::Down | KeyCode::Char('j') => {
                     if selected_day < 6 {

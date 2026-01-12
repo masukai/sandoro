@@ -36,6 +36,7 @@ pub fn send_notification(_state: TimerState) {
 }
 
 /// Play a terminal bell sound
+#[allow(dead_code)]
 pub fn play_bell() {
     // Print ASCII bell character
     print!("\x07");

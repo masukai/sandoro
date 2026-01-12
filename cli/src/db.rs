@@ -354,7 +354,7 @@ impl Database {
 
         while dates.contains(&check_date.format("%Y-%m-%d").to_string()) {
             current_streak += 1;
-            check_date = check_date - Duration::days(1);
+            check_date -= Duration::days(1);
         }
 
         // Calculate longest streak
