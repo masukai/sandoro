@@ -13,6 +13,7 @@ use std::time::Duration;
 use crate::config::Config;
 use crate::db::{Database, SessionType};
 use crate::icons::IconType;
+use crate::notification;
 use crate::theme::Theme;
 use crate::timer::{Timer, TimerState};
 use crate::ui;
@@ -28,11 +29,18 @@ pub enum AppView {
 #[derive(Debug, Clone, PartialEq)]
 pub enum SettingsItem {
     Theme,
+    AccentColor,
     Icon,
     WorkDuration,
     ShortBreak,
     LongBreak,
     AutoStart,
+    SoundEnabled,
+    DesktopNotification,
+    DailySessionsGoal,
+    DailyMinutesGoal,
+    WeeklySessionsGoal,
+    WeeklyMinutesGoal,
     Back,
 }
 
@@ -40,11 +48,18 @@ impl SettingsItem {
     pub fn all() -> Vec<Self> {
         vec![
             Self::Theme,
+            Self::AccentColor,
             Self::Icon,
             Self::WorkDuration,
             Self::ShortBreak,
             Self::LongBreak,
             Self::AutoStart,
+            Self::SoundEnabled,
+            Self::DesktopNotification,
+            Self::DailySessionsGoal,
+            Self::DailyMinutesGoal,
+            Self::WeeklySessionsGoal,
+            Self::WeeklyMinutesGoal,
             Self::Back,
         ]
     }
@@ -52,11 +67,18 @@ impl SettingsItem {
     pub fn label(&self) -> &'static str {
         match self {
             Self::Theme => "Theme",
+            Self::AccentColor => "Accent Color",
             Self::Icon => "Icon",
             Self::WorkDuration => "Work Duration",
             Self::ShortBreak => "Short Break",
             Self::LongBreak => "Long Break",
             Self::AutoStart => "Auto Start",
+            Self::SoundEnabled => "Sound",
+            Self::DesktopNotification => "Desktop Notification",
+            Self::DailySessionsGoal => "Daily Sessions Goal",
+            Self::DailyMinutesGoal => "Daily Minutes Goal",
+            Self::WeeklySessionsGoal => "Weekly Sessions Goal",
+            Self::WeeklyMinutesGoal => "Weekly Minutes Goal",
             Self::Back => "← Back to Timer",
         }
     }
@@ -84,12 +106,20 @@ pub struct App {
     pub icon_index: usize,
     /// Available icons
     pub available_icons: Vec<IconType>,
+    /// Accent color selection index (when editing accent)
+    pub accent_index: usize,
+    /// Available accent colors
+    pub available_accents: Vec<String>,
     /// Is currently editing a setting
     pub editing: bool,
     /// Animation frame counter
     pub animation_frame: u8,
     /// Tick counter for animation timing (animate every N ticks)
     animation_tick: u8,
+    /// Rainbow color frame counter (0-6 for 7 colors)
+    pub rainbow_frame: u8,
+    /// Rainbow animation tick counter
+    rainbow_tick: u8,
     /// Database for session recording
     db: Option<Database>,
     /// Current session ID being recorded
@@ -102,7 +132,10 @@ pub struct App {
 
 impl App {
     pub fn new(config: Config) -> Self {
-        let theme = Theme::by_name(&config.appearance.theme);
+        use crate::theme::available_accent_colors;
+
+        // Apply accent color to theme
+        let theme = Theme::by_name(&config.appearance.theme).with_accent(&config.appearance.accent);
         let available_themes: Vec<String> =
             Theme::free_themes().iter().map(|s| s.to_string()).collect();
         let theme_index = available_themes
@@ -114,6 +147,16 @@ impl App {
         let icon_index = IconType::from_str(&config.appearance.icon)
             .and_then(|icon| available_icons.iter().position(|i| *i == icon))
             .unwrap_or(2); // Default to Hourglass (index 2)
+
+        // Available accent colors
+        let available_accents: Vec<String> = available_accent_colors()
+            .iter()
+            .map(|s| s.to_string())
+            .collect();
+        let accent_index = available_accents
+            .iter()
+            .position(|a| a == &config.appearance.accent)
+            .unwrap_or(0); // Default to cyan (index 0)
 
         // Open database and get today's stats
         let db = Database::open().ok();
@@ -139,9 +182,13 @@ impl App {
             available_themes,
             icon_index,
             available_icons,
+            accent_index,
+            available_accents,
             editing: false,
             animation_frame: 0,
             animation_tick: 0,
+            rainbow_frame: 0,
+            rainbow_tick: 0,
             db,
             current_session_id: None,
             today_work_seconds,
@@ -150,6 +197,13 @@ impl App {
     }
 
     pub fn tick(&mut self) {
+        // Rainbow animation runs in both Timer and Settings views
+        self.rainbow_tick = (self.rainbow_tick + 1) % 5;
+        if self.rainbow_tick == 0 {
+            // Cycle through 7 rainbow colors
+            self.rainbow_frame = (self.rainbow_frame + 1) % 7;
+        }
+
         if self.view == AppView::Timer {
             let was_running = !self.timer.is_paused;
             let old_state = self.timer.state;
@@ -160,6 +214,13 @@ impl App {
             if was_running && self.timer.is_paused && self.timer.state != old_state {
                 // Record session completion
                 self.record_session_complete(old_state, true);
+
+                // Send notification
+                notification::notify_session_complete(
+                    old_state,
+                    self.config.notifications.sound,
+                    self.config.notifications.desktop,
+                );
 
                 // Auto-start if enabled
                 if self.config.timer.auto_start {
@@ -274,6 +335,13 @@ impl App {
                         self.icon_index = self.available_icons.len() - 1;
                     }
                 }
+                SettingsItem::AccentColor => {
+                    if self.accent_index > 0 {
+                        self.accent_index -= 1;
+                    } else {
+                        self.accent_index = self.available_accents.len() - 1;
+                    }
+                }
                 SettingsItem::WorkDuration => {
                     if self.config.timer.work_duration < 60 {
                         self.config.timer.work_duration += 5;
@@ -291,6 +359,36 @@ impl App {
                 }
                 SettingsItem::AutoStart => {
                     self.config.timer.auto_start = !self.config.timer.auto_start;
+                }
+                SettingsItem::SoundEnabled => {
+                    self.config.notifications.sound = !self.config.notifications.sound;
+                }
+                SettingsItem::DesktopNotification => {
+                    self.config.notifications.desktop = !self.config.notifications.desktop;
+                }
+                SettingsItem::DailySessionsGoal => {
+                    if self.config.goals.daily_sessions < 20 {
+                        self.config.goals.daily_sessions += 1;
+                        // Auto-calculate weekly = daily * 7
+                        self.config.goals.weekly_sessions = self.config.goals.daily_sessions * 7;
+                    }
+                }
+                SettingsItem::DailyMinutesGoal => {
+                    if self.config.goals.daily_minutes < 480 {
+                        self.config.goals.daily_minutes += 30;
+                        // Auto-calculate weekly = daily * 7
+                        self.config.goals.weekly_minutes = self.config.goals.daily_minutes * 7;
+                    }
+                }
+                SettingsItem::WeeklySessionsGoal => {
+                    if self.config.goals.weekly_sessions < 100 {
+                        self.config.goals.weekly_sessions += 5;
+                    }
+                }
+                SettingsItem::WeeklyMinutesGoal => {
+                    if self.config.goals.weekly_minutes < 2400 {
+                        self.config.goals.weekly_minutes += 60;
+                    }
                 }
                 _ => {}
             }
@@ -316,6 +414,13 @@ impl App {
                         self.icon_index = 0;
                     }
                 }
+                SettingsItem::AccentColor => {
+                    if self.accent_index < self.available_accents.len() - 1 {
+                        self.accent_index += 1;
+                    } else {
+                        self.accent_index = 0;
+                    }
+                }
                 SettingsItem::WorkDuration => {
                     if self.config.timer.work_duration > 5 {
                         self.config.timer.work_duration -= 5;
@@ -334,6 +439,42 @@ impl App {
                 SettingsItem::AutoStart => {
                     self.config.timer.auto_start = !self.config.timer.auto_start;
                 }
+                SettingsItem::SoundEnabled => {
+                    self.config.notifications.sound = !self.config.notifications.sound;
+                }
+                SettingsItem::DesktopNotification => {
+                    self.config.notifications.desktop = !self.config.notifications.desktop;
+                }
+                SettingsItem::DailySessionsGoal => {
+                    if self.config.goals.daily_sessions > 0 {
+                        self.config.goals.daily_sessions -= 1;
+                        // Auto-calculate weekly = daily * 7
+                        self.config.goals.weekly_sessions = self.config.goals.daily_sessions * 7;
+                    }
+                }
+                SettingsItem::DailyMinutesGoal => {
+                    if self.config.goals.daily_minutes >= 30 {
+                        self.config.goals.daily_minutes -= 30;
+                    } else {
+                        self.config.goals.daily_minutes = 0;
+                    }
+                    // Auto-calculate weekly = daily * 7
+                    self.config.goals.weekly_minutes = self.config.goals.daily_minutes * 7;
+                }
+                SettingsItem::WeeklySessionsGoal => {
+                    if self.config.goals.weekly_sessions >= 5 {
+                        self.config.goals.weekly_sessions -= 5;
+                    } else {
+                        self.config.goals.weekly_sessions = 0;
+                    }
+                }
+                SettingsItem::WeeklyMinutesGoal => {
+                    if self.config.goals.weekly_minutes >= 60 {
+                        self.config.goals.weekly_minutes -= 60;
+                    } else {
+                        self.config.goals.weekly_minutes = 0;
+                    }
+                }
                 _ => {}
             }
         } else if self.settings_index < SettingsItem::all().len() - 1 {
@@ -349,6 +490,7 @@ impl App {
                 self.editing = false;
             }
             SettingsItem::Theme
+            | SettingsItem::AccentColor
             | SettingsItem::Icon
             | SettingsItem::WorkDuration
             | SettingsItem::ShortBreak
@@ -366,13 +508,37 @@ impl App {
                 self.config.timer.auto_start = !self.config.timer.auto_start;
                 self.apply_settings();
             }
+            SettingsItem::SoundEnabled => {
+                // Toggle sound directly
+                self.config.notifications.sound = !self.config.notifications.sound;
+                self.apply_settings();
+            }
+            SettingsItem::DesktopNotification => {
+                // Toggle desktop notification directly
+                self.config.notifications.desktop = !self.config.notifications.desktop;
+                self.apply_settings();
+            }
+            SettingsItem::DailySessionsGoal
+            | SettingsItem::DailyMinutesGoal
+            | SettingsItem::WeeklySessionsGoal
+            | SettingsItem::WeeklyMinutesGoal => {
+                if self.editing {
+                    // Apply changes
+                    self.editing = false;
+                    self.apply_settings();
+                } else {
+                    self.editing = true;
+                }
+            }
         }
     }
 
     fn apply_settings(&mut self) {
-        // Apply theme
+        // Apply theme and accent color
         self.config.appearance.theme = self.available_themes[self.theme_index].clone();
-        self.theme = Theme::by_name(&self.config.appearance.theme);
+        self.config.appearance.accent = self.available_accents[self.accent_index].clone();
+        self.theme =
+            Theme::by_name(&self.config.appearance.theme).with_accent(&self.config.appearance.accent);
 
         // Apply icon
         self.config.appearance.icon = self.available_icons[self.icon_index].to_string();
@@ -402,6 +568,7 @@ impl App {
     pub fn get_current_setting_value(&self) -> String {
         match SettingsItem::all()[self.settings_index] {
             SettingsItem::Theme => self.available_themes[self.theme_index].clone(),
+            SettingsItem::AccentColor => self.available_accents[self.accent_index].clone(),
             SettingsItem::Icon => {
                 let icon = &self.available_icons[self.icon_index];
                 format!("{} {}", icon.emoji(), icon.label())
@@ -416,6 +583,48 @@ impl App {
                     "OFF".to_string()
                 }
             }
+            SettingsItem::SoundEnabled => {
+                if self.config.notifications.sound {
+                    "ON".to_string()
+                } else {
+                    "OFF".to_string()
+                }
+            }
+            SettingsItem::DesktopNotification => {
+                if self.config.notifications.desktop {
+                    "ON".to_string()
+                } else {
+                    "OFF".to_string()
+                }
+            }
+            SettingsItem::DailySessionsGoal => {
+                if self.config.goals.daily_sessions == 0 {
+                    "Not set".to_string()
+                } else {
+                    format!("{} sessions", self.config.goals.daily_sessions)
+                }
+            }
+            SettingsItem::DailyMinutesGoal => {
+                if self.config.goals.daily_minutes == 0 {
+                    "Not set".to_string()
+                } else {
+                    format!("{} min", self.config.goals.daily_minutes)
+                }
+            }
+            SettingsItem::WeeklySessionsGoal => {
+                if self.config.goals.weekly_sessions == 0 {
+                    "Not set".to_string()
+                } else {
+                    format!("{} sessions", self.config.goals.weekly_sessions)
+                }
+            }
+            SettingsItem::WeeklyMinutesGoal => {
+                if self.config.goals.weekly_minutes == 0 {
+                    "Not set".to_string()
+                } else {
+                    format!("{} min", self.config.goals.weekly_minutes)
+                }
+            }
             SettingsItem::Back => String::new(),
         }
     }
@@ -423,6 +632,16 @@ impl App {
     /// Get the current icon type
     pub fn current_icon(&self) -> IconType {
         self.available_icons[self.icon_index]
+    }
+
+    /// Get the current accent color name
+    pub fn current_accent(&self) -> &str {
+        &self.available_accents[self.accent_index]
+    }
+
+    /// Check if rainbow mode is enabled
+    pub fn is_rainbow_mode(&self) -> bool {
+        self.current_accent() == "rainbow"
     }
 }
 

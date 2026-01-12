@@ -1,7 +1,13 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useSessionStorage, DailyStats } from '../hooks/useSessionStorage';
+import { useGoalProgress, hasGoalsEnabled } from '../hooks/useGoalProgress';
+import { useComparison, ComparisonData } from '../hooks/useComparison';
+import { useSettings } from '../hooks/useSettings';
+import { useTheme } from '../hooks/useTheme';
+import { Heatmap } from './Heatmap';
 
 type StatsView = 'today' | 'week' | 'month';
+type ExportFormat = 'json' | 'csv';
 
 function formatDuration(seconds: number): string {
   const hours = Math.floor(seconds / 3600);
@@ -65,22 +71,261 @@ function DailyBreakdown({ days }: { days: DailyStats[] }) {
   );
 }
 
+interface GoalBarProps {
+  label: string;
+  current: number;
+  goal: number;
+  percentage: number;
+  unit: string;
+  isRainbow?: boolean;
+}
+
+function GoalBar({ label, current, goal, percentage, unit, isRainbow = false }: GoalBarProps) {
+  if (goal === 0) return null;
+  const isComplete = percentage >= 100;
+
+  return (
+    <div className="space-y-1">
+      <div className="flex justify-between text-xs">
+        <span>{label}</span>
+        <span className="font-mono">
+          {current}/{goal} {unit}
+        </span>
+      </div>
+      <div className="h-2 bg-sandoro-secondary/30 rounded-full overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all duration-300 ${
+            isRainbow && !isComplete ? 'rainbow-gradient-bg' : ''
+          }`}
+          style={{
+            width: `${Math.min(100, percentage)}%`,
+            backgroundColor: isRainbow && !isComplete ? undefined : isComplete ? 'var(--sandoro-work)' : 'var(--sandoro-primary)',
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function GoalProgress() {
+  const { settings } = useSettings();
+  const { accentColor } = useTheme();
+  const isRainbow = accentColor === 'rainbow';
+  const progress = useGoalProgress();
+
+  if (!hasGoalsEnabled(settings.goals)) {
+    return null;
+  }
+
+  return (
+    <div
+      className="p-4 rounded-lg border border-sandoro-secondary space-y-3"
+      style={{ backgroundColor: 'var(--sandoro-bg)' }}
+    >
+      <h3 className="text-sm font-semibold text-sandoro-secondary">Goals</h3>
+
+      {/* Daily Goals */}
+      {(settings.goals.dailySessionsGoal > 0 || settings.goals.dailyMinutesGoal > 0) && (
+        <div className="space-y-2">
+          <div className="text-xs text-sandoro-secondary/70">Daily</div>
+          <GoalBar
+            label="Sessions"
+            current={progress.daily.sessions.current}
+            goal={progress.daily.sessions.goal}
+            percentage={progress.daily.sessions.percentage}
+            unit=""
+            isRainbow={isRainbow}
+          />
+          <GoalBar
+            label="Minutes"
+            current={progress.daily.minutes.current}
+            goal={progress.daily.minutes.goal}
+            percentage={progress.daily.minutes.percentage}
+            unit="min"
+            isRainbow={isRainbow}
+          />
+        </div>
+      )}
+
+      {/* Weekly Goals */}
+      {(settings.goals.weeklySessionsGoal > 0 || settings.goals.weeklyMinutesGoal > 0) && (
+        <div className="space-y-2">
+          <div className="text-xs text-sandoro-secondary/70">Weekly</div>
+          <GoalBar
+            label="Sessions"
+            current={progress.weekly.sessions.current}
+            goal={progress.weekly.sessions.goal}
+            percentage={progress.weekly.sessions.percentage}
+            unit=""
+            isRainbow={isRainbow}
+          />
+          <GoalBar
+            label="Minutes"
+            current={progress.weekly.minutes.current}
+            goal={progress.weekly.minutes.goal}
+            percentage={progress.weekly.minutes.percentage}
+            unit="min"
+            isRainbow={isRainbow}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface ChangeIndicatorProps {
+  value: number;
+  showPercent?: boolean;
+}
+
+function ChangeIndicator({ value, showPercent = true }: ChangeIndicatorProps) {
+  if (value === 0) {
+    return <span className="text-sandoro-secondary text-xs">--</span>;
+  }
+  const isPositive = value > 0;
+  const color = isPositive ? 'text-sandoro-work' : 'text-red-400';
+  const arrow = isPositive ? '↑' : '↓';
+
+  return (
+    <span className={`text-xs font-mono ${color}`}>
+      {arrow}{Math.abs(value)}{showPercent ? '%' : ''}
+    </span>
+  );
+}
+
+interface ComparisonCardProps {
+  title: string;
+  data: ComparisonData;
+}
+
+function ComparisonCard({ title, data }: ComparisonCardProps) {
+  return (
+    <div
+      className="p-4 rounded-lg border border-sandoro-secondary"
+      style={{ backgroundColor: 'var(--sandoro-bg)' }}
+    >
+      <h3 className="text-sm text-sandoro-secondary mb-3">{title}</h3>
+      <div className="space-y-2 text-sm">
+        <div className="flex justify-between items-center">
+          <span>Sessions</span>
+          <div className="flex items-center gap-2">
+            <span className="font-mono">
+              {data.current.sessionsCompleted}
+              <span className="text-sandoro-secondary text-xs mx-1">vs</span>
+              {data.previous.sessionsCompleted}
+            </span>
+            <ChangeIndicator value={data.change.sessionsCompleted} />
+          </div>
+        </div>
+        <div className="flex justify-between items-center">
+          <span>Total time</span>
+          <div className="flex items-center gap-2">
+            <span className="font-mono">
+              {formatDuration(data.current.totalWorkSeconds)}
+              <span className="text-sandoro-secondary text-xs mx-1">vs</span>
+              {formatDuration(data.previous.totalWorkSeconds)}
+            </span>
+            <ChangeIndicator value={data.change.totalWorkSeconds} />
+          </div>
+        </div>
+        <div className="flex justify-between items-center">
+          <span>Active days</span>
+          <div className="flex items-center gap-2">
+            <span className="font-mono">
+              {data.current.activeDays}
+              <span className="text-sandoro-secondary text-xs mx-1">vs</span>
+              {data.previous.activeDays}
+            </span>
+            <ChangeIndicator value={data.change.activeDays} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function Stats() {
   const [view, setView] = useState<StatsView>('today');
+  const [heatmapWeeks, setHeatmapWeeks] = useState<number>(12);
+  const { accentColor } = useTheme();
+  const isRainbow = accentColor === 'rainbow';
   const {
     getTodayStats,
     getWeekStats,
     getMonthStats,
     getDailyBreakdown,
+    getHeatmapData,
+    getStreak,
+    exportToJSON,
+    exportToCSV,
   } = useSessionStorage();
+
+  const handleExport = useCallback(
+    (format: ExportFormat) => {
+      const content = format === 'json' ? exportToJSON() : exportToCSV();
+      const mimeType = format === 'json' ? 'application/json' : 'text/csv';
+      const filename = `sandoro-sessions.${format}`;
+
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    },
+    [exportToJSON, exportToCSV]
+  );
 
   const todayStats = getTodayStats();
   const weekStats = getWeekStats();
   const monthStats = getMonthStats();
+  const heatmapData = getHeatmapData(heatmapWeeks);
+  const streak = getStreak();
+  const { weekComparison, monthComparison } = useComparison();
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-lg font-semibold">Statistics</h2>
+    <div className="space-y-6 pb-32">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Statistics</h2>
+        <div className="flex gap-2">
+          <button
+            onClick={() => handleExport('json')}
+            className="px-2 py-1 text-xs border border-sandoro-secondary rounded hover:bg-sandoro-secondary/20 transition-colors"
+          >
+            JSON
+          </button>
+          <button
+            onClick={() => handleExport('csv')}
+            className="px-2 py-1 text-xs border border-sandoro-secondary rounded hover:bg-sandoro-secondary/20 transition-colors"
+          >
+            CSV
+          </button>
+        </div>
+      </div>
+
+      {/* Streak Display */}
+      <div
+        className="flex gap-4 p-3 rounded-lg border border-sandoro-secondary"
+        style={{ backgroundColor: 'var(--sandoro-bg)' }}
+      >
+        <div className="flex-1 text-center">
+          <div className={`text-2xl font-mono ${isRainbow ? 'rainbow-gradient' : 'text-sandoro-primary'}`}>
+            {streak.current}
+          </div>
+          <div className="text-xs text-sandoro-secondary">Current Streak</div>
+        </div>
+        <div className="w-px bg-sandoro-secondary/30" />
+        <div className="flex-1 text-center">
+          <div className="text-2xl font-mono" style={{ color: 'var(--sandoro-fg)' }}>
+            {streak.longest}
+          </div>
+          <div className="text-xs text-sandoro-secondary">Longest Streak</div>
+        </div>
+      </div>
+
+      {/* Goal Progress */}
+      <GoalProgress />
 
       {/* View Selector */}
       <div className="flex gap-2">
@@ -88,7 +333,9 @@ export function Stats() {
           onClick={() => setView('today')}
           className={`px-3 py-1 rounded text-sm ${
             view === 'today'
-              ? 'bg-sandoro-primary text-white'
+              ? isRainbow
+                ? 'rainbow-gradient-bg'
+                : 'bg-sandoro-primary text-white'
               : 'border border-sandoro-secondary'
           }`}
         >
@@ -98,7 +345,9 @@ export function Stats() {
           onClick={() => setView('week')}
           className={`px-3 py-1 rounded text-sm ${
             view === 'week'
-              ? 'bg-sandoro-primary text-white'
+              ? isRainbow
+                ? 'rainbow-gradient-bg'
+                : 'bg-sandoro-primary text-white'
               : 'border border-sandoro-secondary'
           }`}
         >
@@ -108,7 +357,9 @@ export function Stats() {
           onClick={() => setView('month')}
           className={`px-3 py-1 rounded text-sm ${
             view === 'month'
-              ? 'bg-sandoro-primary text-white'
+              ? isRainbow
+                ? 'rainbow-gradient-bg'
+                : 'bg-sandoro-primary text-white'
               : 'border border-sandoro-secondary'
           }`}
         >
@@ -139,6 +390,24 @@ export function Stats() {
           )}
         </div>
       )}
+
+      {/* Period Comparison */}
+      <div className="pt-4 border-t border-sandoro-secondary/30">
+        <h3 className="text-sm font-semibold text-sandoro-secondary mb-3">Comparison</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <ComparisonCard title="This Week vs Last Week" data={weekComparison} />
+          <ComparisonCard title="This Month vs Last Month" data={monthComparison} />
+        </div>
+      </div>
+
+      {/* Activity Heatmap */}
+      <div className="pt-4 border-t border-sandoro-secondary/30">
+        <Heatmap
+          data={heatmapData}
+          weeks={heatmapWeeks}
+          onWeeksChange={setHeatmapWeeks}
+        />
+      </div>
     </div>
   );
 }

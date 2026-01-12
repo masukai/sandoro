@@ -49,6 +49,148 @@ impl ThemeColor {
             ThemeColor::Rgb { r, g, b } => Color::Rgb(*r, *g, *b),
         }
     }
+
+    /// Get RGB values as a tuple
+    pub fn to_rgb(&self) -> (u8, u8, u8) {
+        match self {
+            ThemeColor::Rgb { r, g, b } => (*r, *g, *b),
+            ThemeColor::Named(name) => match name.to_lowercase().as_str() {
+                "black" => (0, 0, 0),
+                "red" => (255, 0, 0),
+                "green" => (0, 255, 0),
+                "yellow" => (255, 255, 0),
+                "blue" => (0, 0, 255),
+                "magenta" => (255, 0, 255),
+                "cyan" => (0, 255, 255),
+                "white" => (255, 255, 255),
+                "gray" | "grey" => (128, 128, 128),
+                "darkgray" | "darkgrey" => (64, 64, 64),
+                _ => (255, 255, 255),
+            },
+        }
+    }
+
+    /// Create ThemeColor from accent color name
+    pub fn from_accent_name(name: &str) -> Self {
+        match name.to_lowercase().as_str() {
+            "red" => ThemeColor::Rgb {
+                r: 239,
+                g: 68,
+                b: 68,
+            },
+            "orange" => ThemeColor::Rgb {
+                r: 249,
+                g: 115,
+                b: 22,
+            },
+            "yellow" => ThemeColor::Rgb {
+                r: 234,
+                g: 179,
+                b: 8,
+            },
+            "green" => ThemeColor::Rgb {
+                r: 34,
+                g: 197,
+                b: 94,
+            },
+            "blue" => ThemeColor::Rgb {
+                r: 59,
+                g: 130,
+                b: 246,
+            },
+            "indigo" => ThemeColor::Rgb {
+                r: 99,
+                g: 102,
+                b: 241,
+            },
+            "purple" => ThemeColor::Rgb {
+                r: 168,
+                g: 85,
+                b: 247,
+            },
+            "cyan" => ThemeColor::Rgb {
+                r: 34,
+                g: 211,
+                b: 238,
+            },
+            "pink" => ThemeColor::Rgb {
+                r: 236,
+                g: 72,
+                b: 153,
+            },
+            "rainbow" => {
+                // Rainbow returns a default color (actual animation handled elsewhere)
+                ThemeColor::Rgb {
+                    r: 255,
+                    g: 0,
+                    b: 0,
+                }
+            }
+            _ => ThemeColor::Rgb {
+                r: 34,
+                g: 211,
+                b: 238,
+            }, // Default to cyan
+        }
+    }
+}
+
+/// Available accent colors (matches Web version - 虹色7色 + cyan, pink, rainbow)
+pub fn available_accent_colors() -> Vec<&'static str> {
+    vec![
+        "red", "orange", "yellow", "green", "blue", "indigo", "purple", "cyan", "pink", "rainbow",
+    ]
+}
+
+/// Rainbow colors for animation (7 colors)
+pub const RAINBOW_COLORS: [(u8, u8, u8); 7] = [
+    (255, 0, 0),     // Red
+    (255, 127, 0),   // Orange
+    (255, 255, 0),   // Yellow
+    (0, 255, 0),     // Green
+    (0, 0, 255),     // Blue
+    (75, 0, 130),    // Indigo
+    (148, 0, 211),   // Violet
+];
+
+/// Get rainbow color at a given time offset (cycles through 7 colors)
+pub fn get_rainbow_color(time_offset_ms: u64) -> (u8, u8, u8) {
+    // Cycle through colors every 1 second (1000ms per color)
+    let color_index = ((time_offset_ms / 1000) % 7) as usize;
+    RAINBOW_COLORS[color_index]
+}
+
+/// Interpolate between two colors
+fn lerp_color(c1: (u8, u8, u8), c2: (u8, u8, u8), t: f32) -> (u8, u8, u8) {
+    let r = (c1.0 as f32 + (c2.0 as f32 - c1.0 as f32) * t) as u8;
+    let g = (c1.1 as f32 + (c2.1 as f32 - c1.1 as f32) * t) as u8;
+    let b = (c1.2 as f32 + (c2.2 as f32 - c1.2 as f32) * t) as u8;
+    (r, g, b)
+}
+
+/// Get rainbow gradient color for a specific line
+/// This creates a smooth vertical gradient effect like the web version
+/// - line_index: current line (0-based)
+/// - total_lines: total number of lines
+/// - frame: animation frame (0-6) to scroll the gradient
+pub fn get_rainbow_gradient_color(line_index: usize, total_lines: usize, frame: u8) -> (u8, u8, u8) {
+    if total_lines == 0 {
+        return RAINBOW_COLORS[0];
+    }
+
+    // Calculate position in the gradient (0.0 to 1.0)
+    // Add frame offset to create scrolling animation
+    let frame_offset = (frame as f32) / 7.0;
+    let position = (line_index as f32 / total_lines as f32 + frame_offset) % 1.0;
+
+    // Map position to color index with interpolation
+    // Spread all 7 colors across the gradient
+    let scaled = position * 7.0;
+    let color_index = scaled.floor() as usize % 7;
+    let next_index = (color_index + 1) % 7;
+    let t = scaled.fract();
+
+    lerp_color(RAINBOW_COLORS[color_index], RAINBOW_COLORS[next_index], t)
 }
 
 impl Theme {
@@ -168,6 +310,12 @@ impl Theme {
             "dracula" => Self::dracula(),
             _ => Self::default_theme(),
         }
+    }
+
+    /// Apply user-selected accent color to the theme
+    pub fn with_accent(mut self, accent_name: &str) -> Self {
+        self.accent = ThemeColor::from_accent_name(accent_name);
+        self
     }
 
     /// List available themes (Free tier)

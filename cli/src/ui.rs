@@ -10,6 +10,7 @@ use ratatui::{
 
 use crate::app::{App, AppView, SettingsItem};
 use crate::icons::{IconState, IconType};
+use crate::theme::{get_rainbow_color, get_rainbow_gradient_color, ThemeColor};
 use crate::timer::TimerState;
 
 /// Draw the main UI
@@ -37,10 +38,20 @@ fn draw_timer_view(f: &mut Frame, app: &App) {
 }
 
 fn draw_settings_view(f: &mut Frame, app: &App) {
-    let primary = app.theme.primary.to_color();
     let secondary = app.theme.secondary.to_color();
     let fg = app.theme.foreground.to_color();
-    let accent = app.theme.accent.to_color();
+
+    // Determine accent color (rainbow or selected accent)
+    let accent = if app.is_rainbow_mode() {
+        let time_offset = (app.rainbow_frame as u64) * 1000;
+        let (r, g, b) = get_rainbow_color(time_offset);
+        Color::Rgb(r, g, b)
+    } else {
+        ThemeColor::from_accent_name(app.current_accent()).to_color()
+    };
+
+    // Primary color for selected items
+    let primary = accent;
 
     let chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -73,6 +84,7 @@ fn draw_settings_view(f: &mut Frame, app: &App) {
 
             let value = match item {
                 SettingsItem::Theme => app.available_themes[app.theme_index].clone(),
+                SettingsItem::AccentColor => app.available_accents[app.accent_index].clone(),
                 SettingsItem::Icon => {
                     let icon = &app.available_icons[app.icon_index];
                     format!("{} {}", icon.emoji(), icon.label())
@@ -85,6 +97,48 @@ fn draw_settings_view(f: &mut Frame, app: &App) {
                         "ON".to_string()
                     } else {
                         "OFF".to_string()
+                    }
+                }
+                SettingsItem::SoundEnabled => {
+                    if app.config.notifications.sound {
+                        "ON".to_string()
+                    } else {
+                        "OFF".to_string()
+                    }
+                }
+                SettingsItem::DesktopNotification => {
+                    if app.config.notifications.desktop {
+                        "ON".to_string()
+                    } else {
+                        "OFF".to_string()
+                    }
+                }
+                SettingsItem::DailySessionsGoal => {
+                    if app.config.goals.daily_sessions == 0 {
+                        "Not set".to_string()
+                    } else {
+                        format!("{} sessions", app.config.goals.daily_sessions)
+                    }
+                }
+                SettingsItem::DailyMinutesGoal => {
+                    if app.config.goals.daily_minutes == 0 {
+                        "Not set".to_string()
+                    } else {
+                        format!("{} min", app.config.goals.daily_minutes)
+                    }
+                }
+                SettingsItem::WeeklySessionsGoal => {
+                    if app.config.goals.weekly_sessions == 0 {
+                        "Not set".to_string()
+                    } else {
+                        format!("{} sessions", app.config.goals.weekly_sessions)
+                    }
+                }
+                SettingsItem::WeeklyMinutesGoal => {
+                    if app.config.goals.weekly_minutes == 0 {
+                        "Not set".to_string()
+                    } else {
+                        format!("{} min", app.config.goals.weekly_minutes)
                     }
                 }
                 SettingsItem::Back => String::new(),
@@ -137,11 +191,20 @@ fn draw_header(f: &mut Frame, area: Rect, app: &App) {
 }
 
 fn draw_main_content(f: &mut Frame, area: Rect, app: &App) {
-    let primary = app.theme.primary.to_color();
     let secondary = app.theme.secondary.to_color();
     let work_color = app.theme.work.to_color();
     let short_break_color = app.theme.short_break.to_color();
     let long_break_color = app.theme.long_break.to_color();
+
+    // Determine if rainbow mode is enabled
+    let is_rainbow = app.is_rainbow_mode();
+    let accent_color = if !is_rainbow {
+        // Use accent color from theme
+        ThemeColor::from_accent_name(app.current_accent()).to_color()
+    } else {
+        // Placeholder - will be replaced per line for rainbow
+        Color::White
+    };
 
     // Draw icon based on selected icon type
     let progress = app.timer.progress_percent();
@@ -178,9 +241,20 @@ fn draw_main_content(f: &mut Frame, area: Rect, app: &App) {
         .split(area);
 
     // Draw icon (chunks[0])
+    let total_lines = icon_lines.len();
     let icon_text: Vec<Line> = icon_lines
         .iter()
-        .map(|s| Line::from(Span::styled(s.as_str(), Style::default().fg(primary))))
+        .enumerate()
+        .map(|(i, s)| {
+            let line_color = if is_rainbow {
+                // Rainbow gradient: each line gets a different color
+                let (r, g, b) = get_rainbow_gradient_color(i, total_lines, app.rainbow_frame);
+                Color::Rgb(r, g, b)
+            } else {
+                accent_color
+            };
+            Line::from(Span::styled(s.as_str(), Style::default().fg(line_color)))
+        })
         .collect();
 
     let icon_widget = Paragraph::new(icon_text)

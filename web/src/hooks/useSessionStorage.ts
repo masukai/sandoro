@@ -15,6 +15,11 @@ export interface DailyStats {
   sessionsCompleted: number;
 }
 
+export interface StreakInfo {
+  current: number; // Current consecutive days
+  longest: number; // Longest streak ever
+}
+
 const STORAGE_KEY = 'sandoro_sessions';
 
 function generateId(): string {
@@ -181,6 +186,132 @@ export function useSessionStorage() {
     [sessions]
   );
 
+  // Get heatmap data for the past N weeks (includes all days, even with 0 activity)
+  const getHeatmapData = useCallback(
+    (weeks: number = 12): Map<string, DailyStats> => {
+      const now = new Date();
+      const result = new Map<string, DailyStats>();
+      const days = weeks * 7;
+
+      // Helper to format date as YYYY-MM-DD in local timezone
+      const formatDateStr = (d: Date): string => {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+
+      // Initialize all days with 0
+      for (let i = 0; i < days; i++) {
+        const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+        const dateStr = formatDateStr(date);
+        result.set(dateStr, {
+          date: dateStr,
+          totalWorkSeconds: 0,
+          sessionsCompleted: 0,
+        });
+      }
+
+      // Fill in actual data
+      sessions
+        .filter((s) => s.type === 'work' && s.completed)
+        .forEach((s) => {
+          // Parse ISO string and format in local timezone
+          const sessionDate = new Date(s.startedAt);
+          const dateStr = formatDateStr(sessionDate);
+          const existing = result.get(dateStr);
+          if (existing) {
+            existing.totalWorkSeconds += s.durationSeconds || 0;
+            existing.sessionsCompleted += 1;
+          }
+        });
+
+      return result;
+    },
+    [sessions]
+  );
+
+  // Get streak information
+  const getStreak = useCallback((): StreakInfo => {
+    // Helper to format date as YYYY-MM-DD in local timezone
+    const formatDateStr = (d: Date): string => {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    // Get unique dates with completed work sessions
+    const workDates = new Set<string>();
+    sessions
+      .filter((s) => s.type === 'work' && s.completed)
+      .forEach((s) => {
+        const sessionDate = new Date(s.startedAt);
+        workDates.add(formatDateStr(sessionDate));
+      });
+
+    if (workDates.size === 0) {
+      return { current: 0, longest: 0 };
+    }
+
+    // Sort dates in descending order
+    const sortedDates = Array.from(workDates).sort().reverse();
+
+    // Calculate current streak (from today backwards)
+    const today = formatDateStr(new Date());
+    let currentStreak = 0;
+    const checkDate = new Date();
+
+    // Check if today has activity, if not start from yesterday
+    if (!workDates.has(today)) {
+      checkDate.setDate(checkDate.getDate() - 1);
+    }
+
+    while (workDates.has(formatDateStr(checkDate))) {
+      currentStreak++;
+      checkDate.setDate(checkDate.getDate() - 1);
+    }
+
+    // Calculate longest streak
+    let longestStreak = 0;
+    let tempStreak = 1;
+
+    for (let i = 0; i < sortedDates.length - 1; i++) {
+      const current = new Date(sortedDates[i]);
+      const next = new Date(sortedDates[i + 1]);
+      const diffDays = Math.round((current.getTime() - next.getTime()) / (1000 * 60 * 60 * 24));
+
+      if (diffDays === 1) {
+        tempStreak++;
+      } else {
+        longestStreak = Math.max(longestStreak, tempStreak);
+        tempStreak = 1;
+      }
+    }
+    longestStreak = Math.max(longestStreak, tempStreak);
+
+    return { current: currentStreak, longest: longestStreak };
+  }, [sessions]);
+
+  // Export sessions to JSON
+  const exportToJSON = useCallback((): string => {
+    return JSON.stringify(sessions, null, 2);
+  }, [sessions]);
+
+  // Export sessions to CSV
+  const exportToCSV = useCallback((): string => {
+    const headers = ['id', 'startedAt', 'endedAt', 'durationSeconds', 'type', 'completed'];
+    const rows = sessions.map((s) => [
+      s.id,
+      s.startedAt,
+      s.endedAt || '',
+      s.durationSeconds?.toString() || '',
+      s.type,
+      s.completed.toString(),
+    ]);
+    return [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+  }, [sessions]);
+
   return {
     sessions,
     startSession,
@@ -190,5 +321,9 @@ export function useSessionStorage() {
     getWeekStats,
     getMonthStats,
     getDailyBreakdown,
+    getHeatmapData,
+    getStreak,
+    exportToJSON,
+    exportToCSV,
   };
 }

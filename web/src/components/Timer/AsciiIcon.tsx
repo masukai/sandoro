@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
+import { useTheme } from '../../hooks/useTheme';
 
 interface AsciiIconProps {
   type: 'none' | 'progress' | 'hourglass' | 'tomato' | 'coffee';
@@ -8,6 +9,8 @@ interface AsciiIconProps {
 }
 
 export function AsciiIcon({ type, progress, isBreak = false, isPaused = false }: AsciiIconProps) {
+  const { accentColor } = useTheme();
+  const isRainbow = accentColor === 'rainbow';
   // アニメーションフレーム（CLIと同じく500msで更新）
   const [animationFrame, setAnimationFrame] = useState(0);
 
@@ -43,7 +46,10 @@ export function AsciiIcon({ type, progress, isBreak = false, isPaused = false }:
 
   if (type === 'none') return <pre data-testid="ascii-icon" className="text-sandoro-primary"></pre>;
 
-  return <pre data-testid="ascii-icon" className="text-sandoro-primary">{ascii}</pre>;
+  // レインボーモードの場合はグラデーションアニメーションを適用
+  const colorClass = isRainbow ? 'rainbow-gradient' : 'text-sandoro-primary';
+
+  return <pre data-testid="ascii-icon" className={colorClass}>{ascii}</pre>;
 }
 
 function renderProgressBar(progress: number, isBreak: boolean, animationFrame: number): string {

@@ -16,6 +16,8 @@ pub struct Config {
     #[serde(default)]
     pub notifications: NotificationsConfig,
     #[serde(default)]
+    pub goals: GoalConfig,
+    #[serde(default)]
     pub account: AccountConfig,
 }
 
@@ -39,6 +41,20 @@ pub struct AppearanceConfig {
     pub icon: String,
     #[serde(default = "default_theme")]
     pub theme: String,
+    #[serde(default = "default_accent")]
+    pub accent: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GoalConfig {
+    #[serde(default)]
+    pub daily_sessions: u32,
+    #[serde(default)]
+    pub daily_minutes: u32,
+    #[serde(default)]
+    pub weekly_sessions: u32,
+    #[serde(default)]
+    pub weekly_minutes: u32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -74,6 +90,9 @@ fn default_icon() -> String {
 fn default_theme() -> String {
     "default".to_string()
 }
+fn default_accent() -> String {
+    "cyan".to_string()
+}
 fn default_true() -> bool {
     true
 }
@@ -88,6 +107,7 @@ impl Default for Config {
             timer: TimerConfig::default(),
             appearance: AppearanceConfig::default(),
             notifications: NotificationsConfig::default(),
+            goals: GoalConfig::default(),
             account: AccountConfig::default(),
         }
     }
@@ -110,6 +130,19 @@ impl Default for AppearanceConfig {
         Self {
             icon: default_icon(),
             theme: default_theme(),
+            accent: default_accent(),
+        }
+    }
+}
+
+#[allow(clippy::derivable_impls)]
+impl Default for GoalConfig {
+    fn default() -> Self {
+        Self {
+            daily_sessions: 0,
+            daily_minutes: 0,
+            weekly_sessions: 0,
+            weekly_minutes: 0,
         }
     }
 }

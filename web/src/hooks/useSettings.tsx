@@ -1,6 +1,14 @@
 import { useState, useCallback, createContext, useContext, ReactNode } from 'react';
 
 export type IconType = 'none' | 'progress' | 'hourglass' | 'tomato' | 'coffee';
+export type SoundPattern = 'chime' | 'bell' | 'digital' | 'gentle';
+
+export interface GoalSettings {
+  dailySessionsGoal: number; // 0 = disabled
+  dailyMinutesGoal: number; // 0 = disabled
+  weeklySessionsGoal: number; // 0 = disabled
+  weeklyMinutesGoal: number; // 0 = disabled
+}
 
 export interface TimerSettings {
   workDuration: number; // in minutes
@@ -9,9 +17,21 @@ export interface TimerSettings {
   sessionsUntilLongBreak: number;
   icon: IconType;
   autoStart: boolean;
+  notificationsEnabled: boolean;
+  soundEnabled: boolean;
+  soundVolume: number; // 0-100
+  soundPattern: SoundPattern;
+  goals: GoalSettings;
 }
 
 const STORAGE_KEY = 'sandoro-settings';
+
+const DEFAULT_GOALS: GoalSettings = {
+  dailySessionsGoal: 0, // 0 = disabled
+  dailyMinutesGoal: 0,
+  weeklySessionsGoal: 0,
+  weeklyMinutesGoal: 0,
+};
 
 const DEFAULT_SETTINGS: TimerSettings = {
   workDuration: 25,
@@ -20,6 +40,11 @@ const DEFAULT_SETTINGS: TimerSettings = {
   sessionsUntilLongBreak: 4,
   icon: 'hourglass',
   autoStart: false,
+  notificationsEnabled: true,
+  soundEnabled: true,
+  soundVolume: 50,
+  soundPattern: 'chime',
+  goals: DEFAULT_GOALS,
 };
 
 function getStoredSettings(): TimerSettings {

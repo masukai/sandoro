@@ -14,7 +14,7 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 
-    /* Default: Dark theme */
+    /* Default: Dark Cyber theme */
     --sandoro-bg: #1a1a2e;
     --sandoro-fg: #eaeaea;
     --sandoro-primary: #00d9ff;
@@ -25,7 +25,9 @@
     --sandoro-long-break: #7b68ee;
   }
 
-  /* Light theme */
+  /* ===== Light/Dark Mode Base ===== */
+
+  /* Light theme base */
   [data-theme='light'] {
     --sandoro-bg: #f5f5f5;
     --sandoro-fg: #1a1a2e;
@@ -37,7 +39,7 @@
     --sandoro-long-break: #6655bb;
   }
 
-  /* Dark theme (explicit) */
+  /* Dark theme base (explicit) */
   [data-theme='dark'] {
     --sandoro-bg: #1a1a2e;
     --sandoro-fg: #eaeaea;
@@ -49,6 +51,91 @@
     --sandoro-long-break: #7b68ee;
   }
 
+  /* ===== Accent Colors ===== */
+  /* Accent colors override the primary color for customization */
+
+  /* Cyan (default) - already set in base themes */
+  [data-accent='cyan'] {
+    /* Uses base theme primary color */
+  }
+
+  /* Purple */
+  [data-accent='purple'][data-theme='dark'] {
+    --sandoro-primary: #a855f7;
+  }
+  [data-accent='purple'][data-theme='light'] {
+    --sandoro-primary: #9333ea;
+  }
+
+  /* Pink */
+  [data-accent='pink'][data-theme='dark'] {
+    --sandoro-primary: #ec4899;
+  }
+  [data-accent='pink'][data-theme='light'] {
+    --sandoro-primary: #db2777;
+  }
+
+  /* Orange - darker in light mode for better contrast */
+  [data-accent='orange'][data-theme='dark'] {
+    --sandoro-primary: #f97316;
+  }
+  [data-accent='orange'][data-theme='light'] {
+    --sandoro-primary: #c2410c;
+  }
+
+  /* Green - darker in light mode for better contrast */
+  [data-accent='green'][data-theme='dark'] {
+    --sandoro-primary: #22c55e;
+  }
+  [data-accent='green'][data-theme='light'] {
+    --sandoro-primary: #15803d;
+  }
+
+  /* Blue */
+  [data-accent='blue'][data-theme='dark'] {
+    --sandoro-primary: #3b82f6;
+  }
+  [data-accent='blue'][data-theme='light'] {
+    --sandoro-primary: #2563eb;
+  }
+
+  /* Red */
+  [data-accent='red'][data-theme='dark'] {
+    --sandoro-primary: #ef4444;
+  }
+  [data-accent='red'][data-theme='light'] {
+    --sandoro-primary: #dc2626;
+  }
+
+  /* Yellow - darker in light mode for better contrast */
+  [data-accent='yellow'][data-theme='dark'] {
+    --sandoro-primary: #eab308;
+  }
+  [data-accent='yellow'][data-theme='light'] {
+    --sandoro-primary: #a16207;
+  }
+
+  /* Indigo */
+  [data-accent='indigo'][data-theme='dark'] {
+    --sandoro-primary: #6366f1;
+  }
+  [data-accent='indigo'][data-theme='light'] {
+    --sandoro-primary: #4f46e5;
+  }
+
+  /* Cyan - darker in light mode for better contrast */
+  [data-accent='cyan'][data-theme='dark'] {
+    --sandoro-primary: #22d3ee;
+  }
+  [data-accent='cyan'][data-theme='light'] {
+    --sandoro-primary: #0891b2;
+  }
+
+  /* Rainbow - fallback color (actual rainbow uses gradient classes) */
+  [data-accent='rainbow'] {
+    --sandoro-primary: #a855f7;
+  }
+
   body {
     margin: 0;
     min-height: 100vh;
@@ -57,6 +144,7 @@
     align-items: center;
     color: var(--sandoro-fg);
     background-color: var(--sandoro-bg);
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 }
 
@@ -114,3 +202,166 @@
 .animate-pulse-slow {
   animation: pulse 2s ease-in-out infinite;
 }
+
+/* Rainbow mode note: gradient classes handle the rainbow effect instead of CSS variable animation */
+
+/* Rainbow gradient text effect for icons - smooth vertical scroll */
+/* Dark mode: vibrant colors */
+[data-theme='dark'] .rainbow-gradient {
+  display: inline-block;
+  background: linear-gradient(
+    180deg,
+    #ff0000,
+    #ff8000,
+    #ffff00,
+    #80ff00,
+    #00ff00,
+    #00ff80,
+    #00ffff,
+    #0080ff,
+    #0000ff,
+    #8000ff,
+    #ff00ff,
+    #ff0080,
+    #ff0000
+  );
+  background-size: 100% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+  animation: rainbow-scroll 3s linear infinite;
+}
+
+/* Light mode: darker/more saturated colors for better contrast */
+[data-theme='light'] .rainbow-gradient {
+  display: inline-block;
+  background: linear-gradient(
+    180deg,
+    #cc0000,
+    #cc6600,
+    #b8860b,
+    #228b22,
+    #008000,
+    #008060,
+    #007acc,
+    #0066cc,
+    #0000cc,
+    #6600cc,
+    #cc00cc,
+    #cc0066,
+    #cc0000
+  );
+  background-size: 100% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+  animation: rainbow-scroll 3s linear infinite;
+}
+
+@keyframes rainbow-scroll {
+  0% { background-position: 50% 0%; }
+  100% { background-position: 50% -200%; }
+}
+
+/* Rainbow gradient background for buttons */
+/* Text color is always white for readability on rainbow background */
+.rainbow-gradient-bg {
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Dark mode */
+[data-theme='dark'] .rainbow-gradient-bg {
+  background: linear-gradient(
+    180deg,
+    #ff0000,
+    #ff8000,
+    #ffff00,
+    #80ff00,
+    #00ff00,
+    #00ff80,
+    #00ffff,
+    #0080ff,
+    #0000ff,
+    #8000ff,
+    #ff00ff,
+    #ff0080,
+    #ff0000
+  );
+  background-size: 100% 200%;
+  animation: rainbow-scroll 3s linear infinite;
+}
+
+/* Light mode */
+[data-theme='light'] .rainbow-gradient-bg {
+  background: linear-gradient(
+    180deg,
+    #cc0000,
+    #cc6600,
+    #b8860b,
+    #228b22,
+    #008000,
+    #008060,
+    #007acc,
+    #0066cc,
+    #0000cc,
+    #6600cc,
+    #cc00cc,
+    #cc0066,
+    #cc0000
+  );
+  background-size: 100% 200%;
+  animation: rainbow-scroll 3s linear infinite;
+}
+
+/* Rainbow heatmap cells - with opacity levels */
+.rainbow-heatmap-0 {
+  background: rgba(128, 128, 128, 0.15) !important;
+}
+
+/* Dark mode rainbow heatmap */
+[data-theme='dark'] .rainbow-heatmap-1 {
+  background: linear-gradient(180deg, rgba(255,0,0,0.3), rgba(255,128,0,0.3), rgba(255,255,0,0.3), rgba(0,255,0,0.3), rgba(0,255,255,0.3), rgba(0,128,255,0.3), rgba(128,0,255,0.3), rgba(255,0,128,0.3), rgba(255,0,0,0.3)) !important;
+  background-size: 100% 200% !important;
+  animation: rainbow-scroll 3s linear infinite;
+}
+[data-theme='dark'] .rainbow-heatmap-2 {
+  background: linear-gradient(180deg, rgba(255,0,0,0.5), rgba(255,128,0,0.5), rgba(255,255,0,0.5), rgba(0,255,0,0.5), rgba(0,255,255,0.5), rgba(0,128,255,0.5), rgba(128,0,255,0.5), rgba(255,0,128,0.5), rgba(255,0,0,0.5)) !important;
+  background-size: 100% 200% !important;
+  animation: rainbow-scroll 3s linear infinite;
+}
+[data-theme='dark'] .rainbow-heatmap-3 {
+  background: linear-gradient(180deg, rgba(255,0,0,0.75), rgba(255,128,0,0.75), rgba(255,255,0,0.75), rgba(0,255,0,0.75), rgba(0,255,255,0.75), rgba(0,128,255,0.75), rgba(128,0,255,0.75), rgba(255,0,128,0.75), rgba(255,0,0,0.75)) !important;
+  background-size: 100% 200% !important;
+  animation: rainbow-scroll 3s linear infinite;
+}
+[data-theme='dark'] .rainbow-heatmap-4 {
+  background: linear-gradient(180deg, #ff0000, #ff8000, #ffff00, #00ff00, #00ffff, #0080ff, #8000ff, #ff0080, #ff0000) !important;
+  background-size: 100% 200% !important;
+  animation: rainbow-scroll 3s linear infinite;
+}
+
+/* Light mode rainbow heatmap */
+[data-theme='light'] .rainbow-heatmap-1 {
+  background: linear-gradient(180deg, rgba(204,0,0,0.3), rgba(204,102,0,0.3), rgba(184,134,11,0.3), rgba(0,128,0,0.3), rgba(0,122,204,0.3), rgba(0,102,204,0.3), rgba(102,0,204,0.3), rgba(204,0,102,0.3), rgba(204,0,0,0.3)) !important;
+  background-size: 100% 200% !important;
+  animation: rainbow-scroll 3s linear infinite;
+}
+[data-theme='light'] .rainbow-heatmap-2 {
+  background: linear-gradient(180deg, rgba(204,0,0,0.5), rgba(204,102,0,0.5), rgba(184,134,11,0.5), rgba(0,128,0,0.5), rgba(0,122,204,0.5), rgba(0,102,204,0.5), rgba(102,0,204,0.5), rgba(204,0,102,0.5), rgba(204,0,0,0.5)) !important;
+  background-size: 100% 200% !important;
+  animation: rainbow-scroll 3s linear infinite;
+}
+[data-theme='light'] .rainbow-heatmap-3 {
+  background: linear-gradient(180deg, rgba(204,0,0,0.75), rgba(204,102,0,0.75), rgba(184,134,11,0.75), rgba(0,128,0,0.75), rgba(0,122,204,0.75), rgba(0,102,204,0.75), rgba(102,0,204,0.75), rgba(204,0,102,0.75), rgba(204,0,0,0.75)) !important;
+  background-size: 100% 200% !important;
+  animation: rainbow-scroll 3s linear infinite;
+}
+[data-theme='light'] .rainbow-heatmap-4 {
+  background: linear-gradient(180deg, #cc0000, #cc6600, #b8860b, #008000, #007acc, #0066cc, #6600cc, #cc0066, #cc0000) !important;
+  background-size: 100% 200% !important;
+  animation: rainbow-scroll 3s linear infinite;
+}
+

@@ -2,6 +2,9 @@ import { useRef, useCallback } from 'react';
 import { useTimer } from '../../hooks/useTimer';
 import { useSettings, IconType } from '../../hooks/useSettings';
 import { useSessionStorage } from '../../hooks/useSessionStorage';
+import { useNotification } from '../../hooks/useNotification';
+import { useSound } from '../../hooks/useSound';
+import { useTheme } from '../../hooks/useTheme';
 import { AsciiIcon } from './AsciiIcon';
 
 interface TimerProps {
@@ -22,9 +25,13 @@ export function Timer({
   autoStart = false,
 }: TimerProps) {
   const { settings } = useSettings();
+  const { accentColor } = useTheme();
+  const isRainbow = accentColor === 'rainbow';
   const iconType = icon || settings.icon || 'hourglass';
   const { startSession, completeSession, cancelSession, getTodayStats } =
     useSessionStorage();
+  const { notifySessionComplete } = useNotification();
+  const { playSessionComplete } = useSound();
 
   // Track current session ID
   const currentSessionIdRef = useRef<string | null>(null);
@@ -37,13 +44,17 @@ export function Timer({
   );
 
   const handleSessionComplete = useCallback(
-    (_state: 'work' | 'shortBreak' | 'longBreak', durationSeconds: number) => {
+    (state: 'work' | 'shortBreak' | 'longBreak', durationSeconds: number) => {
       if (currentSessionIdRef.current) {
         completeSession(currentSessionIdRef.current, durationSeconds);
         currentSessionIdRef.current = null;
       }
+
+      // Play sound and show notification
+      playSessionComplete(state);
+      notifySessionComplete(state);
     },
-    [completeSession]
+    [completeSession, playSessionComplete, notifySessionComplete]
   );
 
   const handleSessionCancel = useCallback(() => {
@@ -99,7 +110,9 @@ export function Timer({
       <div className="flex gap-4">
         <button
           onClick={togglePause}
-          className="px-6 py-3 bg-sandoro-primary text-sandoro-bg rounded-lg font-bold hover:opacity-80 transition-opacity"
+          className={`px-6 py-3 text-sandoro-bg rounded-lg font-bold hover:opacity-80 transition-opacity ${
+            isRainbow ? 'rainbow-gradient-bg' : 'bg-sandoro-primary'
+          }`}
         >
           {isRunning ? 'Pause' : 'Start'}
         </button>
