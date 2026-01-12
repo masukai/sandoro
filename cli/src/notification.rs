@@ -10,14 +10,8 @@ pub fn send_notification(state: TimerState) {
     use notify_rust::Notification;
 
     let (summary, body) = match state {
-        TimerState::Work => (
-            "Work Session Complete!",
-            "Time for a break.",
-        ),
-        TimerState::ShortBreak => (
-            "Break Over!",
-            "Ready to get back to work?",
-        ),
+        TimerState::Work => ("Work Session Complete!", "Time for a break."),
+        TimerState::ShortBreak => ("Break Over!", "Ready to get back to work?"),
         TimerState::LongBreak => (
             "Long Break Over!",
             "Feeling refreshed? Time to start a new cycle!",

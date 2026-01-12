@@ -120,11 +120,7 @@ impl ThemeColor {
             },
             "rainbow" => {
                 // Rainbow returns a default color (actual animation handled elsewhere)
-                ThemeColor::Rgb {
-                    r: 255,
-                    g: 0,
-                    b: 0,
-                }
+                ThemeColor::Rgb { r: 255, g: 0, b: 0 }
             }
             _ => ThemeColor::Rgb {
                 r: 34,
@@ -144,13 +140,13 @@ pub fn available_accent_colors() -> Vec<&'static str> {
 
 /// Rainbow colors for animation (7 colors)
 pub const RAINBOW_COLORS: [(u8, u8, u8); 7] = [
-    (255, 0, 0),     // Red
-    (255, 127, 0),   // Orange
-    (255, 255, 0),   // Yellow
-    (0, 255, 0),     // Green
-    (0, 0, 255),     // Blue
-    (75, 0, 130),    // Indigo
-    (148, 0, 211),   // Violet
+    (255, 0, 0),   // Red
+    (255, 127, 0), // Orange
+    (255, 255, 0), // Yellow
+    (0, 255, 0),   // Green
+    (0, 0, 255),   // Blue
+    (75, 0, 130),  // Indigo
+    (148, 0, 211), // Violet
 ];
 
 /// Get rainbow color at a given time offset (cycles through 7 colors)
@@ -173,7 +169,11 @@ fn lerp_color(c1: (u8, u8, u8), c2: (u8, u8, u8), t: f32) -> (u8, u8, u8) {
 /// - line_index: current line (0-based)
 /// - total_lines: total number of lines
 /// - frame: animation frame (0-6) to scroll the gradient
-pub fn get_rainbow_gradient_color(line_index: usize, total_lines: usize, frame: u8) -> (u8, u8, u8) {
+pub fn get_rainbow_gradient_color(
+    line_index: usize,
+    total_lines: usize,
+    frame: u8,
+) -> (u8, u8, u8) {
     if total_lines == 0 {
         return RAINBOW_COLORS[0];
     }

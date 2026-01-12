@@ -537,8 +537,8 @@ impl App {
         // Apply theme and accent color
         self.config.appearance.theme = self.available_themes[self.theme_index].clone();
         self.config.appearance.accent = self.available_accents[self.accent_index].clone();
-        self.theme =
-            Theme::by_name(&self.config.appearance.theme).with_accent(&self.config.appearance.accent);
+        self.theme = Theme::by_name(&self.config.appearance.theme)
+            .with_accent(&self.config.appearance.accent);
 
         // Apply icon
         self.config.appearance.icon = self.available_icons[self.icon_index].to_string();

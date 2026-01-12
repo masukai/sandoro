@@ -138,10 +138,10 @@ fn get_accent_ansi(accent: &str, level: usize) -> String {
     if accent == "rainbow" {
         // Map levels 1-4 to different rainbow colors for visual variety
         let (r, g, b) = match level {
-            1 => (0, 200, 200),     // Cyan (low activity)
-            2 => (0, 200, 0),       // Green (medium activity)
-            3 => (200, 200, 0),     // Yellow (high activity)
-            _ => (255, 0, 128),     // Pink/Magenta (very high activity)
+            1 => (0, 200, 200), // Cyan (low activity)
+            2 => (0, 200, 0),   // Green (medium activity)
+            3 => (200, 200, 0), // Yellow (high activity)
+            _ => (255, 0, 128), // Pink/Magenta (very high activity)
         };
         return format!("\x1b[38;2;{};{};{}m", r, g, b);
     }
@@ -178,10 +178,10 @@ fn get_rainbow_heatmap_ansi(level: usize) -> String {
     // Assign distinct, vibrant rainbow colors to each activity level
     // Web version uses animated gradient per cell; we use distinct colors per level
     let (r, g, b) = match level {
-        1 => (80, 200, 220),    // Cyan (low activity)
-        2 => (80, 220, 120),    // Green (medium)
-        3 => (255, 200, 60),    // Yellow-orange (high)
-        _ => (255, 80, 180),    // Magenta-pink (very high)
+        1 => (80, 200, 220), // Cyan (low activity)
+        2 => (80, 220, 120), // Green (medium)
+        3 => (255, 200, 60), // Yellow-orange (high)
+        _ => (255, 80, 180), // Magenta-pink (very high)
     };
 
     format!("\x1b[38;2;{};{};{}m", r, g, b)
@@ -231,10 +231,7 @@ fn show_heatmap(db: &db::Database, weeks: i32) -> Result<()> {
         let week_num = date.iso_week().week();
         let day_of_week = date.weekday().num_days_from_sunday();
 
-        if last_week_num.is_some()
-            && last_week_num != Some(week_num)
-            && !current_week.is_empty()
-        {
+        if last_week_num.is_some() && last_week_num != Some(week_num) && !current_week.is_empty() {
             week_columns.push(current_week.clone());
             current_week.clear();
         }
@@ -313,7 +310,10 @@ fn show_stats(
             "json" => db.export_to_json()?,
             "csv" => db.export_to_csv()?,
             _ => {
-                println!("Error: Unknown export format '{}'. Use 'json' or 'csv'.", format);
+                println!(
+                    "Error: Unknown export format '{}'. Use 'json' or 'csv'.",
+                    format
+                );
                 return Ok(());
             }
         };
@@ -493,18 +493,14 @@ fn show_goal_progress(db: &db::Database, config: &Config) -> Result<()> {
             let check = if progress >= 100 { "✓" } else { " " };
             println!(
                 "     Sessions: {} {}/{} [{}] {}%",
-                check,
-                today_stats.sessions_completed,
-                config.goals.daily_sessions,
-                bar,
-                progress
+                check, today_stats.sessions_completed, config.goals.daily_sessions, bar, progress
             );
         }
 
         if config.goals.daily_minutes > 0 {
             let today_minutes = today_stats.total_work_seconds / 60;
-            let progress =
-                (today_minutes as f64 / config.goals.daily_minutes as f64 * 100.0).min(100.0) as u32;
+            let progress = (today_minutes as f64 / config.goals.daily_minutes as f64 * 100.0)
+                .min(100.0) as u32;
             let bar = if is_rainbow && progress < 100 {
                 create_rainbow_progress_bar(progress, 20)
             } else {
@@ -535,18 +531,14 @@ fn show_goal_progress(db: &db::Database, config: &Config) -> Result<()> {
             let check = if progress >= 100 { "✓" } else { " " };
             println!(
                 "     Sessions: {} {}/{} [{}] {}%",
-                check,
-                week_stats.sessions_completed,
-                config.goals.weekly_sessions,
-                bar,
-                progress
+                check, week_stats.sessions_completed, config.goals.weekly_sessions, bar, progress
             );
         }
 
         if config.goals.weekly_minutes > 0 {
             let week_minutes = week_stats.total_work_seconds / 60;
-            let progress =
-                (week_minutes as f64 / config.goals.weekly_minutes as f64 * 100.0).min(100.0) as u32;
+            let progress = (week_minutes as f64 / config.goals.weekly_minutes as f64 * 100.0)
+                .min(100.0) as u32;
             let bar = if is_rainbow && progress < 100 {
                 create_rainbow_progress_bar(progress, 20)
             } else {
@@ -577,13 +569,13 @@ fn create_rainbow_progress_bar(percent: u32, width: usize) -> String {
 
     // Rainbow colors for the filled portion
     let rainbow_colors = [
-        (255, 0, 0),     // Red
-        (255, 127, 0),   // Orange
-        (255, 255, 0),   // Yellow
-        (0, 255, 0),     // Green
-        (0, 255, 255),   // Cyan
-        (0, 0, 255),     // Blue
-        (128, 0, 255),   // Purple
+        (255, 0, 0),   // Red
+        (255, 127, 0), // Orange
+        (255, 255, 0), // Yellow
+        (0, 255, 0),   // Green
+        (0, 255, 255), // Cyan
+        (0, 0, 255),   // Blue
+        (128, 0, 255), // Purple
     ];
 
     let mut result = String::new();
@@ -684,72 +676,75 @@ fn run_interactive_heatmap(db: &db::Database, initial_weeks: i32) -> Result<()> 
     let reset = "\x1b[0m";
     let bold = "\x1b[1m";
     // Selection background using accent color
-    let bg_accent = format!("\x1b[48;2;{};{};{}m\x1b[30m",
+    let bg_accent = format!(
+        "\x1b[48;2;{};{};{}m\x1b[30m",
         theme::ThemeColor::from_accent_name(&accent).to_rgb().0,
         theme::ThemeColor::from_accent_name(&accent).to_rgb().1,
         theme::ThemeColor::from_accent_name(&accent).to_rgb().2,
     );
 
     // Build the grid properly aligned to weekdays (like Web version)
-    let build_grid = |weeks: i32, db: &db::Database| -> Result<(Vec<Vec<Option<DailyStats>>>, usize, usize)> {
-        let data = db.get_heatmap_data(weeks)?;
+    let build_grid =
+        |weeks: i32, db: &db::Database| -> Result<(Vec<Vec<Option<DailyStats>>>, usize, usize)> {
+            let data = db.get_heatmap_data(weeks)?;
 
-        // Build a date -> stats map for quick lookup
-        let stats_map: HashMap<String, &DailyStats> = data.iter()
-            .map(|s| (s.date.clone(), s))
-            .collect();
+            // Build a date -> stats map for quick lookup
+            let stats_map: HashMap<String, &DailyStats> =
+                data.iter().map(|s| (s.date.clone(), s)).collect();
 
-        let today = Local::now().date_naive();
-        let today_str = today.format("%Y-%m-%d").to_string();
-        let current_day_of_week = today.weekday().num_days_from_sunday() as usize;
+            let today = Local::now().date_naive();
+            let today_str = today.format("%Y-%m-%d").to_string();
+            let current_day_of_week = today.weekday().num_days_from_sunday() as usize;
 
-        // Calculate grid start (Sunday of the first week)
-        // We want exactly `weeks` columns, with the last column containing today
-        // Start from the Sunday of (weeks - 1) weeks ago
-        let start_date = today
-            - Duration::days(current_day_of_week as i64)
-            - Duration::days((weeks as i64 - 1) * 7);
+            // Calculate grid start (Sunday of the first week)
+            // We want exactly `weeks` columns, with the last column containing today
+            // Start from the Sunday of (weeks - 1) weeks ago
+            let start_date = today
+                - Duration::days(current_day_of_week as i64)
+                - Duration::days((weeks as i64 - 1) * 7);
 
-        // Build grid[week][day] structure
-        let mut grid: Vec<Vec<Option<DailyStats>>> = Vec::new();
-        let num_weeks = weeks as usize;
+            // Build grid[week][day] structure
+            let mut grid: Vec<Vec<Option<DailyStats>>> = Vec::new();
+            let num_weeks = weeks as usize;
 
-        for week in 0..num_weeks {
-            let mut week_data: Vec<Option<DailyStats>> = Vec::new();
-            for day in 0..7usize {
-                let date = start_date + Duration::days((week * 7 + day) as i64);
-                let date_str = date.format("%Y-%m-%d").to_string();
+            for week in 0..num_weeks {
+                let mut week_data: Vec<Option<DailyStats>> = Vec::new();
+                for day in 0..7usize {
+                    let date = start_date + Duration::days((week * 7 + day) as i64);
+                    let date_str = date.format("%Y-%m-%d").to_string();
 
-                // Don't show future dates
-                if date_str > today_str {
-                    week_data.push(None);
-                } else if let Some(stats) = stats_map.get(&date_str) {
-                    week_data.push(Some((*stats).clone()));
-                } else {
-                    // Date exists but no data - show as 0 activity
-                    week_data.push(Some(DailyStats {
-                        date: date_str,
-                        total_work_seconds: 0,
-                        sessions_completed: 0,
-                        longest_streak: 0,
-                    }));
+                    // Don't show future dates
+                    if date_str > today_str {
+                        week_data.push(None);
+                    } else if let Some(stats) = stats_map.get(&date_str) {
+                        week_data.push(Some((*stats).clone()));
+                    } else {
+                        // Date exists but no data - show as 0 activity
+                        week_data.push(Some(DailyStats {
+                            date: date_str,
+                            total_work_seconds: 0,
+                            sessions_completed: 0,
+                            longest_streak: 0,
+                        }));
+                    }
                 }
+                grid.push(week_data);
             }
-            grid.push(week_data);
-        }
 
-        // Initial selection: last week, current day of week
-        let initial_week = num_weeks.saturating_sub(1);
-        let initial_day = current_day_of_week;
+            // Initial selection: last week, current day of week
+            let initial_week = num_weeks.saturating_sub(1);
+            let initial_day = current_day_of_week;
 
-        Ok((grid, initial_week, initial_day))
-    };
+            Ok((grid, initial_week, initial_day))
+        };
 
     let (mut grid, mut selected_week, mut selected_day) = build_grid(weeks, db)?;
     let mut num_weeks = grid.len();
 
     // Month labels for each week column
-    let month_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    let month_names = [
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    ];
 
     // Generate month labels for each week
     let build_month_labels = |grid: &[Vec<Option<DailyStats>>]| -> Vec<Option<&'static str>> {
@@ -781,7 +776,11 @@ fn run_interactive_heatmap(db: &db::Database, initial_weeks: i32) -> Result<()> 
 
     loop {
         // Move cursor to top and clear screen
-        execute!(stdout, cursor::MoveTo(0, 0), terminal::Clear(ClearType::All))?;
+        execute!(
+            stdout,
+            cursor::MoveTo(0, 0),
+            terminal::Clear(ClearType::All)
+        )?;
 
         // Calculate viewport range (scroll to keep selected week visible)
         let scroll_offset = if num_weeks <= viewport_weeks {
@@ -797,8 +796,16 @@ fn run_interactive_heatmap(db: &db::Database, initial_weeks: i32) -> Result<()> 
         let visible_end = (scroll_offset + viewport_weeks).min(num_weeks);
 
         // Header
-        write!(stdout, "\r\n  {}Activity{} ({} weeks)\r\n", bold, reset, weeks)?;
-        write!(stdout, "  {}←↑↓→/hjkl: move  +/-: weeks  q: quit{}\r\n\r\n", dim, reset)?;
+        write!(
+            stdout,
+            "\r\n  {}Activity{} ({} weeks)\r\n",
+            bold, reset, weeks
+        )?;
+        write!(
+            stdout,
+            "  {}←↑↓→/hjkl: move  +/-: weeks  q: quit{}\r\n\r\n",
+            dim, reset
+        )?;
 
         // Month labels row
         write!(stdout, "       ")?; // Align with day labels
@@ -848,11 +855,14 @@ fn run_interactive_heatmap(db: &db::Database, initial_weeks: i32) -> Result<()> 
 
         // Scroll indicator if needed
         if num_weeks > viewport_weeks {
-            write!(stdout, "  {}[{}/{}]{}\r\n",
-                   dim,
-                   selected_week + 1,
-                   num_weeks,
-                   reset)?;
+            write!(
+                stdout,
+                "  {}[{}/{}]{}\r\n",
+                dim,
+                selected_week + 1,
+                num_weeks,
+                reset
+            )?;
         }
 
         // Legend with colors
@@ -877,32 +887,73 @@ fn run_interactive_heatmap(db: &db::Database, initial_weeks: i32) -> Result<()> 
             };
 
             // Parse and format date with weekday
-            let date_display = if let Ok(date) = NaiveDate::parse_from_str(&day_data.date, "%Y-%m-%d") {
-                let weekday = day_labels[date.weekday().num_days_from_sunday() as usize];
-                format!("{} ({})", day_data.date, weekday)
-            } else {
-                day_data.date.clone()
-            };
+            let date_display =
+                if let Ok(date) = NaiveDate::parse_from_str(&day_data.date, "%Y-%m-%d") {
+                    let weekday = day_labels[date.weekday().num_days_from_sunday() as usize];
+                    format!("{} ({})", day_data.date, weekday)
+                } else {
+                    day_data.date.clone()
+                };
 
             // Use rainbow colors for info box border if in rainbow mode
             if is_rainbow {
                 // Use vibrant colors for the info box (same as level 1-4 + magenta for top)
-                let c1 = "\x1b[38;2;255;80;180m";  // Magenta-pink (top border)
-                let c2 = "\x1b[38;2;80;200;220m";  // Cyan
-                let c3 = "\x1b[38;2;80;220;120m";  // Green
-                let c4 = "\x1b[38;2;255;200;60m";  // Yellow-orange
-                let c5 = "\x1b[38;2;255;80;180m";  // Magenta-pink (bottom border)
-                write!(stdout, "  {}┌─────────────────────────────┐{}\r\n", c1, reset)?;
-                write!(stdout, "  {}│{} 📅 {:<23}{}│{}\r\n", c2, reset, date_display, c2, reset)?;
-                write!(stdout, "  {}│{} ⏱  {:<23}{}│{}\r\n", c3, reset, time_str, c3, reset)?;
-                write!(stdout, "  {}│{} 📊 {:<23}{}│{}\r\n", c4, reset, sessions_str, c4, reset)?;
-                write!(stdout, "  {}└─────────────────────────────┘{}\r\n", c5, reset)?;
+                let c1 = "\x1b[38;2;255;80;180m"; // Magenta-pink (top border)
+                let c2 = "\x1b[38;2;80;200;220m"; // Cyan
+                let c3 = "\x1b[38;2;80;220;120m"; // Green
+                let c4 = "\x1b[38;2;255;200;60m"; // Yellow-orange
+                let c5 = "\x1b[38;2;255;80;180m"; // Magenta-pink (bottom border)
+                write!(
+                    stdout,
+                    "  {}┌─────────────────────────────┐{}\r\n",
+                    c1, reset
+                )?;
+                write!(
+                    stdout,
+                    "  {}│{} 📅 {:<23}{}│{}\r\n",
+                    c2, reset, date_display, c2, reset
+                )?;
+                write!(
+                    stdout,
+                    "  {}│{} ⏱  {:<23}{}│{}\r\n",
+                    c3, reset, time_str, c3, reset
+                )?;
+                write!(
+                    stdout,
+                    "  {}│{} 📊 {:<23}{}│{}\r\n",
+                    c4, reset, sessions_str, c4, reset
+                )?;
+                write!(
+                    stdout,
+                    "  {}└─────────────────────────────┘{}\r\n",
+                    c5, reset
+                )?;
             } else {
-                write!(stdout, "  {}┌─────────────────────────────┐{}\r\n", accent_color, reset)?;
-                write!(stdout, "  {}│{} 📅 {:<23}{}│{}\r\n", accent_color, reset, date_display, accent_color, reset)?;
-                write!(stdout, "  {}│{} ⏱  {:<23}{}│{}\r\n", accent_color, reset, time_str, accent_color, reset)?;
-                write!(stdout, "  {}│{} 📊 {:<23}{}│{}\r\n", accent_color, reset, sessions_str, accent_color, reset)?;
-                write!(stdout, "  {}└─────────────────────────────┘{}\r\n", accent_color, reset)?;
+                write!(
+                    stdout,
+                    "  {}┌─────────────────────────────┐{}\r\n",
+                    accent_color, reset
+                )?;
+                write!(
+                    stdout,
+                    "  {}│{} 📅 {:<23}{}│{}\r\n",
+                    accent_color, reset, date_display, accent_color, reset
+                )?;
+                write!(
+                    stdout,
+                    "  {}│{} ⏱  {:<23}{}│{}\r\n",
+                    accent_color, reset, time_str, accent_color, reset
+                )?;
+                write!(
+                    stdout,
+                    "  {}│{} 📊 {:<23}{}│{}\r\n",
+                    accent_color, reset, sessions_str, accent_color, reset
+                )?;
+                write!(
+                    stdout,
+                    "  {}└─────────────────────────────┘{}\r\n",
+                    accent_color, reset
+                )?;
             }
         }
 
@@ -920,7 +971,8 @@ fn run_interactive_heatmap(db: &db::Database, initial_weeks: i32) -> Result<()> 
                 KeyCode::Right | KeyCode::Char('l') => {
                     if selected_week < num_weeks - 1 {
                         // Check if the cell has data (not future)
-                        if grid.get(selected_week + 1)
+                        if grid
+                            .get(selected_week + 1)
                             .and_then(|w| w.get(selected_day))
                             .map(|d| d.is_some())
                             .unwrap_or(false)
@@ -943,7 +995,9 @@ fn run_interactive_heatmap(db: &db::Database, initial_weeks: i32) -> Result<()> 
                     // Increase weeks (max 104 = 2 years)
                     if weeks < 104 {
                         weeks += 4;
-                        if weeks > 104 { weeks = 104; }
+                        if weeks > 104 {
+                            weeks = 104;
+                        }
                         let (new_grid, _, _) = build_grid(weeks, db)?;
                         grid = new_grid;
                         num_weeks = grid.len();
@@ -956,7 +1010,9 @@ fn run_interactive_heatmap(db: &db::Database, initial_weeks: i32) -> Result<()> 
                     // Decrease weeks (min 4)
                     if weeks > 4 {
                         weeks -= 4;
-                        if weeks < 4 { weeks = 4; }
+                        if weeks < 4 {
+                            weeks = 4;
+                        }
                         let (new_grid, _, _) = build_grid(weeks, db)?;
                         grid = new_grid;
                         num_weeks = grid.len();
@@ -1000,7 +1056,17 @@ fn main() -> Result<()> {
             compare,
             goals,
         }) => {
-            show_stats(day, week, month, date, weeks, interactive, export, compare, goals)?;
+            show_stats(
+                day,
+                week,
+                month,
+                date,
+                weeks,
+                interactive,
+                export,
+                compare,
+                goals,
+            )?;
         }
         Some(Commands::Config { icon, theme }) => {
             if let Some(icon) = icon {

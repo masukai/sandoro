@@ -427,20 +427,29 @@ impl Database {
             let duration_seconds: Option<i32> = row.get(3)?;
             let session_type: String = row.get(4)?;
             let completed: bool = row.get(5)?;
-            Ok((id, started_at, ended_at, duration_seconds, session_type, completed))
-        })?
-        .filter_map(|r| r.ok())
-        .for_each(|(id, started_at, ended_at, duration_seconds, session_type, completed)| {
-            csv.push_str(&format!(
-                "{},{},{},{},{},{}\n",
+            Ok((
                 id,
                 started_at,
-                ended_at.unwrap_or_default(),
-                duration_seconds.map(|d| d.to_string()).unwrap_or_default(),
+                ended_at,
+                duration_seconds,
                 session_type,
-                completed
-            ));
-        });
+                completed,
+            ))
+        })?
+        .filter_map(|r| r.ok())
+        .for_each(
+            |(id, started_at, ended_at, duration_seconds, session_type, completed)| {
+                csv.push_str(&format!(
+                    "{},{},{},{},{},{}\n",
+                    id,
+                    started_at,
+                    ended_at.unwrap_or_default(),
+                    duration_seconds.map(|d| d.to_string()).unwrap_or_default(),
+                    session_type,
+                    completed
+                ));
+            },
+        );
 
         Ok(csv)
     }
