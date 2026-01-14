@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import { Timer } from './components/Timer/Timer';
 import { Settings } from './components/Settings';
 import { Stats } from './components/Stats';
@@ -9,8 +9,23 @@ import { useTheme } from './hooks/useTheme';
 import { useSettings } from './hooks/useSettings';
 import { useClock } from './hooks/useClock';
 
+type ViewType = 'timer' | 'stats' | 'settings' | 'privacy';
+
 function App() {
-  const [view, setView] = useState<'timer' | 'stats' | 'settings' | 'privacy'>('timer');
+  const [view, setView] = useState<ViewType>('timer');
+  const previousViewRef = useRef<ViewType>('timer');
+
+  // Track previous view for "back" navigation
+  const navigateTo = useCallback((newView: ViewType) => {
+    if (view !== 'privacy') {
+      previousViewRef.current = view;
+    }
+    setView(newView);
+  }, [view]);
+
+  const goBack = useCallback(() => {
+    setView(previousViewRef.current);
+  }, []);
 
   // Debug mode: ?debug=true でアイコンプレビューモード
   const isDebugMode = useMemo(() => {
@@ -66,22 +81,22 @@ function App() {
         >
           <div className="flex justify-center">
             <button
-              onClick={() => setView('timer')}
+              onClick={goBack}
               className={`px-4 py-1 text-sm ${isRainbow ? 'rainbow-gradient' : 'text-sandoro-primary'}`}
             >
-              &larr; Back to Timer
+              &larr; Back
             </button>
           </div>
         </nav>
       ) : (
         <>
-          <Footer onPrivacyClick={() => setView('privacy')} />
+          <Footer onPrivacyClick={() => navigateTo('privacy')} />
           <nav
             className="fixed bottom-0 left-0 right-0 flex justify-around py-2 border-t border-sandoro-secondary z-50"
             style={{ backgroundColor: 'var(--sandoro-bg)' }}
           >
             <button
-              onClick={() => setView('timer')}
+              onClick={() => navigateTo('timer')}
               className={`px-3 py-1 text-sm ${
                 view === 'timer'
                   ? isRainbow ? 'rainbow-gradient' : 'text-sandoro-primary'
@@ -91,7 +106,7 @@ function App() {
               Timer
             </button>
             <button
-              onClick={() => setView('stats')}
+              onClick={() => navigateTo('stats')}
               className={`px-3 py-1 text-sm ${
                 view === 'stats'
                   ? isRainbow ? 'rainbow-gradient' : 'text-sandoro-primary'
@@ -101,7 +116,7 @@ function App() {
               Stats
             </button>
             <button
-              onClick={() => setView('settings')}
+              onClick={() => navigateTo('settings')}
               className={`px-3 py-1 text-sm ${
                 view === 'settings'
                   ? isRainbow ? 'rainbow-gradient' : 'text-sandoro-primary'
