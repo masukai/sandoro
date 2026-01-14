@@ -1,10 +1,12 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useSessionStorage, DailyStats } from '../hooks/useSessionStorage';
 import { useGoalProgress, hasGoalsEnabled } from '../hooks/useGoalProgress';
 import { useComparison, ComparisonData } from '../hooks/useComparison';
 import { useSettings } from '../hooks/useSettings';
 import { useTheme } from '../hooks/useTheme';
+import { useTags } from '../hooks/useTags';
 import { Heatmap } from './Heatmap';
+import { ShareModal } from './ShareModal';
 
 type StatsView = 'today' | 'week' | 'month';
 type ExportFormat = 'json' | 'csv';
@@ -247,7 +249,9 @@ function ComparisonCard({ title, data }: ComparisonCardProps) {
 export function Stats() {
   const [view, setView] = useState<StatsView>('today');
   const [heatmapWeeks, setHeatmapWeeks] = useState<number>(12);
-  const { accentColor } = useTheme();
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const { settings } = useSettings();
+  const { accentColor, resolvedTheme } = useTheme();
   const isRainbow = accentColor === 'rainbow';
   const {
     getTodayStats,
@@ -258,7 +262,9 @@ export function Stats() {
     getStreak,
     exportToJSON,
     exportToCSV,
+    getStatsByTag,
   } = useSessionStorage();
+  const { getTagById } = useTags();
 
   const handleExport = useCallback(
     (format: ExportFormat) => {
@@ -283,12 +289,45 @@ export function Stats() {
   const heatmapData = getHeatmapData(heatmapWeeks);
   const streak = getStreak();
   const { weekComparison, monthComparison } = useComparison();
+  const tagStats = getStatsByTag(30);
+
+  // Convert tag stats to array for rendering
+  const tagStatsArray = useMemo(() => {
+    const result: Array<{
+      tagId: string | undefined;
+      tagName: string;
+      totalSeconds: number;
+      sessionsCount: number;
+    }> = [];
+    tagStats.forEach((stats, tagId) => {
+      const tag = tagId ? getTagById(tagId) : undefined;
+      result.push({
+        tagId,
+        tagName: tag?.name || 'No tag',
+        totalSeconds: stats.totalSeconds,
+        sessionsCount: stats.sessionsCount,
+      });
+    });
+    // Sort by total seconds descending
+    result.sort((a, b) => b.totalSeconds - a.totalSeconds);
+    return result;
+  }, [tagStats, getTagById]);
 
   return (
     <div className="space-y-6 pb-32">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Statistics</h2>
         <div className="flex gap-2">
+          <button
+            onClick={() => setIsShareModalOpen(true)}
+            className={`px-2 py-1 text-xs rounded transition-colors ${
+              isRainbow
+                ? 'rainbow-gradient-bg text-white'
+                : 'bg-sandoro-primary text-white hover:opacity-80'
+            }`}
+          >
+            Share
+          </button>
           <button
             onClick={() => handleExport('json')}
             className="px-2 py-1 text-xs border border-sandoro-secondary rounded hover:bg-sandoro-secondary/20 transition-colors"
@@ -408,6 +447,50 @@ export function Stats() {
           onWeeksChange={setHeatmapWeeks}
         />
       </div>
+
+      {/* Tag Stats */}
+      {tagStatsArray.length > 0 && (
+        <div className="pt-4 border-t border-sandoro-secondary/30">
+          <h3 className="text-sm font-semibold text-sandoro-secondary mb-3">Stats by Tag (Last 30 days)</h3>
+          <div
+            className="p-4 rounded-lg border border-sandoro-secondary space-y-2"
+            style={{ backgroundColor: 'var(--sandoro-bg)' }}
+          >
+            {tagStatsArray.map((stat) => (
+              <div
+                key={stat.tagId ?? 'no-tag'}
+                className="flex justify-between items-center text-sm font-mono py-1 border-b border-sandoro-secondary/30 last:border-0"
+              >
+                <span className={stat.tagId ? '' : 'text-sandoro-secondary'}>
+                  {stat.tagName}
+                </span>
+                <div className="flex gap-4">
+                  <span>{formatDuration(stat.totalSeconds)}</span>
+                  <span className="text-sandoro-secondary">{stat.sessionsCount} sessions</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        data={{
+          todayStats,
+          weekStats,
+          monthStats,
+          streak,
+          heatmapData: getHeatmapData(8),
+        }}
+        theme={{
+          accentColor,
+          resolvedTheme,
+          icon: settings.icon,
+        }}
+      />
     </div>
   );
 }
