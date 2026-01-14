@@ -13,7 +13,17 @@
 
 <br />
 
-![sandoro demo](docs/assets/demo.gif)
+### ⏳ CLI - Hourglass Mode
+
+![CLI Hourglass Demo](docs/assets/demo-cli.gif)
+
+### 📊 CLI - Progress Bar Mode
+
+![CLI Progress Bar Demo](docs/assets/demo-bar.gif)
+
+### 🌐 Web App
+
+![Web Demo](docs/assets/demo-web.gif)
 
 <br />
 
@@ -39,6 +49,7 @@
 | 🏷️ **タグ機能** | 作業内容をタグで分類し、タグ別の統計を確認 |
 | 💬 **コンテキストメッセージ** | 時刻・状態に応じた気の利いた一言表示 |
 | 📤 **シェア機能** | 頑張りをSNSでシェア |
+| ✏️ **履歴編集** | 過去のセッションのタグ変更・削除 |
 
 ## クイックスタート
 
@@ -136,6 +147,7 @@ sandoro stats     # 統計表示
 | 🏷️ **Tags** | Categorize your work and view tag-based statistics |
 | 💬 **Context Messages** | Time-aware encouraging messages |
 | 📤 **Share** | Share your progress on social media |
+| ✏️ **Edit History** | Change tags or delete past sessions |
 
 ## Quick Start
 
