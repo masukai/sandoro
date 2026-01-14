@@ -38,6 +38,7 @@ SANDORO_ENV = "development"
 
 # === CLI版 (Rust) ===
 "dev-cli"   = { run = "cargo run", dir = "cli", description = "Run CLI in development" }
+"cli-help"  = { run = "cargo run -- --help", dir = "cli", description = "Show CLI help and privacy info" }
 "stats-cli" = { run = "cargo run -- stats", dir = "cli", description = "Show CLI stats (today)" }
 "stats-cli:week" = { run = "cargo run -- stats --week", dir = "cli", description = "Show CLI stats (week)" }
 "stats-cli:month" = { run = "cargo run -- stats --month", dir = "cli", description = "Show CLI stats (month)" }
