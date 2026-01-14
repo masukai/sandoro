@@ -57,6 +57,14 @@ pub struct StreakInfo {
     pub longest: i32,
 }
 
+/// A tag for categorizing sessions
+#[derive(Debug, Clone)]
+pub struct Tag {
+    pub id: i64,
+    pub name: String,
+    pub color: Option<String>,
+}
+
 /// Database connection wrapper
 pub struct Database {
     conn: Connection,
@@ -80,15 +88,23 @@ impl Database {
 
     /// Initialize database schema
     fn init_schema(&self) -> Result<()> {
+        // Create tables first (without tag_id index since column might not exist yet)
         self.conn.execute_batch(
             r#"
+            CREATE TABLE IF NOT EXISTS tags (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                color TEXT
+            );
+
             CREATE TABLE IF NOT EXISTS sessions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 started_at DATETIME NOT NULL,
                 ended_at DATETIME,
                 duration_seconds INTEGER,
                 type TEXT NOT NULL CHECK (type IN ('work', 'short_break', 'long_break')),
-                completed BOOLEAN DEFAULT FALSE
+                completed BOOLEAN DEFAULT FALSE,
+                tag_id INTEGER REFERENCES tags(id)
             );
 
             CREATE TABLE IF NOT EXISTS daily_stats (
@@ -102,6 +118,34 @@ impl Database {
             CREATE INDEX IF NOT EXISTS idx_sessions_type ON sessions(type);
             "#,
         )?;
+
+        // Migration: add tag_id column if it doesn't exist (for existing DBs)
+        self.migrate_add_tag_id()?;
+
+        // Create tag index after migration ensures column exists
+        self.conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_sessions_tag ON sessions(tag_id)",
+            [],
+        )?;
+
+        Ok(())
+    }
+
+    /// Migration: Add tag_id column to sessions table if it doesn't exist
+    fn migrate_add_tag_id(&self) -> Result<()> {
+        // Check if tag_id column exists
+        let mut stmt = self.conn.prepare("PRAGMA table_info(sessions)")?;
+        let columns: Vec<String> = stmt
+            .query_map([], |row| row.get::<_, String>(1))?
+            .filter_map(|r| r.ok())
+            .collect();
+
+        if !columns.contains(&"tag_id".to_string()) {
+            self.conn.execute(
+                "ALTER TABLE sessions ADD COLUMN tag_id INTEGER REFERENCES tags(id)",
+                [],
+            )?;
+        }
         Ok(())
     }
 
@@ -452,5 +496,142 @@ impl Database {
         );
 
         Ok(csv)
+    }
+
+    // === Tag operations ===
+
+    /// Create a new tag
+    pub fn create_tag(&self, name: &str, color: Option<&str>) -> Result<i64> {
+        self.conn.execute(
+            "INSERT INTO tags (name, color) VALUES (?1, ?2)",
+            params![name, color],
+        )?;
+        Ok(self.conn.last_insert_rowid())
+    }
+
+    /// Get all tags
+    pub fn get_all_tags(&self) -> Result<Vec<Tag>> {
+        let mut stmt = self.conn.prepare("SELECT id, name, color FROM tags ORDER BY name")?;
+        let tags = stmt
+            .query_map([], |row| {
+                Ok(Tag {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                    color: row.get(2)?,
+                })
+            })?
+            .filter_map(|r| r.ok())
+            .collect();
+        Ok(tags)
+    }
+
+    /// Get a tag by ID
+    pub fn get_tag(&self, tag_id: i64) -> Result<Option<Tag>> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT id, name, color FROM tags WHERE id = ?1")?;
+        let tag = stmt
+            .query_row(params![tag_id], |row| {
+                Ok(Tag {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                    color: row.get(2)?,
+                })
+            })
+            .ok();
+        Ok(tag)
+    }
+
+    /// Get a tag by name
+    pub fn get_tag_by_name(&self, name: &str) -> Result<Option<Tag>> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT id, name, color FROM tags WHERE name = ?1")?;
+        let tag = stmt
+            .query_row(params![name], |row| {
+                Ok(Tag {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                    color: row.get(2)?,
+                })
+            })
+            .ok();
+        Ok(tag)
+    }
+
+    /// Delete a tag (sets sessions with this tag to NULL)
+    pub fn delete_tag(&self, tag_id: i64) -> Result<()> {
+        // First, remove tag from sessions
+        self.conn.execute(
+            "UPDATE sessions SET tag_id = NULL WHERE tag_id = ?1",
+            params![tag_id],
+        )?;
+        // Then delete the tag
+        self.conn
+            .execute("DELETE FROM tags WHERE id = ?1", params![tag_id])?;
+        Ok(())
+    }
+
+    /// Update a tag
+    pub fn update_tag(&self, tag_id: i64, name: &str, color: Option<&str>) -> Result<()> {
+        self.conn.execute(
+            "UPDATE tags SET name = ?1, color = ?2 WHERE id = ?3",
+            params![name, color, tag_id],
+        )?;
+        Ok(())
+    }
+
+    /// Start a new session with optional tag
+    pub fn start_session_with_tag(
+        &self,
+        session_type: SessionType,
+        tag_id: Option<i64>,
+    ) -> Result<i64> {
+        let now = Utc::now();
+        self.conn.execute(
+            "INSERT INTO sessions (started_at, type, completed, tag_id) VALUES (?1, ?2, FALSE, ?3)",
+            params![now.to_rfc3339(), session_type.as_str(), tag_id],
+        )?;
+        Ok(self.conn.last_insert_rowid())
+    }
+
+    /// Get statistics grouped by tag
+    pub fn get_stats_by_tag(&self, days: i32) -> Result<Vec<(Option<Tag>, i32, i32)>> {
+        let offset = format!("-{} days", days);
+        let mut stmt = self.conn.prepare(
+            r#"
+            SELECT t.id, t.name, t.color,
+                   COALESCE(SUM(s.duration_seconds), 0) as total_seconds,
+                   COUNT(s.id) as sessions
+            FROM sessions s
+            LEFT JOIN tags t ON s.tag_id = t.id
+            WHERE date(s.started_at) >= date('now', ?1)
+              AND s.type = 'work'
+              AND s.completed = TRUE
+            GROUP BY s.tag_id
+            ORDER BY total_seconds DESC
+            "#,
+        )?;
+
+        let stats = stmt
+            .query_map(params![offset], |row| {
+                let tag_id: Option<i64> = row.get(0)?;
+                let tag = if let Some(id) = tag_id {
+                    Some(Tag {
+                        id,
+                        name: row.get(1)?,
+                        color: row.get(2)?,
+                    })
+                } else {
+                    None
+                };
+                let total_seconds: i32 = row.get(3)?;
+                let sessions: i32 = row.get(4)?;
+                Ok((tag, total_seconds, sessions))
+            })?
+            .filter_map(|r| r.ok())
+            .collect();
+
+        Ok(stats)
     }
 }

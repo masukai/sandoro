@@ -1,7 +1,14 @@
+import { useState } from 'react';
 import { useTheme, ThemeMode, ACCENT_COLORS } from '../hooks/useTheme';
-import { useSettings, IconType } from '../hooks/useSettings';
+import { useSettings, IconType, Language } from '../hooks/useSettings';
 import { useNotification } from '../hooks/useNotification';
 import { useSound, SOUND_PATTERN_OPTIONS } from '../hooks/useSound';
+import { useTags } from '../hooks/useTags';
+
+const LANGUAGE_OPTIONS: { value: Language; label: string; icon: string }[] = [
+  { value: 'ja', label: '日本語', icon: '🇯🇵' },
+  { value: 'en', label: 'English', icon: '🇺🇸' },
+];
 
 const THEME_OPTIONS: { value: ThemeMode; label: string; icon: string }[] = [
   { value: 'light', label: 'Light', icon: '○' },
@@ -30,11 +37,11 @@ interface NumberInputProps {
 function NumberInput({ label, value, min, max, step, unit, onChange }: NumberInputProps) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-sm" style={{ color: 'var(--sandoro-fg)' }}>{label}</span>
-      <div className="flex items-center gap-2">
+      <span className="text-xs" style={{ color: 'var(--sandoro-fg)' }}>{label}</span>
+      <div className="flex items-center gap-1.5">
         <button
           onClick={() => onChange(Math.max(min, value - step))}
-          className="w-8 h-8 rounded font-bold text-lg"
+          className="w-6 h-6 rounded font-bold text-sm"
           style={{
             backgroundColor: 'var(--sandoro-secondary)',
             color: 'var(--sandoro-bg)',
@@ -43,14 +50,14 @@ function NumberInput({ label, value, min, max, step, unit, onChange }: NumberInp
           -
         </button>
         <span
-          className="w-20 text-center font-mono"
+          className="w-16 text-center font-mono text-xs"
           style={{ color: 'var(--sandoro-fg)' }}
         >
           {value}{unit ? ` ${unit}` : ''}
         </span>
         <button
           onClick={() => onChange(Math.min(max, value + step))}
-          className="w-8 h-8 rounded font-bold text-lg"
+          className="w-6 h-6 rounded font-bold text-sm"
           style={{
             backgroundColor: 'var(--sandoro-secondary)',
             color: 'var(--sandoro-bg)',
@@ -74,12 +81,12 @@ interface ToggleButtonProps {
 function ToggleButton({ label, enabled, onToggle, extra, isRainbow = false }: ToggleButtonProps) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-sm" style={{ color: 'var(--sandoro-fg)' }}>{label}</span>
-      <div className="flex items-center gap-2">
+      <span className="text-xs" style={{ color: 'var(--sandoro-fg)' }}>{label}</span>
+      <div className="flex items-center gap-1.5">
         {extra}
         <button
           onClick={onToggle}
-          className={`px-4 py-1 text-sm rounded-md transition-colors ${
+          className={`px-3 py-0.5 text-xs rounded transition-colors ${
             enabled && isRainbow ? 'rainbow-gradient-bg' : ''
           }`}
           style={{
@@ -101,6 +108,10 @@ export function Settings() {
   const { settings, setSettings, resetSettings } = useSettings();
   const { permission, isSupported, requestPermission } = useNotification();
   const { testSound, testSoundWithPattern } = useSound();
+  const { tags, addTag, removeTag, updateTag } = useTags();
+  const [newTagName, setNewTagName] = useState('');
+  const [editingTagId, setEditingTagId] = useState<string | null>(null);
+  const [editingTagName, setEditingTagName] = useState('');
 
   const handleNotificationToggle = async () => {
     if (!settings.notificationsEnabled) {
@@ -120,22 +131,22 @@ export function Settings() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      <h2 className="text-lg font-bold">Settings</h2>
+    <div className="flex flex-col gap-4">
+      <h2 className="text-base font-bold">Settings</h2>
 
       {/* Theme Section */}
-      <div className="flex flex-col gap-3">
-        <h3 className="text-sm font-semibold" style={{ color: 'var(--sandoro-secondary)' }}>Appearance</h3>
+      <div className="flex flex-col gap-2">
+        <h3 className="text-xs font-semibold" style={{ color: 'var(--sandoro-secondary)' }}>Appearance</h3>
         <div className="flex items-center gap-2">
-          <span className="text-sm w-14" style={{ color: 'var(--sandoro-fg)' }}>Mode:</span>
-          <div className="flex gap-1 rounded-lg p-1 bg-sandoro-secondary/20">
+          <span className="text-xs w-12" style={{ color: 'var(--sandoro-fg)' }}>Mode:</span>
+          <div className="flex gap-0.5 rounded-lg p-0.5 bg-sandoro-secondary/20">
             {THEME_OPTIONS.map((option) => {
               const isSelected = mode === option.value;
               return (
                 <button
                   key={option.value}
                   onClick={() => setMode(option.value)}
-                  className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                  className={`px-2 py-0.5 text-xs rounded transition-colors ${
                     isSelected && isRainbow ? 'rainbow-gradient-bg' : ''
                   }`}
                   style={{
@@ -145,7 +156,7 @@ export function Settings() {
                   }}
                   title={option.label}
                 >
-                  <span className="mr-1">{option.icon}</span>
+                  <span className="mr-0.5">{option.icon}</span>
                   {option.label}
                 </button>
               );
@@ -153,8 +164,8 @@ export function Settings() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-sm w-14" style={{ color: 'var(--sandoro-fg)' }}>Accent:</span>
-          <div className="flex gap-1 flex-wrap rounded-lg p-1 bg-sandoro-secondary/20">
+          <span className="text-xs w-12" style={{ color: 'var(--sandoro-fg)' }}>Accent:</span>
+          <div className="flex gap-0.5 flex-wrap rounded-lg p-0.5 bg-sandoro-secondary/20">
             {ACCENT_COLORS.map((accent) => {
               const isSelected = accentColor === accent.value;
               const isRainbowSelected = isSelected && accent.value === 'rainbow';
@@ -162,7 +173,7 @@ export function Settings() {
                 <button
                   key={accent.value}
                   onClick={() => setAccentColor(accent.value)}
-                  className={`px-2 py-1 text-xs rounded-md transition-colors flex items-center gap-1 ${
+                  className={`px-1.5 py-0.5 text-xs rounded transition-colors flex items-center gap-0.5 ${
                     isRainbowSelected ? 'rainbow-gradient-bg' : ''
                   }`}
                   style={{
@@ -173,7 +184,7 @@ export function Settings() {
                   title={accent.label}
                 >
                   <span
-                    className="w-3 h-3 rounded-full"
+                    className="w-2.5 h-2.5 rounded-full"
                     style={{
                       background: accent.color,
                     }}
@@ -185,15 +196,15 @@ export function Settings() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-sm w-14" style={{ color: 'var(--sandoro-fg)' }}>Icon:</span>
-          <div className="flex gap-1 rounded-lg p-1 bg-sandoro-secondary/20">
+          <span className="text-xs w-12" style={{ color: 'var(--sandoro-fg)' }}>Icon:</span>
+          <div className="flex gap-0.5 rounded-lg p-0.5 bg-sandoro-secondary/20">
             {ICON_OPTIONS.map((option) => {
               const isSelected = settings.icon === option.value;
               return (
                 <button
                   key={option.value}
                   onClick={() => setSettings({ icon: option.value })}
-                  className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                  className={`px-2 py-0.5 text-xs rounded transition-colors ${
                     isSelected && isRainbow ? 'rainbow-gradient-bg' : ''
                   }`}
                   style={{
@@ -203,7 +214,33 @@ export function Settings() {
                   }}
                   title={option.label}
                 >
-                  <span className="mr-1">{option.icon}</span>
+                  <span className="mr-0.5">{option.icon}</span>
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs w-12" style={{ color: 'var(--sandoro-fg)' }}>Lang:</span>
+          <div className="flex gap-0.5 rounded-lg p-0.5 bg-sandoro-secondary/20">
+            {LANGUAGE_OPTIONS.map((option) => {
+              const isSelected = settings.language === option.value;
+              return (
+                <button
+                  key={option.value}
+                  onClick={() => setSettings({ language: option.value })}
+                  className={`px-2 py-0.5 text-xs rounded transition-colors ${
+                    isSelected && isRainbow ? 'rainbow-gradient-bg' : ''
+                  }`}
+                  style={{
+                    backgroundColor: isSelected && !isRainbow ? 'var(--sandoro-primary)' : !isSelected ? 'transparent' : undefined,
+                    color: isSelected && !isRainbow ? 'var(--sandoro-bg)' : !isSelected ? 'var(--sandoro-fg)' : undefined,
+                    fontWeight: isSelected ? 'bold' : 'normal',
+                  }}
+                  title={option.label}
+                >
+                  <span className="mr-0.5">{option.icon}</span>
                   {option.label}
                 </button>
               );
@@ -213,9 +250,9 @@ export function Settings() {
       </div>
 
       {/* Notifications & Sound Section */}
-      <div className="flex flex-col gap-3">
-        <h3 className="text-sm font-semibold text-sandoro-secondary">Notifications & Sound</h3>
-        <div className="flex flex-col gap-4 bg-sandoro-secondary/10 rounded-lg p-4">
+      <div className="flex flex-col gap-2">
+        <h3 className="text-xs font-semibold text-sandoro-secondary">Notifications & Sound</h3>
+        <div className="flex flex-col gap-2 bg-sandoro-secondary/10 rounded-lg p-3">
           <ToggleButton
             label="Notifications"
             enabled={settings.notificationsEnabled && permission === 'granted'}
@@ -249,8 +286,8 @@ export function Settings() {
           {settings.soundEnabled && (
             <>
               <div className="flex items-center justify-between">
-                <span className="text-sm" style={{ color: 'var(--sandoro-fg)' }}>Volume</span>
-                <div className="flex items-center gap-2">
+                <span className="text-xs" style={{ color: 'var(--sandoro-fg)' }}>Volume</span>
+                <div className="flex items-center gap-1.5">
                   <input
                     type="range"
                     min="0"
@@ -258,14 +295,14 @@ export function Settings() {
                     step="10"
                     value={settings.soundVolume}
                     onChange={(e) => setSettings({ soundVolume: parseInt(e.target.value, 10) })}
-                    className="w-24 accent-sandoro-primary"
+                    className="w-20 accent-sandoro-primary"
                   />
-                  <span className="w-10 text-sm font-mono text-sandoro-secondary">{settings.soundVolume}%</span>
+                  <span className="w-8 text-xs font-mono text-sandoro-secondary">{settings.soundVolume}%</span>
                 </div>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm" style={{ color: 'var(--sandoro-fg)' }}>Sound Type</span>
-                <div className="flex gap-1 flex-wrap rounded-lg p-1 bg-sandoro-secondary/20">
+                <span className="text-xs" style={{ color: 'var(--sandoro-fg)' }}>Sound Type</span>
+                <div className="flex gap-0.5 flex-wrap rounded-lg p-0.5 bg-sandoro-secondary/20">
                   {SOUND_PATTERN_OPTIONS.map((option) => {
                     const isSelected = settings.soundPattern === option.value;
                     return (
@@ -276,7 +313,7 @@ export function Settings() {
                           // Play test sound immediately with the new pattern
                           testSoundWithPattern(option.value);
                         }}
-                        className={`px-2 py-1 text-xs rounded-md transition-colors ${
+                        className={`px-1.5 py-0.5 text-xs rounded transition-colors ${
                           isSelected && isRainbow ? 'rainbow-gradient-bg' : ''
                         }`}
                         style={{
@@ -298,12 +335,12 @@ export function Settings() {
       </div>
 
       {/* Timer Section */}
-      <div className="flex flex-col gap-3">
-        <h3 className="text-sm font-semibold text-sandoro-secondary">Timer</h3>
+      <div className="flex flex-col gap-2">
+        <h3 className="text-xs font-semibold text-sandoro-secondary">Timer</h3>
         <p className="text-xs text-sandoro-secondary/70">
           * Changing timer settings will reset the current session
         </p>
-        <div className="flex flex-col gap-4 bg-sandoro-secondary/10 rounded-lg p-4">
+        <div className="flex flex-col gap-2 bg-sandoro-secondary/10 rounded-lg p-3">
           <NumberInput
             label="Work Duration"
             value={settings.workDuration}
@@ -350,12 +387,12 @@ export function Settings() {
       </div>
 
       {/* Goals Section */}
-      <div className="flex flex-col gap-3">
-        <h3 className="text-sm font-semibold text-sandoro-secondary">Goals</h3>
+      <div className="flex flex-col gap-2">
+        <h3 className="text-xs font-semibold text-sandoro-secondary">Goals</h3>
         <p className="text-xs text-sandoro-secondary/70">
           * Set to 0 to disable a goal. Daily changes auto-update weekly (×7).
         </p>
-        <div className="flex flex-col gap-4 bg-sandoro-secondary/10 rounded-lg p-4">
+        <div className="flex flex-col gap-2 bg-sandoro-secondary/10 rounded-lg p-3">
           <NumberInput
             label="Daily Sessions"
             value={settings.goals.dailySessionsGoal}
@@ -407,10 +444,118 @@ export function Settings() {
         </div>
       </div>
 
+      {/* Tags Section */}
+      <div className="flex flex-col gap-2">
+        <h3 className="text-xs font-semibold text-sandoro-secondary">Tags</h3>
+        <p className="text-xs text-sandoro-secondary/70">
+          * Tags help categorize your work sessions
+        </p>
+        <div className="flex flex-col gap-2 bg-sandoro-secondary/10 rounded-lg p-3">
+          {/* Add new tag */}
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={newTagName}
+              onChange={(e) => setNewTagName(e.target.value)}
+              placeholder="New tag name..."
+              className="flex-1 px-3 py-1.5 text-sm rounded border border-sandoro-secondary/50 bg-transparent focus:outline-none focus:border-sandoro-primary transition-colors"
+              style={{ color: 'var(--sandoro-fg)' }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && newTagName.trim()) {
+                  addTag(newTagName.trim());
+                  setNewTagName('');
+                }
+              }}
+            />
+            <button
+              onClick={() => {
+                if (newTagName.trim()) {
+                  addTag(newTagName.trim());
+                  setNewTagName('');
+                }
+              }}
+              disabled={!newTagName.trim()}
+              className={`px-3 py-1.5 text-sm rounded transition-colors ${
+                newTagName.trim()
+                  ? isRainbow
+                    ? 'rainbow-gradient-bg'
+                    : 'bg-sandoro-primary text-white hover:opacity-80'
+                  : 'bg-sandoro-secondary/30 text-sandoro-secondary cursor-not-allowed'
+              }`}
+            >
+              Add
+            </button>
+          </div>
+
+          {/* Tag list */}
+          {tags.length === 0 ? (
+            <p className="text-sm text-sandoro-secondary text-center py-2">
+              No tags yet. Add one above!
+            </p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {tags.map((tag) => (
+                <div
+                  key={tag.id}
+                  className="flex items-center justify-between p-2 rounded border border-sandoro-secondary/30 hover:border-sandoro-secondary/50 transition-colors"
+                >
+                  {editingTagId === tag.id ? (
+                    <input
+                      type="text"
+                      value={editingTagName}
+                      onChange={(e) => setEditingTagName(e.target.value)}
+                      className="flex-1 px-2 py-0.5 text-sm rounded border border-sandoro-primary bg-transparent focus:outline-none"
+                      style={{ color: 'var(--sandoro-fg)' }}
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && editingTagName.trim()) {
+                          updateTag(tag.id, { name: editingTagName.trim() });
+                          setEditingTagId(null);
+                          setEditingTagName('');
+                        } else if (e.key === 'Escape') {
+                          setEditingTagId(null);
+                          setEditingTagName('');
+                        }
+                      }}
+                      onBlur={() => {
+                        if (editingTagName.trim()) {
+                          updateTag(tag.id, { name: editingTagName.trim() });
+                        }
+                        setEditingTagId(null);
+                        setEditingTagName('');
+                      }}
+                    />
+                  ) : (
+                    <span
+                      className="text-sm cursor-pointer hover:text-sandoro-primary transition-colors"
+                      style={{ color: 'var(--sandoro-fg)' }}
+                      onClick={() => {
+                        setEditingTagId(tag.id);
+                        setEditingTagName(tag.name);
+                      }}
+                      title="Click to edit"
+                    >
+                      {tag.name}
+                    </span>
+                  )}
+                  <button
+                    onClick={() => removeTag(tag.id)}
+                    className="px-2 py-0.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors"
+                    title="Delete tag"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Reset Button */}
       <button
         onClick={resetSettings}
-        className="self-start px-4 py-2 text-sm text-sandoro-secondary hover:text-sandoro-fg border border-sandoro-secondary/30 rounded-md hover:border-sandoro-secondary transition-colors"
+        className="self-start px-3 py-1 text-xs text-sandoro-secondary hover:text-sandoro-fg border border-sandoro-secondary/30 rounded hover:border-sandoro-secondary transition-colors"
       >
         Reset to defaults
       </button>

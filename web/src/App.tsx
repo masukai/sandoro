@@ -5,6 +5,7 @@ import { Stats } from './components/Stats';
 import { IconPreview } from './components/IconPreview';
 import { useTheme } from './hooks/useTheme';
 import { useSettings } from './hooks/useSettings';
+import { useClock } from './hooks/useClock';
 
 function App() {
   const [view, setView] = useState<'timer' | 'stats' | 'settings'>('timer');
@@ -18,6 +19,7 @@ function App() {
   const { accentColor } = useTheme();
   const isRainbow = accentColor === 'rainbow';
   const { settings } = useSettings();
+  const currentTime = useClock();
 
   return (
     <div
@@ -25,11 +27,14 @@ function App() {
       style={{ backgroundColor: 'var(--sandoro-bg)', color: 'var(--sandoro-fg)' }}
     >
       <header className="flex justify-between items-center p-4 border-b border-sandoro-secondary">
-        <h1 className="text-xl font-bold">sandoro</h1>
-        <span className="text-sm text-sandoro-secondary">v0.1.0</span>
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl font-bold">sandoro</h1>
+          <span className="text-sm text-sandoro-secondary">v0.1.0</span>
+        </div>
+        <span className="text-sm text-sandoro-secondary font-mono">{currentTime}</span>
       </header>
 
-      <main className="p-4 pb-32">
+      <main className="p-4 pb-16">
         {isDebugMode ? (
           <IconPreview />
         ) : (
@@ -52,12 +57,12 @@ function App() {
       </main>
 
       <nav
-        className="fixed bottom-0 left-0 right-0 flex justify-around p-4 border-t border-sandoro-secondary z-50"
+        className="fixed bottom-0 left-0 right-0 flex justify-around py-2 border-t border-sandoro-secondary z-50"
         style={{ backgroundColor: 'var(--sandoro-bg)' }}
       >
         <button
           onClick={() => setView('timer')}
-          className={`px-4 py-2 ${
+          className={`px-3 py-1 text-sm ${
             view === 'timer'
               ? isRainbow ? 'rainbow-gradient' : 'text-sandoro-primary'
               : 'text-sandoro-secondary'
@@ -67,7 +72,7 @@ function App() {
         </button>
         <button
           onClick={() => setView('stats')}
-          className={`px-4 py-2 ${
+          className={`px-3 py-1 text-sm ${
             view === 'stats'
               ? isRainbow ? 'rainbow-gradient' : 'text-sandoro-primary'
               : 'text-sandoro-secondary'
@@ -77,7 +82,7 @@ function App() {
         </button>
         <button
           onClick={() => setView('settings')}
-          className={`px-4 py-2 ${
+          className={`px-3 py-1 text-sm ${
             view === 'settings'
               ? isRainbow ? 'rainbow-gradient' : 'text-sandoro-primary'
               : 'text-sandoro-secondary'
