@@ -4,70 +4,66 @@
 
 **Terminal-first Pomodoro timer with beautiful ASCII art animations**
 
+**美しいASCIIアートアニメーション付きポモドーロタイマー**
+
 [![CI](https://github.com/masukai/sandoro/actions/workflows/ci.yml/badge.svg)](https://github.com/masukai/sandoro/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Rust](https://img.shields.io/badge/Rust-1.92+-orange?logo=rust)](https://www.rust-lang.org/)
+[![Rust](https://img.shields.io/badge/Rust-1.70+-orange?logo=rust)](https://www.rust-lang.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev/)
 
 <br />
 
 ```
-    ╭───────────────────────────────────────╮
-    │                                       │
-    │           ░░▒▒▓▓████▓▓▒▒░░            │
-    │           ░░▒▒▓▓████▓▓▒▒░░            │
-    │               ╲      ╱                │
-    │                ╲ ░░ ╱                 │
-    │                 ╲▒▒╱                  │
-    │                  ╳                    │
-    │                 ╱▒▒╲                  │
-    │                ╱ ▓▓ ╲                 │
-    │               ╱      ╲                │
-    │           ░░▒▒▓▓▓▓▓▓▓▓▒▒░░            │
-    │           ░░▒▒▓▓████▓▓▒▒░░            │
-    │                                       │
-    │              [ 24:59 ]                │
-    │                                       │
-    ╰───────────────────────────────────────╯
+ ╔══════════╗
+ ║▄▄▄▄▄▄▄▄▄▄║
+ ║░░░░░░░░░░║
+ ║░░░░░░░░░░║
+ ║▒▒▒▒▒▒▒▒▒▒║
+ ║▒▒▒▒▒▒▒▒▒▒║
+  ╲▓▓▓▓▓▓▓▓╱
+   ╲▓▓▓▓▓▓╱
+    ╲ ▼  ╱
+     ╲▓░╱
+     ╱░▓╲
+    ╱  ▼ ╲
+   ╱      ╲
+  ╱        ╲
+ ║░░░░░░░░░░║
+ ║▒▒▒▒▒▒▒▒▒▒║
+ ║▓▓▓▓▓▓▓▓▓▓║
+ ║▓▓▓▓▓▓▓▓▓▓║
+ ║▀▀▀▀▀▀▀▀▀▀║
+ ╚══════════╝
 ```
 
-*CLI & Web • Rich ASCII animations • Offline-ready PWA • Privacy-first*
+<br />
 
-[**Try Web Version**](https://sandoro.app) · [**Releases**](https://github.com/masukai/sandoro/releases) · [**Documentation**](docs/)
+**[🌐 Try Web App](https://sandoro.app)** · **[📦 Releases](https://github.com/masukai/sandoro/releases)** · **[📖 Docs](docs/)**
 
 </div>
 
 ---
 
-## Why sandoro?
+<details>
+<summary><strong>🇯🇵 日本語</strong></summary>
+
+## 特徴
 
 | Feature | Description |
 |---------|-------------|
-| **Beautiful Animations** | 4-phase smooth ASCII art animations using Unicode gradients (`░▒▓█`) |
-| **CLI & Web** | Same experience in terminal and browser. PWA support for offline use |
-| **Privacy-First** | All data stays local. No tracking, no analytics, no cloud required |
-| **Flexible** | Customizable work/break durations, themes, accent colors, and icons |
-| **Track Progress** | Heatmaps, streaks, goals, and tag-based statistics |
+| 🎨 **美しいアニメーション** | Unicode文字（`░▒▓█`）による4フェーズのスムーズなアニメーション |
+| 🖥️ **CLI & Web** | ターミナルでもブラウザでも同じ体験。PWA対応でオフライン動作 |
+| 🔒 **プライバシー重視** | データはすべてローカル保存。トラッキングなし |
+| ⚙️ **カスタマイズ** | 作業/休憩時間、テーマ、アクセントカラー、アイコンを自由に設定 |
+| 📊 **進捗トラッキング** | ヒートマップ、ストリーク、目標設定、タグ別統計 |
 
----
+## クイックスタート
 
-## Quick Start
+### Web版（インストール不要）
 
-### Web (No installation required)
+👉 **[sandoro.app](https://sandoro.app)** - PWAとしてオフラインでも利用可能
 
-Visit **[sandoro.app](https://sandoro.app)** - works offline as a PWA
-
-### CLI
-
-```bash
-# Run timer (TUI mode)
-sandoro
-
-# Show statistics with heatmap
-sandoro stats
-```
-
-**Installation:**
+### CLI版
 
 ```bash
 # Homebrew (macOS/Linux)
@@ -75,44 +71,95 @@ brew tap masukai/sandoro && brew install sandoro
 
 # Cargo (Rust)
 cargo install sandoro
+
+# 使い方
+sandoro           # タイマー起動
+sandoro stats     # 統計表示
 ```
 
+## キーボードショートカット
+
+| キー | 操作 |
+|:---:|------|
+| `Space` | 開始 / 一時停止 |
+| `r` | リセット |
+| `R` | フルリセット（セッション数も） |
+| `s` | スキップ |
+| `t` | タグ切り替え |
+| `Tab` | 設定画面 |
+| `q` | 終了 |
+
+## アイコンスタイル
+
+| アイコン | 説明 |
+|---------|------|
+| ⏳ **Hourglass** | 砂が落下/上昇する4フェーズアニメーション |
+| 🍅 **Tomato** | チェリートマトが揺れるアニメーション |
+| ☕ **Coffee** | 湯気が立ち上るアニメーション |
+| 📊 **Progress** | シンプルなプログレスバー |
+
+## テーマ & カラー
+
+- **7テーマ**: Default, Nord, Dracula, Solarized, Gruvbox, Monokai, Tokyo Night
+- **10アクセントカラー**: Cyan, Purple, Pink, Orange, Green, Blue, Indigo, Yellow, Red, Rainbow
+
+## 設定
+
+| 設定 | 説明 | デフォルト |
+|------|------|-----------|
+| Work Duration | 作業時間（分） | 25 |
+| Short Break | 短い休憩（分） | 5 |
+| Long Break | 長い休憩（分） | 15 |
+| Sessions | 長い休憩までのセッション数 | 4 |
+| Auto Start | 自動で次のセッション開始 | OFF |
+
+## プライバシー
+
+**すべてのデータはデバイス内に保存されます**
+
+- CLI: `~/.sandoro/` 内のSQLiteデータベース
+- Web: ブラウザのlocalStorage
+- 外部への通信なし
+- トラッキング・解析なし
+
+</details>
+
 ---
+
+<details open>
+<summary><strong>🇺🇸 English</strong></summary>
 
 ## Features
 
-### 4 Icon Styles
+| Feature | Description |
+|---------|-------------|
+| 🎨 **Beautiful Animations** | 4-phase smooth ASCII art animations using Unicode gradients (`░▒▓█`) |
+| 🖥️ **CLI & Web** | Same experience in terminal and browser. PWA support for offline use |
+| 🔒 **Privacy-First** | All data stays local. No tracking, no analytics, no cloud required |
+| ⚙️ **Customizable** | Work/break durations, themes, accent colors, and icon styles |
+| 📊 **Track Progress** | Heatmaps, streaks, goals, and tag-based statistics |
 
-| Icon | Animation |
-|------|-----------|
-| **Hourglass** | Sand falling/rising with 4-phase animation |
-| **Tomato** | Twin cherry tomatoes with wobble effect |
-| **Coffee** | Rising steam animation |
-| **Progress** | Clean progress bar |
+## Quick Start
 
-### Themes & Colors
+### Web (No installation required)
 
-- **7 Themes**: Default, Nord, Dracula, Solarized, Gruvbox, Monokai, Tokyo Night
-- **10 Accent Colors**: Cyan, Purple, Pink, Orange, Green, Blue, Indigo, Yellow, Red, Rainbow
+👉 **[sandoro.app](https://sandoro.app)** - Works offline as a PWA
 
-### Statistics
+### CLI
 
-- **Heatmap**: GitHub-style contribution graph
-- **Streaks**: Track your consecutive work days
-- **Goals**: Set daily/weekly session and time targets
-- **Tags**: Categorize sessions and view tag-based stats
-- **Export**: JSON/CSV export for your data
+```bash
+# Homebrew (macOS/Linux)
+brew tap masukai/sandoro && brew install sandoro
 
-### Context Messages
+# Cargo (Rust)
+cargo install sandoro
 
-Smart messages based on time of day and your stats:
-- Morning encouragement, late-night reminders
-- Streak celebrations, goal progress updates
-- Break-time suggestions
+# Usage
+sandoro           # Start timer
+sandoro stats     # Show statistics
+```
 
----
-
-## Keyboard Shortcuts (CLI)
+## Keyboard Shortcuts
 
 | Key | Action |
 |:---:|--------|
@@ -124,34 +171,21 @@ Smart messages based on time of day and your stats:
 | `Tab` | Settings |
 | `q` | Quit |
 
----
+## Icon Styles
 
-## CLI Commands
+| Icon | Description |
+|------|-------------|
+| ⏳ **Hourglass** | Sand falling/rising with 4-phase animation |
+| 🍅 **Tomato** | Twin cherry tomatoes with wobble effect |
+| ☕ **Coffee** | Rising steam animation |
+| 📊 **Progress** | Clean progress bar |
 
-```bash
-sandoro           # Start timer (default)
-sandoro start     # Start with options
-sandoro stats     # Show statistics
-```
+## Themes & Colors
 
-### Stats Options
-
-```bash
-sandoro stats              # Today's stats (default)
-sandoro stats --week       # Last 7 days
-sandoro stats --month      # Last 30 days
-sandoro stats --interactive  # Navigate heatmap with arrow keys
-sandoro stats --by-tag     # Stats grouped by tag
-sandoro stats --goals      # Show goal progress
-sandoro stats --compare    # Compare with previous period
-sandoro stats --export json  # Export to JSON
-```
-
----
+- **7 Themes**: Default, Nord, Dracula, Solarized, Gruvbox, Monokai, Tokyo Night
+- **10 Accent Colors**: Cyan, Purple, Pink, Orange, Green, Blue, Indigo, Yellow, Red, Rainbow
 
 ## Configuration
-
-Settings are managed through the TUI (press `Tab`):
 
 | Setting | Description | Default |
 |---------|-------------|---------|
@@ -159,16 +193,27 @@ Settings are managed through the TUI (press `Tab`):
 | Short Break | Minutes for short break | 5 |
 | Long Break | Minutes for long break | 15 |
 | Sessions | Sessions until long break | 4 |
-| Auto Start | Auto-start next session | Off |
-| Theme | Color theme | Default |
-| Accent Color | Primary accent color | Cyan |
-| Icon | Animation style | Hourglass |
-| Tags | Manage custom tags | - |
-| Goals | Daily/weekly targets | Not set |
+| Auto Start | Auto-start next session | OFF |
+
+## Privacy
+
+**Your data stays on your device.**
+
+- CLI: SQLite database in `~/.sandoro/`
+- Web: Browser localStorage
+- No external data transmission
+- No analytics or tracking
+
+</details>
 
 ---
 
-## What is Pomodoro?
+## What is Pomodoro? / ポモドーロとは？
+
+<details>
+<summary><strong>Learn more / 詳しく見る</strong></summary>
+
+### English
 
 **Pomodoro Technique** is a time management method developed by Francesco Cirillo:
 
@@ -181,9 +226,24 @@ Work 25min → Break 5min → Work 25min → Break 5min → ... → Long Break 1
 - Regular breaks prevent burnout
 - Visible progress motivates continuation
 
+### 日本語
+
+**ポモドーロ・テクニック**は、1980年代にフランチェスコ・シリロによって考案された時間管理術です：
+
+```
+🍅 作業25分 → ☕ 休憩5分 → 🍅 作業25分 → ☕ 休憩5分 → ... → 🛋️ 長い休憩15分
+```
+
+**なぜ効果的か：**
+- 25分は「始めやすく、集中できる」ちょうどいい長さ
+- 定期的な休憩で疲労を防止
+- 達成が見えるのでモチベーション維持
+
+</details>
+
 ---
 
-## Development
+## Development / 開発
 
 ```bash
 # Install all tools
@@ -196,18 +256,18 @@ cd cli && cargo run
 cd web && npm install && npm run dev
 ```
 
----
+<details>
+<summary><strong>Project Structure / プロジェクト構成</strong></summary>
 
-## Privacy
+```
+sandoro/
+├── cli/          # 🦀 Rust CLI (ratatui)
+├── web/          # ⚛️  React Web (Vite + TailwindCSS)
+├── shared/       # 📦 Shared resources
+└── docs/         # 📚 Documentation
+```
 
-**Your data stays on your device.**
-
-- CLI: SQLite database in `~/.sandoro/`
-- Web: Browser localStorage
-- No external data transmission
-- No analytics or tracking
-
-See [Privacy Policy](https://sandoro.app) for details.
+</details>
 
 ---
 
@@ -219,7 +279,7 @@ See [Privacy Policy](https://sandoro.app) for details.
 
 <div align="center">
 
-**[⬆ Back to top](#sandoro)**
+**[⬆ Back to top / トップに戻る](#sandoro)**
 
 Made with focus and ☕
 
