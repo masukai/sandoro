@@ -2,6 +2,7 @@ import { useState, useCallback, createContext, useContext, ReactNode } from 'rea
 
 export type IconType = 'none' | 'progress' | 'hourglass' | 'tomato' | 'coffee';
 export type SoundPattern = 'chime' | 'bell' | 'digital' | 'gentle';
+export type Language = 'ja' | 'en';
 
 export interface GoalSettings {
   dailySessionsGoal: number; // 0 = disabled
@@ -22,6 +23,7 @@ export interface TimerSettings {
   soundVolume: number; // 0-100
   soundPattern: SoundPattern;
   goals: GoalSettings;
+  language: Language;
 }
 
 const STORAGE_KEY = 'sandoro-settings';
@@ -45,6 +47,7 @@ const DEFAULT_SETTINGS: TimerSettings = {
   soundVolume: 50,
   soundPattern: 'chime',
   goals: DEFAULT_GOALS,
+  language: 'ja',
 };
 
 function getStoredSettings(): TimerSettings {

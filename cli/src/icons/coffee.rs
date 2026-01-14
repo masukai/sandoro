@@ -14,9 +14,9 @@ pub fn render_coffee_with_direction(
     animation_frame: u8,
     is_break: bool,
 ) -> Vec<String> {
-    const ROWS: usize = 6;
+    const ROWS: usize = 6; // 元の高さを維持（滑らかな進捗表示）
     const MAX_LEVEL: usize = 18;
-    const W: usize = 8;
+    const W: usize = 16; // 8から16に拡大（横長のマグカップ）
 
     // During break, progress shows how much has been refilled (0→100)
     let effective_progress = if is_break { 100.0 - percent } else { percent };
@@ -35,7 +35,7 @@ pub fn render_coffee_with_direction(
     let is_working = !is_break && percent > 0.0 && percent < 100.0;
     let work_frame = animation_frame % 4;
 
-    // Generate coffee fill with gradient
+    // Generate coffee fill with gradient (wider cup, original height)
     let generate_fill = |level: usize| -> Vec<String> {
         let units_per_row = 3;
         let mut rows = Vec::new();
@@ -68,65 +68,65 @@ pub fn render_coffee_with_direction(
 
     let fill = generate_fill(remaining_level);
 
-    // Steam pattern (work mode: 4-phase rising animation)
+    // Steam pattern (work mode: 4-phase rising animation, wider)
     let (steam0, steam1, steam2) = if show_steam && is_working {
         // Rising steam animation
         match work_frame {
-            0 => ("        ", " ～  ～ ", "～    ～"),
-            1 => (" ～  ～ ", "～    ～", "  ～～  "),
-            2 => ("～    ～", "  ～～  ", "   ~~   "),
-            _ => ("  ～～  ", "   ~~   ", "        "),
+            0 => ("                ", "  ～      ～    ", "～            ～"),
+            1 => ("  ～      ～    ", "～            ～", "      ～～      "),
+            2 => ("～            ～", "      ～～      ", "       ~~       "),
+            _ => ("      ～～      ", "       ~~       ", "                "),
         }
     } else if show_steam {
-        ("        ", " ～  ～ ", "～    ～")
+        ("                ", "  ～      ～    ", "～            ～")
     } else {
-        ("        ", "        ", "        ")
+        ("                ", "                ", "                ")
     };
 
-    // Pouring animation (during break)
+    // Pouring animation (during break, wider)
     let anim_frame = animation_frame % 2;
     let (pour1, pour2, pour3) = if is_pouring {
         if anim_frame == 0 {
-            ("  │││  ", "  ╲│╱  ", "   ▼   ")
+            ("      │││      ", "      ╲│╱      ", "       ▼       ")
         } else {
-            ("  │ │  ", "  ╲ ╱  ", "   ▽   ")
+            ("      │ │      ", "      ╲ ╱      ", "       ▽       ")
         }
     } else {
-        ("       ", "       ", "       ")
+        ("               ", "               ", "               ")
     };
 
-    // Coffee cup frame with larger handle (4 rows)
+    // Coffee cup frame (wider mug shape, original height)
     if is_pouring {
         vec![
             format!("  {}  ", pour1),
             format!("  {}  ", pour2),
             format!("  {}  ", pour3),
-            " ╭────────╮  ".to_string(),
-            format!(" │{}├─╮", fill[0]),
-            format!(" │{}│ │", fill[1]),
-            format!(" │{}│ │", fill[2]),
-            format!(" │{}├─╯", fill[3]),
-            format!(" │{}│  ", fill[4]),
-            format!(" │{}│  ", fill[5]),
-            " ╰────────╯  ".to_string(),
-            "   ══════    ".to_string(),
-            " ▔▔▔▔▔▔▔▔▔▔▔▔".to_string(),
+            " ╭────────────────╮   ".to_string(),
+            format!(" │{}├──╮", fill[0]),
+            format!(" │{}│  │", fill[1]),
+            format!(" │{}│  │", fill[2]),
+            format!(" │{}├──╯", fill[3]),
+            format!(" │{}│   ", fill[4]),
+            format!(" │{}│   ", fill[5]),
+            " ╰────────────────╯   ".to_string(),
+            "     ══════════       ".to_string(),
+            " ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔ ".to_string(),
         ]
     } else {
         vec![
             format!("  {}  ", steam0),
             format!("  {}  ", steam1),
             format!("  {}  ", steam2),
-            " ╭────────╮  ".to_string(),
-            format!(" │{}├─╮", fill[0]),
-            format!(" │{}│ │", fill[1]),
-            format!(" │{}│ │", fill[2]),
-            format!(" │{}├─╯", fill[3]),
-            format!(" │{}│  ", fill[4]),
-            format!(" │{}│  ", fill[5]),
-            " ╰────────╯  ".to_string(),
-            "   ══════    ".to_string(),
-            " ▔▔▔▔▔▔▔▔▔▔▔▔".to_string(),
+            " ╭────────────────╮   ".to_string(),
+            format!(" │{}├──╮", fill[0]),
+            format!(" │{}│  │", fill[1]),
+            format!(" │{}│  │", fill[2]),
+            format!(" │{}├──╯", fill[3]),
+            format!(" │{}│   ", fill[4]),
+            format!(" │{}│   ", fill[5]),
+            " ╰────────────────╯   ".to_string(),
+            "     ══════════       ".to_string(),
+            " ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔ ".to_string(),
         ]
     }
 }
@@ -139,14 +139,14 @@ mod tests {
     fn test_coffee_full() {
         let lines = render_coffee(100.0, 0);
         assert!(!lines.is_empty());
-        assert_eq!(lines.len(), 13);
+        assert_eq!(lines.len(), 13); // 元の行数に戻す
     }
 
     #[test]
     fn test_coffee_empty() {
         let lines = render_coffee(0.0, 0);
         assert!(!lines.is_empty());
-        assert_eq!(lines.len(), 13);
+        assert_eq!(lines.len(), 13); // 元の行数に戻す
     }
 
     #[test]
@@ -198,7 +198,7 @@ mod tests {
     #[test]
     fn test_coffee_has_saucer() {
         let lines = render_coffee(50.0, 0);
-        // Bottom should have saucer
+        // Bottom should have saucer (at index 11)
         assert!(lines[11].contains("══"));
     }
 
@@ -206,7 +206,7 @@ mod tests {
     fn test_coffee_fill_gradient() {
         // At low progress (high coffee), should show fill gradient
         let lines = render_coffee(20.0, 0);
-        let fill_area = lines[4..10].join("");
+        let fill_area = lines[4..10].join(""); // 元の範囲に戻す
         // Should contain gradient characters
         assert!(fill_area.contains("▓") || fill_area.contains("▒") || fill_area.contains("░"));
     }

@@ -7,6 +7,7 @@ export interface Session {
   durationSeconds: number | null;
   type: 'work' | 'shortBreak' | 'longBreak';
   completed: boolean;
+  tagId?: string; // Optional tag ID for categorization
 }
 
 export interface DailyStats {
@@ -48,7 +49,7 @@ export function useSessionStorage() {
   }, []);
 
   const startSession = useCallback(
-    (type: 'work' | 'shortBreak' | 'longBreak'): string => {
+    (type: 'work' | 'shortBreak' | 'longBreak', tagId?: string): string => {
       const session: Session = {
         id: generateId(),
         startedAt: new Date().toISOString(),
@@ -56,6 +57,7 @@ export function useSessionStorage() {
         durationSeconds: null,
         type,
         completed: false,
+        tagId,
       };
 
       setSessions((prev) => {
@@ -300,7 +302,7 @@ export function useSessionStorage() {
 
   // Export sessions to CSV
   const exportToCSV = useCallback((): string => {
-    const headers = ['id', 'startedAt', 'endedAt', 'durationSeconds', 'type', 'completed'];
+    const headers = ['id', 'startedAt', 'endedAt', 'durationSeconds', 'type', 'completed', 'tagId'];
     const rows = sessions.map((s) => [
       s.id,
       s.startedAt,
@@ -308,9 +310,39 @@ export function useSessionStorage() {
       s.durationSeconds?.toString() || '',
       s.type,
       s.completed.toString(),
+      s.tagId || '',
     ]);
     return [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
   }, [sessions]);
+
+  // Get statistics grouped by tag
+  const getStatsByTag = useCallback(
+    (
+      days: number
+    ): Map<string | undefined, { totalSeconds: number; sessionsCount: number }> => {
+      const now = new Date();
+      const cutoff = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+      const result = new Map<string | undefined, { totalSeconds: number; sessionsCount: number }>();
+
+      sessions
+        .filter(
+          (s) =>
+            s.type === 'work' &&
+            s.completed &&
+            new Date(s.startedAt) >= cutoff
+        )
+        .forEach((s) => {
+          const key = s.tagId;
+          const existing = result.get(key) || { totalSeconds: 0, sessionsCount: 0 };
+          existing.totalSeconds += s.durationSeconds || 0;
+          existing.sessionsCount += 1;
+          result.set(key, existing);
+        });
+
+      return result;
+    },
+    [sessions]
+  );
 
   return {
     sessions,
@@ -325,5 +357,6 @@ export function useSessionStorage() {
     getStreak,
     exportToJSON,
     exportToCSV,
+    getStatsByTag,
   };
 }
