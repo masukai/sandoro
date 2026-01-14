@@ -9,6 +9,7 @@ mod app;
 mod config;
 mod db;
 mod icons;
+mod messages;
 mod notification;
 
 use config::Config;
@@ -78,6 +79,10 @@ enum Commands {
         /// Show goal progress
         #[arg(short = 'g', long)]
         goals: bool,
+
+        /// Show stats grouped by tag
+        #[arg(short = 't', long)]
+        by_tag: bool,
     },
     /// Configure settings
     Config {
@@ -98,6 +103,41 @@ enum Commands {
     Sync,
     /// Login to sandoro account
     Login,
+    /// Manage tags for sessions
+    Tag {
+        #[command(subcommand)]
+        action: TagAction,
+    },
+}
+
+#[derive(Subcommand)]
+enum TagAction {
+    /// List all tags
+    List,
+    /// Add a new tag
+    Add {
+        /// Tag name
+        name: String,
+        /// Tag color (e.g., "cyan", "green", "#FF5500")
+        #[arg(short, long)]
+        color: Option<String>,
+    },
+    /// Remove a tag
+    Remove {
+        /// Tag name to remove
+        name: String,
+    },
+    /// Update a tag
+    Update {
+        /// Current tag name
+        name: String,
+        /// New tag name
+        #[arg(long)]
+        new_name: Option<String>,
+        /// New tag color
+        #[arg(short, long)]
+        color: Option<String>,
+    },
 }
 
 fn format_duration(seconds: i32) -> String {
@@ -301,6 +341,7 @@ fn show_stats(
     export: Option<String>,
     compare: bool,
     goals: bool,
+    by_tag: bool,
 ) -> Result<()> {
     let db = db::Database::open()?;
     let config = Config::load().unwrap_or_default();
@@ -427,6 +468,31 @@ fn show_stats(
         run_interactive_heatmap(&db, weeks)?;
     } else {
         show_heatmap(&db, weeks)?;
+    }
+
+    // Show tag-based statistics
+    if by_tag {
+        println!();
+        println!("  🏷️  Stats by Tag (Last 30 days)");
+        println!("  ─────────────────────────────");
+
+        let tag_stats = db.get_stats_by_tag(30)?;
+        if tag_stats.is_empty() {
+            println!("     No data found for the last 30 days.");
+        } else {
+            for (tag, total_seconds, sessions) in tag_stats {
+                let tag_name = match &tag {
+                    Some(t) => &t.name,
+                    None => "No tag",
+                };
+                println!(
+                    "     {} │ {} │ {} sessions",
+                    tag_name,
+                    format_duration(total_seconds),
+                    sessions
+                );
+            }
+        }
     }
 
     Ok(())
@@ -1029,6 +1095,60 @@ fn run_interactive_heatmap(db: &db::Database, initial_weeks: i32) -> Result<()> 
     Ok(())
 }
 
+/// Handle tag management commands
+fn handle_tag_action(action: TagAction) -> Result<()> {
+    let database = db::Database::open()?;
+
+    match action {
+        TagAction::List => {
+            let tags = database.get_all_tags()?;
+            if tags.is_empty() {
+                println!("No tags found. Create one with: sandoro tag add <name>");
+            } else {
+                println!("Tags:");
+                for tag in tags {
+                    let color_display = tag.color.as_deref().unwrap_or("default");
+                    println!("  • {} (color: {})", tag.name, color_display);
+                }
+            }
+        }
+        TagAction::Add { name, color } => {
+            // Check if tag already exists
+            if let Some(_existing) = database.get_tag_by_name(&name)? {
+                println!("Tag '{}' already exists.", name);
+                return Ok(());
+            }
+
+            database.create_tag(&name, color.as_deref())?;
+            println!("Created tag: {}", name);
+        }
+        TagAction::Remove { name } => {
+            if let Some(tag) = database.get_tag_by_name(&name)? {
+                database.delete_tag(tag.id)?;
+                println!("Removed tag: {}", name);
+            } else {
+                println!("Tag '{}' not found.", name);
+            }
+        }
+        TagAction::Update {
+            name,
+            new_name,
+            color,
+        } => {
+            if let Some(tag) = database.get_tag_by_name(&name)? {
+                let updated_name = new_name.as_deref().unwrap_or(&tag.name);
+                let updated_color = color.or(tag.color);
+                database.update_tag(tag.id, updated_name, updated_color.as_deref())?;
+                println!("Updated tag: {} -> {}", name, updated_name);
+            } else {
+                println!("Tag '{}' not found.", name);
+            }
+        }
+    }
+
+    Ok(())
+}
+
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
@@ -1051,6 +1171,7 @@ fn main() -> Result<()> {
             export,
             compare,
             goals,
+            by_tag,
         }) => {
             show_stats(
                 day,
@@ -1062,6 +1183,7 @@ fn main() -> Result<()> {
                 export,
                 compare,
                 goals,
+                by_tag,
             )?;
         }
         Some(Commands::Config { icon, theme }) => {
@@ -1084,6 +1206,9 @@ fn main() -> Result<()> {
         Some(Commands::Login) => {
             println!("Opening browser for authentication...");
             // TODO: Implement OAuth login
+        }
+        Some(Commands::Tag { action }) => {
+            handle_tag_action(action)?;
         }
         None => {
             // Default: start timer with settings from config file

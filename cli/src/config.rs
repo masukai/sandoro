@@ -43,6 +43,8 @@ pub struct AppearanceConfig {
     pub theme: String,
     #[serde(default = "default_accent")]
     pub accent: String,
+    #[serde(default = "default_language")]
+    pub language: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -93,6 +95,9 @@ fn default_theme() -> String {
 fn default_accent() -> String {
     "cyan".to_string()
 }
+fn default_language() -> String {
+    "ja".to_string()
+}
 fn default_true() -> bool {
     true
 }
@@ -131,6 +136,7 @@ impl Default for AppearanceConfig {
             icon: default_icon(),
             theme: default_theme(),
             accent: default_accent(),
+            language: default_language(),
         }
     }
 }

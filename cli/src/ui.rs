@@ -1,5 +1,6 @@
 //! UI rendering
 
+use chrono::Local;
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
@@ -10,6 +11,7 @@ use ratatui::{
 
 use crate::app::{App, AppView, SettingsItem};
 use crate::icons::{IconState, IconType};
+use crate::messages::{get_context_message, Language};
 use crate::theme::{get_rainbow_color, get_rainbow_gradient_color, ThemeColor};
 use crate::timer::TimerState;
 
@@ -177,6 +179,18 @@ fn draw_header(f: &mut Frame, area: Rect, app: &App) {
     let fg = app.theme.foreground.to_color();
     let secondary = app.theme.secondary.to_color();
 
+    // Get current time
+    let current_time = Local::now().format("%H:%M:%S").to_string();
+
+    // Calculate padding to right-align the time
+    // Area width - borders (2) - left content (~15) - time (~8) - right padding (2)
+    let left_content_width = 15; // "  sandoro v0.1.0"
+    let time_width = 8; // "HH:MM:SS"
+    let padding_width = area
+        .width
+        .saturating_sub(2 + left_content_width + time_width + 2) as usize;
+    let padding = " ".repeat(padding_width);
+
     let header = Paragraph::new(Line::from(vec![
         Span::styled("  ", Style::default()),
         Span::styled(
@@ -184,6 +198,9 @@ fn draw_header(f: &mut Frame, area: Rect, app: &App) {
             Style::default().add_modifier(Modifier::BOLD).fg(fg),
         ),
         Span::styled(" v0.1.0", Style::default().fg(secondary)),
+        Span::styled(padding, Style::default()),
+        Span::styled(current_time, Style::default().fg(secondary)),
+        Span::styled("  ", Style::default()),
     ]))
     .block(Block::default().borders(Borders::TOP | Borders::LEFT | Borders::RIGHT));
 
@@ -236,6 +253,7 @@ fn draw_main_content(f: &mut Frame, area: Rect, app: &App) {
             Constraint::Length(2),           // Timer display
             Constraint::Length(2),           // Status
             Constraint::Length(1),           // Session info
+            Constraint::Length(2),           // Context message
             Constraint::Min(0),              // Absorb remaining space
         ])
         .split(area);
@@ -339,9 +357,18 @@ fn draw_main_content(f: &mut Frame, area: Rect, app: &App) {
     .block(Block::default().borders(Borders::LEFT | Borders::RIGHT));
     f.render_widget(session_info, chunks[4]);
 
-    // Fill remaining space with borders (chunks[5])
+    // Draw context message (chunks[5])
+    let lang = Language::from_str(&app.config.appearance.language);
+    let context_msg = get_context_message(app.timer.state, !app.timer.is_paused, lang);
+    let context_widget = Paragraph::new(context_msg)
+        .style(Style::default().fg(secondary).add_modifier(Modifier::ITALIC))
+        .alignment(Alignment::Center)
+        .block(Block::default().borders(Borders::LEFT | Borders::RIGHT));
+    f.render_widget(context_widget, chunks[5]);
+
+    // Fill remaining space with borders (chunks[6])
     let filler = Paragraph::new("").block(Block::default().borders(Borders::LEFT | Borders::RIGHT));
-    f.render_widget(filler, chunks[5]);
+    f.render_widget(filler, chunks[6]);
 }
 
 fn draw_footer(f: &mut Frame, area: Rect, app: &App, is_settings: bool) {
