@@ -183,7 +183,8 @@ fn draw_settings_view(f: &mut Frame, app: &App) {
             };
 
             // Check if this is the AddTag item in input mode
-            let is_input_mode = matches!(item, SettingsItem::AddTag) && app.tag_input_mode && is_selected;
+            let is_input_mode =
+                matches!(item, SettingsItem::AddTag) && app.tag_input_mode && is_selected;
 
             let prefix = if is_selected { "► " } else { "  " };
             let edit_indicator = if is_editing && !is_input_mode {

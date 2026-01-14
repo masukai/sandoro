@@ -414,7 +414,9 @@ impl App {
             if db.delete_tag(tag_id).is_ok() {
                 self.available_tags.remove(self.delete_tag_index);
                 // Adjust indices
-                if self.delete_tag_index >= self.available_tags.len() && !self.available_tags.is_empty() {
+                if self.delete_tag_index >= self.available_tags.len()
+                    && !self.available_tags.is_empty()
+                {
                     self.delete_tag_index = self.available_tags.len() - 1;
                 }
                 // Also adjust selected_tag_index if needed

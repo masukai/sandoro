@@ -2,10 +2,10 @@
 name = "sandoro"
 version = "0.1.0"
 edition = "2021"
-authors = ["Your Name <your.email@example.com>"]
+authors = ["K. Masuda"]
 description = "Terminal-first Pomodoro timer with ASCII art animations"
 license = "MIT"
-repository = "https://github.com/USERNAME/sandoro"
+repository = "https://github.com/masukai/sandoro"
 homepage = "https://sandoro.app"
 keywords = ["pomodoro", "timer", "tui", "terminal", "productivity"]
 categories = ["command-line-utilities"]

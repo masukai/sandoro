@@ -1,8 +1,8 @@
 <div align="center">
 
-# 🏜️ sandoro
+# sandoro
 
-**砂時計アニメーションが特徴的なポモドーロタイマー**
+**Terminal-first Pomodoro timer with beautiful ASCII art animations**
 
 [![CI](https://github.com/masukai/sandoro/actions/workflows/ci.yml/badge.svg)](https://github.com/masukai/sandoro/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -11,268 +11,218 @@
 
 <br />
 
-<img src="docs/assets/demo.gif" alt="sandoro demo" width="600">
+```
+    ╭───────────────────────────────────────╮
+    │                                       │
+    │           ░░▒▒▓▓████▓▓▒▒░░            │
+    │           ░░▒▒▓▓████▓▓▒▒░░            │
+    │               ╲      ╱                │
+    │                ╲ ░░ ╱                 │
+    │                 ╲▒▒╱                  │
+    │                  ╳                    │
+    │                 ╱▒▒╲                  │
+    │                ╱ ▓▓ ╲                 │
+    │               ╱      ╲                │
+    │           ░░▒▒▓▓▓▓▓▓▓▓▒▒░░            │
+    │           ░░▒▒▓▓████▓▓▒▒░░            │
+    │                                       │
+    │              [ 24:59 ]                │
+    │                                       │
+    ╰───────────────────────────────────────╯
+```
 
-*CLI & Web 両対応 • リッチなASCIIアートアニメーション • オフライン対応*
+*CLI & Web • Rich ASCII animations • Offline-ready PWA • Privacy-first*
 
-[Web版を試す](https://sandoro.app) · [リリース](https://github.com/masukai/sandoro/releases) · [ドキュメント](docs/)
+[**Try Web Version**](https://sandoro.app) · [**Releases**](https://github.com/masukai/sandoro/releases) · [**Documentation**](docs/)
 
 </div>
 
 ---
 
-## 🍅 ポモドーロ・テクニックとは？
+## Why sandoro?
 
-**ポモドーロ・テクニック**は、1980年代にフランチェスコ・シリロによって考案された時間管理術です。
-
-### 基本サイクル
-
-```
-🍅 作業 25分 → ☕ 休憩 5分 → 🍅 作業 25分 → ☕ 休憩 5分 → ...
-                    ↓ 4セッション完了後
-                🛋️ 長い休憩 15-30分
-```
-
-### なぜ効果的なのか？
-
-| ポイント | 説明 |
-|----------|------|
-| **集中力の維持** | 25分という「短すぎず長すぎない」時間で集中力を最大化 |
-| **先延ばし防止** | 「とりあえず25分だけ」と始めやすい |
-| **疲労の軽減** | 定期的な休憩で脳をリフレッシュ |
-| **時間の可視化** | 「今日は8ポモドーロ達成」と成果が見える |
-
-sandoroは、このポモドーロ・テクニックを**楽しく続けられる**ようにデザインされたタイマーです。
+| Feature | Description |
+|---------|-------------|
+| **Beautiful Animations** | 4-phase smooth ASCII art animations using Unicode gradients (`░▒▓█`) |
+| **CLI & Web** | Same experience in terminal and browser. PWA support for offline use |
+| **Privacy-First** | All data stays local. No tracking, no analytics, no cloud required |
+| **Flexible** | Customizable work/break durations, themes, accent colors, and icons |
+| **Track Progress** | Heatmaps, streaks, goals, and tag-based statistics |
 
 ---
 
-## ✨ 特徴
+## Quick Start
 
-<table>
-<tr>
-<td width="50%">
+### Web (No installation required)
 
-### 🎨 リッチなアニメーション
+Visit **[sandoro.app](https://sandoro.app)** - works offline as a PWA
 
-Unicode文字（`░▒▓`）によるグラデーション表現と4フェーズのスムーズなアニメーション
-
-</td>
-<td width="50%">
-
-### 🖥️ CLI & Web
-
-ターミナルでもブラウザでも同じ体験。PWA対応でオフラインでも動作
-
-</td>
-</tr>
-<tr>
-<td>
-
-### 🎯 4種類のアイコン
-
-- ⏳ **砂時計**: 砂が落下/上昇するアニメーション
-- 🍅 **トマト**: 2つのチェリートマトが揺れる
-- ☕ **コーヒー**: 湯気が立ち上る/注がれる
-- 📊 **プログレス**: シンプルな進捗バー
-
-</td>
-<td>
-
-### 🎨 カラーテーマ
-
-Nord, Dracula など人気テーマに対応。お好みの配色で作業できます
-
-</td>
-</tr>
-</table>
-
----
-
-## 🚀 インストール
-
-### CLI版
-
-<details open>
-<summary><strong>macOS / Linux (Homebrew)</strong></summary>
+### CLI
 
 ```bash
-brew tap masukai/sandoro
-brew install sandoro
+# Run timer (TUI mode)
+sandoro
+
+# Show statistics with heatmap
+sandoro stats
 ```
 
-</details>
-
-<details>
-<summary><strong>Rust (Cargo)</strong></summary>
+**Installation:**
 
 ```bash
+# Homebrew (macOS/Linux)
+brew tap masukai/sandoro && brew install sandoro
+
+# Cargo (Rust)
 cargo install sandoro
 ```
 
-</details>
+---
 
-<details>
-<summary><strong>直接ダウンロード</strong></summary>
+## Features
 
-[GitHub Releases](https://github.com/masukai/sandoro/releases) から最新のバイナリをダウンロード
+### 4 Icon Styles
 
-| OS | Architecture | ダウンロード |
-|----|--------------|-------------|
-| macOS | Apple Silicon | `sandoro-darwin-arm64` |
-| macOS | Intel | `sandoro-darwin-amd64` |
-| Linux | x86_64 | `sandoro-linux-amd64` |
+| Icon | Animation |
+|------|-----------|
+| **Hourglass** | Sand falling/rising with 4-phase animation |
+| **Tomato** | Twin cherry tomatoes with wobble effect |
+| **Coffee** | Rising steam animation |
+| **Progress** | Clean progress bar |
 
-</details>
+### Themes & Colors
 
-### Web版
+- **7 Themes**: Default, Nord, Dracula, Solarized, Gruvbox, Monokai, Tokyo Night
+- **10 Accent Colors**: Cyan, Purple, Pink, Orange, Green, Blue, Indigo, Yellow, Red, Rainbow
 
-👉 **[sandoro.app](https://sandoro.app)** にアクセス（インストール不要）
+### Statistics
 
-PWAとしてインストールすれば、デスクトップアプリのように使えます。
+- **Heatmap**: GitHub-style contribution graph
+- **Streaks**: Track your consecutive work days
+- **Goals**: Set daily/weekly session and time targets
+- **Tags**: Categorize sessions and view tag-based stats
+- **Export**: JSON/CSV export for your data
+
+### Context Messages
+
+Smart messages based on time of day and your stats:
+- Morning encouragement, late-night reminders
+- Streak celebrations, goal progress updates
+- Break-time suggestions
 
 ---
 
-## 📖 使い方
+## Keyboard Shortcuts (CLI)
 
-### 基本操作
+| Key | Action |
+|:---:|--------|
+| `Space` | Start / Pause |
+| `r` | Reset timer |
+| `R` | Full reset (including session count) |
+| `s` | Skip to next phase |
+| `t` | Cycle through tags |
+| `Tab` | Settings |
+| `q` | Quit |
+
+---
+
+## CLI Commands
 
 ```bash
-# タイマーを開始
-sandoro
-
-# カスタム設定で開始
-sandoro start --work 30 --short-break 10 --long-break 20
+sandoro           # Start timer (default)
+sandoro start     # Start with options
+sandoro stats     # Show statistics
 ```
 
-### キーボードショートカット
-
-| キー | 操作 |
-|:----:|------|
-| `Space` | 開始 / 一時停止 |
-| `r` | リセット（現在のタイマーのみ） |
-| `R` | フルリセット（セッション数も含む） |
-| `s` | スキップ |
-| `Tab` | 設定画面 |
-| `q` | 終了 |
-
-### 設定オプション
-
-| 設定 | 説明 | デフォルト |
-|------|------|-----------|
-| Work Duration | 作業時間（分） | 25 |
-| Short Break | 短い休憩時間（分） | 5 |
-| Long Break | 長い休憩時間（分） | 15 |
-| Sessions until long | 長い休憩までのセッション数 | 4 |
-| Auto Start | 次のセッションを自動開始 | OFF |
-
-### CLI コマンド一覧
+### Stats Options
 
 ```bash
-sandoro [COMMAND] [OPTIONS]
-```
-
-| コマンド | 説明 |
-|----------|------|
-| `sandoro` | タイマーを開始（デフォルト） |
-| `sandoro start` | タイマーを開始（オプション指定可能） |
-| `sandoro stats` | 統計を表示 |
-| `sandoro help` | ヘルプを表示 |
-
-#### `sandoro start` オプション
-
-```bash
-sandoro start [OPTIONS]
-```
-
-| オプション | 短縮 | 説明 | デフォルト |
-|------------|------|------|-----------|
-| `--work <分>` | `-w` | 作業時間（分） | 25 |
-| `--short-break <分>` | `-s` | 短い休憩時間（分） | 5 |
-| `--long-break <分>` | `-l` | 長い休憩時間（分） | 15 |
-| `--sessions <数>` | `-n` | 長い休憩までのセッション数 | 4 |
-| `--icon <種類>` | `-i` | アイコン（hourglass/tomato/coffee/progress） | hourglass |
-| `--theme <テーマ>` | `-t` | テーマ（default/nord/dracula/solarized/gruvbox/monokai/tokyonight） | default |
-| `--auto-start` | `-a` | 次のセッションを自動開始 | OFF |
-
-#### `sandoro stats` オプション
-
-```bash
-sandoro stats [OPTIONS]
-```
-
-| オプション | 短縮 | 説明 |
-|------------|------|------|
-| `--day` | `-d` | 今日の統計を表示（デフォルト） |
-| `--week` | `-w` | 過去7日間の統計を表示 |
-| `--month` | `-m` | 過去30日間の統計を表示 |
-
-**使用例:**
-
-```bash
-# 今日の統計
-sandoro stats
-
-# 週間統計
-sandoro stats --week
-
-# 月間統計
-sandoro stats -m
+sandoro stats              # Today's stats (default)
+sandoro stats --week       # Last 7 days
+sandoro stats --month      # Last 30 days
+sandoro stats --interactive  # Navigate heatmap with arrow keys
+sandoro stats --by-tag     # Stats grouped by tag
+sandoro stats --goals      # Show goal progress
+sandoro stats --compare    # Compare with previous period
+sandoro stats --export json  # Export to JSON
 ```
 
 ---
 
-## 🛠️ 開発
+## Configuration
 
-### 必要なツール
+Settings are managed through the TUI (press `Tab`):
 
-- [mise](https://mise.jdx.dev/) - ツールバージョン管理
+| Setting | Description | Default |
+|---------|-------------|---------|
+| Work Duration | Minutes per work session | 25 |
+| Short Break | Minutes for short break | 5 |
+| Long Break | Minutes for long break | 15 |
+| Sessions | Sessions until long break | 4 |
+| Auto Start | Auto-start next session | Off |
+| Theme | Color theme | Default |
+| Accent Color | Primary accent color | Cyan |
+| Icon | Animation style | Hourglass |
+| Tags | Manage custom tags | - |
+| Goals | Daily/weekly targets | Not set |
+
+---
+
+## What is Pomodoro?
+
+**Pomodoro Technique** is a time management method developed by Francesco Cirillo:
+
+```
+Work 25min → Break 5min → Work 25min → Break 5min → ... → Long Break 15min
+```
+
+**Why it works:**
+- 25 minutes is short enough to start, long enough to focus
+- Regular breaks prevent burnout
+- Visible progress motivates continuation
+
+---
+
+## Development
 
 ```bash
-# 全ての開発ツールをインストール
+# Install all tools
 mise install
-```
 
-### 開発コマンド
+# CLI development
+cd cli && cargo run
 
-```bash
-# CLI版
-cd cli
-cargo run        # 実行
-cargo test       # テスト
-cargo clippy     # リント
-
-# Web版
-cd web
-pnpm install     # 依存関係インストール
-pnpm dev         # 開発サーバー起動
-pnpm test        # テスト
-pnpm build       # ビルド
+# Web development
+cd web && npm install && npm run dev
 ```
 
 ---
 
-## 📁 プロジェクト構成
+## Privacy
 
-```
-sandoro/
-├── cli/          # 🦀 Rust CLI (ratatui)
-├── web/          # ⚛️  React Web (Vite + TailwindCSS)
-├── shared/       # 📦 共有リソース
-└── docs/         # 📚 ドキュメント
-```
+**Your data stays on your device.**
+
+- CLI: SQLite database in `~/.sandoro/`
+- Web: Browser localStorage
+- No external data transmission
+- No analytics or tracking
+
+See [Privacy Policy](https://sandoro.app) for details.
 
 ---
 
-## 📄 ライセンス
+## License
 
-[MIT License](LICENSE) © 2025 masukai
+[MIT License](LICENSE) © 2025 K. Masuda
 
 ---
 
 <div align="center">
 
-**[⬆ トップに戻る](#-sandoro)**
+**[⬆ Back to top](#sandoro)**
 
-Made with ❤️ and ☕
+Made with focus and ☕
+
+[GitHub](https://github.com/masukai/sandoro) · [Issues](https://github.com/masukai/sandoro/issues)
 
 </div>

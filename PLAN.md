@@ -2118,6 +2118,17 @@ github: [your-username]
 - Twitter/X、その他SNSへのシェアボタン
 - OGP画像対応（Web版）
 
+### Phase 2.8: 完成度向上 ✅ 完了
+
+| タスク | 詳細 | ステータス |
+|--------|------|----------|
+| CLI Settingsスクロール | 設定項目が多くなってもスクロール可能に | ✅ 完了 |
+| TUIタグ管理 | SettingsでAdd/Deleteタグ（sandoro tagコマンド削除） | ✅ 完了 |
+| CLIコマンド簡素化 | sandoro / start / stats のみに簡素化 | ✅ 完了 |
+| Privacy Policy（Web） | プライバシーポリシーページ追加 | ✅ 完了 |
+| フッター（Web） | コピーライト、連絡先、GitHubリンク | ✅ 完了 |
+| CLI著作権表示 | --helpにプライバシー・連絡先・ライセンス表示 | ✅ 完了 |
+
 ### Phase 3: CLI/Web統合
 
 | タスク | 詳細 | ステータス |
@@ -2176,9 +2187,10 @@ github: [your-username]
 ### 現在の優先順位
 
 1. ~~**Phase 2.7**: UX強化・タグ機能~~ ← **完了**
-2. **Phase 2.5**: Webデプロイ（Vercel/Cloudflare） ← **次の優先**
-3. **Phase 3**: CLI/Web統合（データ共有）
-4. **Phase 4-6**: 課金、拡張機能、マーケティング
+2. ~~**Phase 2.8**: 完成度向上~~ ← **完了**
+3. **Phase 2.5**: Webデプロイ（Vercel/Cloudflare） ← **次の優先**
+4. **Phase 3**: CLI/Web統合（データ共有）
+5. **Phase 4-6**: 課金、拡張機能、マーケティング
 
 ### 差別化を意識した開発
 

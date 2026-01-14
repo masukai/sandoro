@@ -20,7 +20,13 @@ mod ui;
 
 #[derive(Parser)]
 #[command(name = "sandoro")]
-#[command(author, version, about, long_about = None)]
+#[command(author = "K. Masuda")]
+#[command(version)]
+#[command(about = "Terminal-first Pomodoro timer with ASCII art animations")]
+#[command(after_help = "\
+PRIVACY: All data is stored locally (~/.sandoro/). No external data transmission.
+CONTACT: https://github.com/masukai/sandoro/issues
+LICENSE: MIT - (c) 2025 K. Masuda")]
 struct Cli {
     #[command(subcommand)]
     command: Option<Commands>,
