@@ -84,60 +84,6 @@ enum Commands {
         #[arg(short = 't', long)]
         by_tag: bool,
     },
-    /// Configure settings
-    Config {
-        /// Set icon type (hourglass, tomato, coffee)
-        #[arg(long)]
-        icon: Option<String>,
-
-        /// Set theme (default, nord, dracula)
-        #[arg(long)]
-        theme: Option<String>,
-    },
-    /// Activate Pro license
-    License {
-        /// License key (SAND-XXXX-XXXX-XXXX-XXXX)
-        key: String,
-    },
-    /// Sync data with cloud (Pro only)
-    Sync,
-    /// Login to sandoro account
-    Login,
-    /// Manage tags for sessions
-    Tag {
-        #[command(subcommand)]
-        action: TagAction,
-    },
-}
-
-#[derive(Subcommand)]
-enum TagAction {
-    /// List all tags
-    List,
-    /// Add a new tag
-    Add {
-        /// Tag name
-        name: String,
-        /// Tag color (e.g., "cyan", "green", "#FF5500")
-        #[arg(short, long)]
-        color: Option<String>,
-    },
-    /// Remove a tag
-    Remove {
-        /// Tag name to remove
-        name: String,
-    },
-    /// Update a tag
-    Update {
-        /// Current tag name
-        name: String,
-        /// New tag name
-        #[arg(long)]
-        new_name: Option<String>,
-        /// New tag color
-        #[arg(short, long)]
-        color: Option<String>,
-    },
 }
 
 fn format_duration(seconds: i32) -> String {
@@ -1095,60 +1041,6 @@ fn run_interactive_heatmap(db: &db::Database, initial_weeks: i32) -> Result<()> 
     Ok(())
 }
 
-/// Handle tag management commands
-fn handle_tag_action(action: TagAction) -> Result<()> {
-    let database = db::Database::open()?;
-
-    match action {
-        TagAction::List => {
-            let tags = database.get_all_tags()?;
-            if tags.is_empty() {
-                println!("No tags found. Create one with: sandoro tag add <name>");
-            } else {
-                println!("Tags:");
-                for tag in tags {
-                    let color_display = tag.color.as_deref().unwrap_or("default");
-                    println!("  • {} (color: {})", tag.name, color_display);
-                }
-            }
-        }
-        TagAction::Add { name, color } => {
-            // Check if tag already exists
-            if let Some(_existing) = database.get_tag_by_name(&name)? {
-                println!("Tag '{}' already exists.", name);
-                return Ok(());
-            }
-
-            database.create_tag(&name, color.as_deref())?;
-            println!("Created tag: {}", name);
-        }
-        TagAction::Remove { name } => {
-            if let Some(tag) = database.get_tag_by_name(&name)? {
-                database.delete_tag(tag.id)?;
-                println!("Removed tag: {}", name);
-            } else {
-                println!("Tag '{}' not found.", name);
-            }
-        }
-        TagAction::Update {
-            name,
-            new_name,
-            color,
-        } => {
-            if let Some(tag) = database.get_tag_by_name(&name)? {
-                let updated_name = new_name.as_deref().unwrap_or(&tag.name);
-                let updated_color = color.or(tag.color);
-                database.update_tag(tag.id, updated_name, updated_color.as_deref())?;
-                println!("Updated tag: {} -> {}", name, updated_name);
-            } else {
-                println!("Tag '{}' not found.", name);
-            }
-        }
-    }
-
-    Ok(())
-}
-
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
@@ -1185,30 +1077,6 @@ fn main() -> Result<()> {
                 goals,
                 by_tag,
             )?;
-        }
-        Some(Commands::Config { icon, theme }) => {
-            if let Some(icon) = icon {
-                println!("Setting icon to: {}", icon);
-            }
-            if let Some(theme) = theme {
-                println!("Setting theme to: {}", theme);
-            }
-            // TODO: Implement config update
-        }
-        Some(Commands::License { key }) => {
-            println!("Activating license: {}", key);
-            // TODO: Implement license activation
-        }
-        Some(Commands::Sync) => {
-            println!("Syncing with cloud...");
-            // TODO: Implement cloud sync
-        }
-        Some(Commands::Login) => {
-            println!("Opening browser for authentication...");
-            // TODO: Implement OAuth login
-        }
-        Some(Commands::Tag { action }) => {
-            handle_tag_action(action)?;
         }
         None => {
             // Default: start timer with settings from config file

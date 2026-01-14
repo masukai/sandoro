@@ -11,7 +11,7 @@ use std::io;
 use std::time::Duration;
 
 use crate::config::Config;
-use crate::db::{Database, SessionType};
+use crate::db::{Database, SessionType, Tag};
 use crate::icons::IconType;
 use crate::notification;
 use crate::theme::Theme;
@@ -41,6 +41,9 @@ pub enum SettingsItem {
     DailyMinutesGoal,
     WeeklySessionsGoal,
     WeeklyMinutesGoal,
+    TagsHeader,
+    AddTag,
+    DeleteTag,
     Back,
 }
 
@@ -60,6 +63,9 @@ impl SettingsItem {
             Self::DailyMinutesGoal,
             Self::WeeklySessionsGoal,
             Self::WeeklyMinutesGoal,
+            Self::TagsHeader,
+            Self::AddTag,
+            Self::DeleteTag,
             Self::Back,
         ]
     }
@@ -79,8 +85,16 @@ impl SettingsItem {
             Self::DailyMinutesGoal => "Daily Minutes Goal",
             Self::WeeklySessionsGoal => "Weekly Sessions Goal",
             Self::WeeklyMinutesGoal => "Weekly Minutes Goal",
+            Self::TagsHeader => "── Tags ──",
+            Self::AddTag => "Add New Tag",
+            Self::DeleteTag => "Delete Tag",
             Self::Back => "← Back to Timer",
         }
+    }
+
+    /// Returns true if this item is a header/separator (not selectable for editing)
+    pub fn is_header(&self) -> bool {
+        matches!(self, Self::TagsHeader)
     }
 }
 
@@ -138,6 +152,18 @@ pub struct App {
     pub week_avg_seconds: i32,
     /// Total sessions completed (all time)
     pub total_sessions: i32,
+    /// Available tags from database
+    pub available_tags: Vec<Tag>,
+    /// Currently selected tag index (None = no tag)
+    pub selected_tag_index: Option<usize>,
+    /// Settings list scroll offset for visible items
+    pub settings_scroll_offset: usize,
+    /// Input buffer for adding new tag
+    pub tag_input: String,
+    /// Whether we're in tag input mode
+    pub tag_input_mode: bool,
+    /// Index for selecting tag to delete (cycles through available tags)
+    pub delete_tag_index: usize,
 }
 
 impl App {
@@ -210,6 +236,12 @@ impl App {
             .map(|s| s.sessions_completed)
             .unwrap_or(0);
 
+        // Load available tags
+        let available_tags = db
+            .as_ref()
+            .and_then(|d| d.get_all_tags().ok())
+            .unwrap_or_default();
+
         Self {
             timer: Timer::with_sessions(
                 config.timer.work_duration,
@@ -242,6 +274,12 @@ impl App {
             yesterday_seconds,
             week_avg_seconds,
             total_sessions,
+            available_tags,
+            selected_tag_index: None,
+            settings_scroll_offset: 0,
+            tag_input: String::new(),
+            tag_input_mode: false,
+            delete_tag_index: 0,
         }
     }
 
@@ -323,6 +361,82 @@ impl App {
         self.record_session_complete(old_state, false);
     }
 
+    /// Cycle through available tags (None -> tag1 -> tag2 -> ... -> None)
+    pub fn cycle_tag(&mut self) {
+        if self.available_tags.is_empty() {
+            return;
+        }
+        match self.selected_tag_index {
+            None => self.selected_tag_index = Some(0),
+            Some(idx) => {
+                if idx + 1 < self.available_tags.len() {
+                    self.selected_tag_index = Some(idx + 1);
+                } else {
+                    self.selected_tag_index = None;
+                }
+            }
+        }
+    }
+
+    /// Get the currently selected tag
+    pub fn selected_tag(&self) -> Option<&Tag> {
+        self.selected_tag_index
+            .and_then(|idx| self.available_tags.get(idx))
+    }
+
+    /// Add a new tag
+    pub fn add_tag(&mut self, name: &str) {
+        if name.trim().is_empty() {
+            return;
+        }
+        if let Some(ref db) = self.db {
+            if let Ok(id) = db.create_tag(name.trim(), None) {
+                let tag = Tag {
+                    id,
+                    name: name.trim().to_string(),
+                    color: None,
+                };
+                self.available_tags.push(tag);
+            }
+        }
+    }
+
+    /// Delete the tag at delete_tag_index
+    pub fn delete_current_tag(&mut self) {
+        if self.available_tags.is_empty() {
+            return;
+        }
+        if self.delete_tag_index >= self.available_tags.len() {
+            self.delete_tag_index = 0;
+        }
+        let tag_id = self.available_tags[self.delete_tag_index].id;
+        if let Some(ref db) = self.db {
+            if db.delete_tag(tag_id).is_ok() {
+                self.available_tags.remove(self.delete_tag_index);
+                // Adjust indices
+                if self.delete_tag_index >= self.available_tags.len() && !self.available_tags.is_empty() {
+                    self.delete_tag_index = self.available_tags.len() - 1;
+                }
+                // Also adjust selected_tag_index if needed
+                if let Some(idx) = self.selected_tag_index {
+                    if idx == self.delete_tag_index {
+                        self.selected_tag_index = None;
+                    } else if idx > self.delete_tag_index {
+                        self.selected_tag_index = Some(idx - 1);
+                    }
+                }
+            }
+        }
+    }
+
+    /// Cycle delete_tag_index through available tags
+    pub fn cycle_delete_tag(&mut self) {
+        if self.available_tags.is_empty() {
+            return;
+        }
+        self.delete_tag_index = (self.delete_tag_index + 1) % self.available_tags.len();
+    }
+
     /// Start recording a new session
     fn start_session_recording(&mut self) {
         if let Some(ref db) = self.db {
@@ -331,7 +445,13 @@ impl App {
                 TimerState::ShortBreak => SessionType::ShortBreak,
                 TimerState::LongBreak => SessionType::LongBreak,
             };
-            if let Ok(id) = db.start_session(session_type) {
+            // Start session with tag if selected
+            let result = if let Some(tag) = self.selected_tag() {
+                db.start_session_with_tag(session_type, Some(tag.id))
+            } else {
+                db.start_session(session_type)
+            };
+            if let Ok(id) = result {
                 self.current_session_id = Some(id);
             }
         }
@@ -446,10 +566,25 @@ impl App {
                         self.config.goals.weekly_minutes += 60;
                     }
                 }
+                SettingsItem::DeleteTag => {
+                    // Cycle to previous tag for deletion
+                    if !self.available_tags.is_empty() {
+                        if self.delete_tag_index > 0 {
+                            self.delete_tag_index -= 1;
+                        } else {
+                            self.delete_tag_index = self.available_tags.len() - 1;
+                        }
+                    }
+                }
                 _ => {}
             }
         } else if self.settings_index > 0 {
             self.settings_index -= 1;
+            // Skip header items
+            while self.settings_index > 0 && SettingsItem::all()[self.settings_index].is_header() {
+                self.settings_index -= 1;
+            }
+            self.adjust_settings_scroll();
         }
     }
 
@@ -531,10 +666,37 @@ impl App {
                         self.config.goals.weekly_minutes = 0;
                     }
                 }
+                SettingsItem::DeleteTag => {
+                    // Cycle to next tag for deletion
+                    self.cycle_delete_tag();
+                }
                 _ => {}
             }
         } else if self.settings_index < SettingsItem::all().len() - 1 {
             self.settings_index += 1;
+            // Skip header items
+            while self.settings_index < SettingsItem::all().len() - 1
+                && SettingsItem::all()[self.settings_index].is_header()
+            {
+                self.settings_index += 1;
+            }
+            self.adjust_settings_scroll();
+        }
+    }
+
+    /// Adjust scroll offset to keep selected item visible
+    /// Assumes a visible window of about 10 items (can be adjusted based on actual terminal size)
+    fn adjust_settings_scroll(&mut self) {
+        const VISIBLE_ITEMS: usize = 10;
+
+        // If selected index is above the visible window, scroll up
+        if self.settings_index < self.settings_scroll_offset {
+            self.settings_scroll_offset = self.settings_index;
+        }
+
+        // If selected index is below the visible window, scroll down
+        if self.settings_index >= self.settings_scroll_offset + VISIBLE_ITEMS {
+            self.settings_scroll_offset = self.settings_index - VISIBLE_ITEMS + 1;
         }
     }
 
@@ -583,6 +745,33 @@ impl App {
                     self.editing = false;
                     self.apply_settings();
                 } else {
+                    self.editing = true;
+                }
+            }
+            SettingsItem::TagsHeader => {
+                // Header is not selectable, skip to next item
+            }
+            SettingsItem::AddTag => {
+                if self.tag_input_mode {
+                    // Confirm: add the tag
+                    if !self.tag_input.is_empty() {
+                        self.add_tag(&self.tag_input.clone());
+                        self.tag_input.clear();
+                    }
+                    self.tag_input_mode = false;
+                } else {
+                    // Enter input mode
+                    self.tag_input_mode = true;
+                    self.tag_input.clear();
+                }
+            }
+            SettingsItem::DeleteTag => {
+                if self.editing {
+                    // Confirm: delete the selected tag
+                    self.delete_current_tag();
+                    self.editing = false;
+                } else if !self.available_tags.is_empty() {
+                    // Enter edit mode to select which tag to delete
                     self.editing = true;
                 }
             }
@@ -681,6 +870,9 @@ impl App {
                     format!("{} min", self.config.goals.weekly_minutes)
                 }
             }
+            SettingsItem::TagsHeader | SettingsItem::AddTag | SettingsItem::DeleteTag => {
+                String::new()
+            }
             SettingsItem::Back => String::new(),
         }
     }
@@ -732,27 +924,60 @@ pub fn run() -> Result<()> {
                         KeyCode::Char('r') => app.reset(),
                         KeyCode::Char('R') => app.full_reset(),
                         KeyCode::Char('s') => app.skip(),
+                        KeyCode::Char('t') => app.cycle_tag(),
                         KeyCode::Tab => app.toggle_settings(),
                         _ => {}
                     },
-                    AppView::Settings => match key.code {
-                        KeyCode::Char('q') => {
-                            if !app.editing {
-                                app.should_quit = true;
+                    AppView::Settings => {
+                        // Handle tag input mode separately
+                        if app.tag_input_mode {
+                            match key.code {
+                                KeyCode::Enter => {
+                                    // Confirm tag input
+                                    if !app.tag_input.is_empty() {
+                                        let name = app.tag_input.clone();
+                                        app.add_tag(&name);
+                                        app.tag_input.clear();
+                                    }
+                                    app.tag_input_mode = false;
+                                }
+                                KeyCode::Esc => {
+                                    // Cancel tag input
+                                    app.tag_input.clear();
+                                    app.tag_input_mode = false;
+                                }
+                                KeyCode::Backspace => {
+                                    app.tag_input.pop();
+                                }
+                                KeyCode::Char(c) => {
+                                    // Add character to input (limit length)
+                                    if app.tag_input.len() < 30 {
+                                        app.tag_input.push(c);
+                                    }
+                                }
+                                _ => {}
+                            }
+                        } else {
+                            match key.code {
+                                KeyCode::Char('q') => {
+                                    if !app.editing {
+                                        app.should_quit = true;
+                                    }
+                                }
+                                KeyCode::Tab | KeyCode::Esc => {
+                                    if app.editing {
+                                        app.editing = false;
+                                    } else {
+                                        app.toggle_settings();
+                                    }
+                                }
+                                KeyCode::Up | KeyCode::Char('k') => app.settings_up(),
+                                KeyCode::Down | KeyCode::Char('j') => app.settings_down(),
+                                KeyCode::Enter | KeyCode::Char(' ') => app.settings_select(),
+                                _ => {}
                             }
                         }
-                        KeyCode::Tab | KeyCode::Esc => {
-                            if app.editing {
-                                app.editing = false;
-                            } else {
-                                app.toggle_settings();
-                            }
-                        }
-                        KeyCode::Up | KeyCode::Char('k') => app.settings_up(),
-                        KeyCode::Down | KeyCode::Char('j') => app.settings_down(),
-                        KeyCode::Enter | KeyCode::Char(' ') => app.settings_select(),
-                        _ => {}
-                    },
+                    }
                 }
             }
         }

@@ -76,10 +76,16 @@ fn draw_settings_view(f: &mut Frame, app: &App) {
     .block(Block::default().borders(Borders::TOP | Borders::LEFT | Borders::RIGHT));
     f.render_widget(header, chunks[0]);
 
-    // Settings list
-    let items: Vec<ListItem> = SettingsItem::all()
+    // Calculate visible area height (subtract borders)
+    let visible_height = chunks[1].height.saturating_sub(2) as usize;
+
+    // Settings list with scroll support
+    let all_items = SettingsItem::all();
+    let items: Vec<ListItem> = all_items
         .iter()
         .enumerate()
+        .skip(app.settings_scroll_offset)
+        .take(visible_height.max(1))
         .map(|(i, item)| {
             let is_selected = i == app.settings_index;
             let is_editing = app.editing && is_selected;
@@ -143,13 +149,53 @@ fn draw_settings_view(f: &mut Frame, app: &App) {
                         format!("{} min", app.config.goals.weekly_minutes)
                     }
                 }
+                SettingsItem::TagsHeader => {
+                    // Show existing tags as a summary
+                    if app.available_tags.is_empty() {
+                        "(no tags)".to_string()
+                    } else {
+                        app.available_tags
+                            .iter()
+                            .map(|t| t.name.clone())
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    }
+                }
+                SettingsItem::AddTag => {
+                    if app.tag_input_mode && is_selected {
+                        format!("[{}|]", app.tag_input)
+                    } else {
+                        String::new()
+                    }
+                }
+                SettingsItem::DeleteTag => {
+                    if app.available_tags.is_empty() {
+                        "(no tags)".to_string()
+                    } else if is_editing {
+                        let tag_name = &app.available_tags[app.delete_tag_index].name;
+                        format!("→ {} [↑↓ select, Enter delete]", tag_name)
+                    } else {
+                        let tag_name = &app.available_tags[app.delete_tag_index].name;
+                        tag_name.clone()
+                    }
+                }
                 SettingsItem::Back => String::new(),
             };
 
-            let prefix = if is_selected { "► " } else { "  " };
-            let edit_indicator = if is_editing { " [editing ↑↓]" } else { "" };
+            // Check if this is the AddTag item in input mode
+            let is_input_mode = matches!(item, SettingsItem::AddTag) && app.tag_input_mode && is_selected;
 
-            let content = if value.is_empty() {
+            let prefix = if is_selected { "► " } else { "  " };
+            let edit_indicator = if is_editing && !is_input_mode {
+                " [editing ↑↓]"
+            } else {
+                ""
+            };
+
+            let content = if matches!(item, SettingsItem::TagsHeader) {
+                // Header: show label on left, value on right without ":"
+                format!("{}{} {}", prefix, item.label(), value)
+            } else if value.is_empty() {
                 format!("{}{}", prefix, item.label())
             } else {
                 format!("{}{}: {}{}", prefix, item.label(), value, edit_indicator)
@@ -348,9 +394,17 @@ fn draw_main_content(f: &mut Frame, area: Rect, app: &App) {
     } else {
         format!("{}m", minutes)
     };
+    // Show tag if selected
+    let tag_display = if let Some(tag) = app.selected_tag() {
+        format!("  Tag: {}", tag.name)
+    } else if !app.available_tags.is_empty() {
+        "  Tag: -".to_string()
+    } else {
+        String::new()
+    };
     let session_info = Paragraph::new(format!(
-        "Session: {}/{}                      Today: {}",
-        app.timer.session_count, app.timer.sessions_until_long_break, today_display
+        "Session: {}/{}    Today: {}{}",
+        app.timer.session_count, app.timer.sessions_until_long_break, today_display, tag_display
     ))
     .style(Style::default().fg(secondary))
     .alignment(Alignment::Center)
@@ -389,11 +443,15 @@ fn draw_footer(f: &mut Frame, area: Rect, app: &App, is_settings: bool) {
     let secondary = app.theme.secondary.to_color();
 
     let help_text = if is_settings {
-        if app.editing {
+        if app.tag_input_mode {
+            "  Type tag name  [Enter] Add  [Esc] Cancel"
+        } else if app.editing {
             "  [↑↓] Change  [Enter] Confirm  [Esc] Cancel"
         } else {
             "  [↑↓/jk] Navigate  [Enter] Select  [Tab] Back  [q] Quit"
         }
+    } else if !app.available_tags.is_empty() {
+        "  [Space] Start/Pause  [r] Reset  [s] Skip  [t] Tag  [Tab] Settings  [q] Quit"
     } else {
         "  [Space] Start/Pause  [r] Reset  [R] Full Reset  [s] Skip  [Tab] Settings  [q] Quit"
     };

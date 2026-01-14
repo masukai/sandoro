@@ -34,8 +34,11 @@ export function Timer({
     useSessionStorage();
   const { tags } = useTags();
   const [selectedTagId, setSelectedTagId] = useState<string | undefined>(undefined);
-  const { notifySessionComplete } = useNotification();
+  const { notifySessionComplete, permission, requestPermission } = useNotification();
   const { playSessionComplete } = useSound();
+
+  // Request notification permission on first timer start if enabled but not granted
+  const hasRequestedPermission = useRef(false);
 
   // Track current session ID
   const currentSessionIdRef = useRef<string | null>(null);
@@ -127,6 +130,16 @@ export function Timer({
   // Get context-aware message
   const contextMessage = useContextMessage(state, isRunning, settings.language, rotationTick, userStats);
 
+  // Handle start/pause with permission request
+  const handleTogglePause = useCallback(() => {
+    // Request notification permission on first start if notifications are enabled but permission not granted
+    if (!isRunning && settings.notificationsEnabled && permission !== 'granted' && !hasRequestedPermission.current) {
+      hasRequestedPermission.current = true;
+      requestPermission(); // Fire and forget - don't block timer start
+    }
+    togglePause();
+  }, [isRunning, settings.notificationsEnabled, permission, requestPermission, togglePause]);
+
   const stateLabel = {
     work: 'WORKING',
     shortBreak: 'SHORT BREAK',
@@ -183,7 +196,7 @@ export function Timer({
       {/* Controls */}
       <div className="flex gap-1.5">
         <button
-          onClick={togglePause}
+          onClick={handleTogglePause}
           className={`px-3 py-1 text-xs text-sandoro-bg rounded font-bold hover:opacity-80 transition-opacity ${
             isRainbow ? 'rainbow-gradient-bg' : 'bg-sandoro-primary'
           }`}
