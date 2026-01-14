@@ -13,28 +13,7 @@
 
 <br />
 
-```
- ╔══════════╗
- ║▄▄▄▄▄▄▄▄▄▄║
- ║░░░░░░░░░░║
- ║░░░░░░░░░░║
- ║▒▒▒▒▒▒▒▒▒▒║
- ║▒▒▒▒▒▒▒▒▒▒║
-  ╲▓▓▓▓▓▓▓▓╱
-   ╲▓▓▓▓▓▓╱
-    ╲ ▼  ╱
-     ╲▓░╱
-     ╱░▓╲
-    ╱  ▼ ╲
-   ╱      ╲
-  ╱        ╲
- ║░░░░░░░░░░║
- ║▒▒▒▒▒▒▒▒▒▒║
- ║▓▓▓▓▓▓▓▓▓▓║
- ║▓▓▓▓▓▓▓▓▓▓║
- ║▀▀▀▀▀▀▀▀▀▀║
- ╚══════════╝
-```
+![sandoro demo](docs/assets/demo.gif)
 
 <br />
 
@@ -56,6 +35,10 @@
 | 🔒 **プライバシー重視** | データはすべてローカル保存。トラッキングなし |
 | ⚙️ **カスタマイズ** | 作業/休憩時間、テーマ、アクセントカラー、アイコンを自由に設定 |
 | 📊 **進捗トラッキング** | ヒートマップ、ストリーク、目標設定、タグ別統計 |
+| 🔔 **通知 & サウンド** | セッション完了時に通知・サウンドでお知らせ |
+| 🏷️ **タグ機能** | 作業内容をタグで分類し、タグ別の統計を確認 |
+| 💬 **コンテキストメッセージ** | 時刻・状態に応じた気の利いた一言表示 |
+| 📤 **シェア機能** | 頑張りをSNSでシェア |
 
 ## クイックスタート
 
@@ -103,6 +86,15 @@ sandoro stats     # 統計表示
 - **7テーマ**: Default, Nord, Dracula, Solarized, Gruvbox, Monokai, Tokyo Night
 - **10アクセントカラー**: Cyan, Purple, Pink, Orange, Green, Blue, Indigo, Yellow, Red, Rainbow
 
+## 統計機能
+
+- **ヒートマップ**: GitHub草グラフ風の活動可視化
+- **ストリーク**: 連続日数の記録
+- **目標設定**: 日次/週次のセッション数・作業時間目標
+- **期間比較**: 今週vs先週、今月vs先月の統計比較
+- **タグ別統計**: タグごとの作業時間を可視化
+- **エクスポート**: JSON/CSV形式での出力（CLI）
+
 ## 設定
 
 | 設定 | 説明 | デフォルト |
@@ -112,6 +104,8 @@ sandoro stats     # 統計表示
 | Long Break | 長い休憩（分） | 15 |
 | Sessions | 長い休憩までのセッション数 | 4 |
 | Auto Start | 自動で次のセッション開始 | OFF |
+| Notifications | セッション完了時の通知 | ON |
+| Sound | セッション完了時のサウンド | ON |
 
 ## プライバシー
 
@@ -138,6 +132,10 @@ sandoro stats     # 統計表示
 | 🔒 **Privacy-First** | All data stays local. No tracking, no analytics, no cloud required |
 | ⚙️ **Customizable** | Work/break durations, themes, accent colors, and icon styles |
 | 📊 **Track Progress** | Heatmaps, streaks, goals, and tag-based statistics |
+| 🔔 **Notifications & Sound** | Get notified when sessions complete |
+| 🏷️ **Tags** | Categorize your work and view tag-based statistics |
+| 💬 **Context Messages** | Time-aware encouraging messages |
+| 📤 **Share** | Share your progress on social media |
 
 ## Quick Start
 
@@ -185,6 +183,15 @@ sandoro stats     # Show statistics
 - **7 Themes**: Default, Nord, Dracula, Solarized, Gruvbox, Monokai, Tokyo Night
 - **10 Accent Colors**: Cyan, Purple, Pink, Orange, Green, Blue, Indigo, Yellow, Red, Rainbow
 
+## Statistics
+
+- **Heatmap**: GitHub-style activity visualization
+- **Streaks**: Track consecutive days
+- **Goals**: Set daily/weekly session and time targets
+- **Comparison**: This week vs last week, this month vs last month
+- **Tag Statistics**: Visualize time spent per tag
+- **Export**: JSON/CSV export (CLI)
+
 ## Configuration
 
 | Setting | Description | Default |
@@ -194,6 +201,8 @@ sandoro stats     # Show statistics
 | Long Break | Minutes for long break | 15 |
 | Sessions | Sessions until long break | 4 |
 | Auto Start | Auto-start next session | OFF |
+| Notifications | Notify on session complete | ON |
+| Sound | Play sound on session complete | ON |
 
 ## Privacy
 
