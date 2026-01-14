@@ -903,8 +903,9 @@ impl App {
                     self.editing = true;
                     // Initialize tag edit index based on current session's tag
                     if let Some((_, ref tag)) = self.recent_sessions.get(self.session_edit_index) {
-                        self.session_tag_edit_index =
-                            tag.as_ref().and_then(|t| self.available_tags.iter().position(|at| at.id == t.id));
+                        self.session_tag_edit_index = tag
+                            .as_ref()
+                            .and_then(|t| self.available_tags.iter().position(|at| at.id == t.id));
                     }
                 }
             }
@@ -1016,9 +1017,9 @@ impl App {
             SettingsItem::TagsHeader | SettingsItem::AddTag | SettingsItem::DeleteTag => {
                 String::new()
             }
-            SettingsItem::SessionsHeader | SettingsItem::EditSessionTag | SettingsItem::DeleteSession => {
-                String::new()
-            }
+            SettingsItem::SessionsHeader
+            | SettingsItem::EditSessionTag
+            | SettingsItem::DeleteSession => String::new(),
             SettingsItem::Back => String::new(),
         }
     }

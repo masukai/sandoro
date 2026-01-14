@@ -193,12 +193,16 @@ fn draw_settings_view(f: &mut Frame, app: &App) {
                     } else if is_editing {
                         let (session, tag) = &app.recent_sessions[app.session_edit_index];
                         let tag_name = tag.as_ref().map(|t| t.name.as_str()).unwrap_or("No tag");
-                        let new_tag = app.session_tag_edit_index
+                        let new_tag = app
+                            .session_tag_edit_index
                             .and_then(|i| app.available_tags.get(i))
                             .map(|t| t.name.as_str())
                             .unwrap_or("No tag");
                         let date = session.started_at.format("%m/%d %H:%M").to_string();
-                        format!("→ {} {} → {} [↑↓ select, Enter confirm]", date, tag_name, new_tag)
+                        format!(
+                            "→ {} {} → {} [↑↓ select, Enter confirm]",
+                            date, tag_name, new_tag
+                        )
                     } else {
                         let (session, tag) = &app.recent_sessions[app.session_edit_index];
                         let tag_name = tag.as_ref().map(|t| t.name.as_str()).unwrap_or("No tag");
@@ -214,7 +218,10 @@ fn draw_settings_view(f: &mut Frame, app: &App) {
                         let tag_name = tag.as_ref().map(|t| t.name.as_str()).unwrap_or("No tag");
                         let date = session.started_at.format("%m/%d %H:%M").to_string();
                         let duration = session.duration_seconds.unwrap_or(0) / 60;
-                        format!("→ {} {}m {} [↑↓ select, Enter delete]", date, duration, tag_name)
+                        format!(
+                            "→ {} {}m {} [↑↓ select, Enter delete]",
+                            date, duration, tag_name
+                        )
                     } else {
                         let (session, tag) = &app.recent_sessions[app.session_edit_index];
                         let tag_name = tag.as_ref().map(|t| t.name.as_str()).unwrap_or("No tag");
@@ -237,7 +244,10 @@ fn draw_settings_view(f: &mut Frame, app: &App) {
                 ""
             };
 
-            let content = if matches!(item, SettingsItem::TagsHeader | SettingsItem::SessionsHeader) {
+            let content = if matches!(
+                item,
+                SettingsItem::TagsHeader | SettingsItem::SessionsHeader
+            ) {
                 // Header: show label on left, value on right without ":"
                 format!("{}{} {}", prefix, item.label(), value)
             } else if value.is_empty() {
