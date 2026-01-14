@@ -1,10 +1,12 @@
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useState } from 'react';
 import { useTimer } from '../../hooks/useTimer';
 import { useSettings, IconType } from '../../hooks/useSettings';
 import { useSessionStorage } from '../../hooks/useSessionStorage';
 import { useNotification } from '../../hooks/useNotification';
 import { useSound } from '../../hooks/useSound';
 import { useTheme } from '../../hooks/useTheme';
+import { useContextMessage } from '../../hooks/useContextMessage';
+import { useTags } from '../../hooks/useTags';
 import { AsciiIcon } from './AsciiIcon';
 
 interface TimerProps {
@@ -30,6 +32,8 @@ export function Timer({
   const iconType = icon || settings.icon || 'hourglass';
   const { startSession, completeSession, cancelSession, getTodayStats } =
     useSessionStorage();
+  const { tags } = useTags();
+  const [selectedTagId, setSelectedTagId] = useState<string | undefined>(undefined);
   const { notifySessionComplete } = useNotification();
   const { playSessionComplete } = useSound();
 
@@ -38,9 +42,11 @@ export function Timer({
 
   const handleSessionStart = useCallback(
     (state: 'work' | 'shortBreak' | 'longBreak') => {
-      currentSessionIdRef.current = startSession(state);
+      // Only apply tag to work sessions
+      const tagId = state === 'work' ? selectedTagId : undefined;
+      currentSessionIdRef.current = startSession(state, tagId);
     },
-    [startSession]
+    [startSession, selectedTagId]
   );
 
   const handleSessionComplete = useCallback(
@@ -79,6 +85,9 @@ export function Timer({
   // Get today's stats for display
   const todayStats = getTodayStats();
 
+  // Get context-aware message
+  const contextMessage = useContextMessage(state, isRunning, settings.language);
+
   const stateLabel = {
     work: 'WORKING',
     shortBreak: 'SHORT BREAK',
@@ -92,9 +101,9 @@ export function Timer({
   }[state];
 
   return (
-    <div className="flex flex-col items-center gap-8 py-8">
+    <div className="flex flex-col items-center gap-3 py-2">
       {/* ASCII Art Icon */}
-      <div className="ascii-art text-center">
+      <div className="text-center">
         <AsciiIcon type={iconType} progress={progress} isBreak={state !== 'work'} isPaused={!isRunning} />
       </div>
 
@@ -102,15 +111,41 @@ export function Timer({
       <div className="timer-display">{formattedTime}</div>
 
       {/* State Label */}
-      <div className={`text-lg font-bold ${isRunning ? stateColor : 'text-yellow-500'}`}>
+      <div className={`text-base font-bold ${isRunning ? stateColor : 'text-yellow-500'}`}>
         [ {stateLabel}{!isRunning ? ' - PAUSED' : ''} ]
       </div>
 
+      {/* Tag Selection */}
+      {tags.length > 0 && (
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-sandoro-secondary">Tag:</span>
+          <select
+            value={selectedTagId || ''}
+            onChange={(e) => setSelectedTagId(e.target.value || undefined)}
+            className="px-3 py-1 text-sm rounded border border-sandoro-secondary bg-transparent hover:bg-sandoro-secondary/20 transition-colors focus:outline-none focus:border-sandoro-primary"
+            style={{ color: 'var(--sandoro-fg)' }}
+          >
+            <option value="" style={{ backgroundColor: 'var(--sandoro-bg)' }}>
+              No tag
+            </option>
+            {tags.map((tag) => (
+              <option
+                key={tag.id}
+                value={tag.id}
+                style={{ backgroundColor: 'var(--sandoro-bg)' }}
+              >
+                {tag.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {/* Controls */}
-      <div className="flex gap-4">
+      <div className="flex gap-1.5">
         <button
           onClick={togglePause}
-          className={`px-6 py-3 text-sandoro-bg rounded-lg font-bold hover:opacity-80 transition-opacity ${
+          className={`px-3 py-1 text-xs text-sandoro-bg rounded font-bold hover:opacity-80 transition-opacity ${
             isRainbow ? 'rainbow-gradient-bg' : 'bg-sandoro-primary'
           }`}
         >
@@ -118,21 +153,21 @@ export function Timer({
         </button>
         <button
           onClick={reset}
-          className="px-6 py-3 border border-sandoro-secondary rounded-lg hover:bg-sandoro-secondary/20 transition-colors"
+          className="px-3 py-1 text-xs border border-sandoro-secondary rounded hover:bg-sandoro-secondary/20 transition-colors"
           title="Reset current timer"
         >
           Reset
         </button>
         <button
           onClick={fullReset}
-          className="px-6 py-3 border border-red-500 text-red-500 rounded-lg hover:bg-red-500/20 transition-colors"
+          className="px-3 py-1 text-xs border border-red-500 text-red-500 rounded hover:bg-red-500/20 transition-colors"
           title="Reset timer and session count"
         >
           Full Reset
         </button>
         <button
           onClick={skip}
-          className="px-6 py-3 border border-sandoro-secondary rounded-lg hover:bg-sandoro-secondary/20 transition-colors"
+          className="px-3 py-1 text-xs border border-sandoro-secondary rounded hover:bg-sandoro-secondary/20 transition-colors"
         >
           Skip
         </button>
@@ -144,6 +179,11 @@ export function Timer({
         {todayStats.totalWorkSeconds >= 3600
           ? `${Math.floor(todayStats.totalWorkSeconds / 3600)}h ${Math.floor((todayStats.totalWorkSeconds % 3600) / 60)}m`
           : `${Math.floor(todayStats.totalWorkSeconds / 60)}m`}
+      </div>
+
+      {/* Context Message */}
+      <div className="text-sm italic" style={{ color: 'var(--sandoro-fg)', opacity: 0.7 }}>
+        {contextMessage}
       </div>
     </div>
   );

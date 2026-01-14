@@ -48,8 +48,10 @@ export function AsciiIcon({ type, progress, isBreak = false, isPaused = false }:
 
   // レインボーモードの場合はグラデーションアニメーションを適用
   const colorClass = isRainbow ? 'rainbow-gradient' : 'text-sandoro-primary';
+  // プログレスバーは行数が少ないので大きいサイズを使用
+  const sizeClass = type === 'progress' ? 'ascii-art-large' : 'ascii-art';
 
-  return <pre data-testid="ascii-icon" className={colorClass}>{ascii}</pre>;
+  return <pre data-testid="ascii-icon" className={`${sizeClass} ${colorClass}`}>{ascii}</pre>;
 }
 
 function renderProgressBar(progress: number, isBreak: boolean, animationFrame: number): string {
@@ -360,7 +362,7 @@ function renderCoffee(progress: number, isBreak: boolean, animationFrame: number
   // 休憩中: コーヒーが補充されていく（おかわり）+ 上から注ぐアニメーション
   // progress: 0% = 満タン、100% = 空（作業中）/ 逆（休憩中）
 
-  const ROWS = 6;
+  const ROWS = 6; // 元の高さを維持（滑らかな進捗表示）
   const MAX_LEVEL = 18;
 
   // 休憩中は逆方向（空→満タンへ補充）
@@ -379,11 +381,11 @@ function renderCoffee(progress: number, isBreak: boolean, animationFrame: number
   const isWorking = !isBreak && progress > 0 && progress < 100;
   const workFrame = animationFrame % 4;
 
-  // コーヒーの中身を生成
+  // コーヒーの中身を生成（横幅を広げた、高さは維持）
   const generateCoffeeFill = (level: number): string[] => {
     const rows: string[] = [];
     const unitsPerRow = 3;
-    const W = 8;
+    const W = 16; // 8から16に拡大（横長のマグカップ）
 
     for (let row = 0; row < ROWS; row++) {
       const rowFromBottom = ROWS - 1 - row;
@@ -411,62 +413,62 @@ function renderCoffee(progress: number, isBreak: boolean, animationFrame: number
   const fill = generateCoffeeFill(remainingLevel);
 
   // 蒸気パターン（作業中は動く演出：上昇）
-  // 4段階で湯気が上に昇っていく表現
+  // 4段階で湯気が上に昇っていく表現（横幅をさらに広げた）
   let steam0: string, steam1: string, steam2: string;
   if (showSteam && isWorking) {
     // 作業中: 湯気が上昇
     const steamPatterns: [string, string, string][] = [
-      ['        ', ' ～  ～ ', '～    ～'],  // 下から出る
-      [' ～  ～ ', '～    ～', '  ～～  '],  // 上昇中
-      ['～    ～', '  ～～  ', '   ~~   '],  // さらに上昇
-      ['  ～～  ', '   ~~   ', '        '],  // 消えていく
+      ['                ', '  ～      ～    ', '～            ～'],  // 下から出る
+      ['  ～      ～    ', '～            ～', '      ～～      '],  // 上昇中
+      ['～            ～', '      ～～      ', '       ~~       '],  // さらに上昇
+      ['      ～～      ', '       ~~       ', '                '],  // 消えていく
     ];
     [steam0, steam1, steam2] = steamPatterns[workFrame];
   } else if (showSteam) {
-    steam0 = '        ';
-    steam1 = ' ～  ～ ';
-    steam2 = '～    ～';
+    steam0 = '                ';
+    steam1 = '  ～      ～    ';
+    steam2 = '～            ～';
   } else {
-    steam0 = '        ';
-    steam1 = '        ';
-    steam2 = '        ';
+    steam0 = '                ';
+    steam1 = '                ';
+    steam2 = '                ';
   }
 
   // 注いでいる演出（上から注ぐ）- チカチカ
   const animFrame = animationFrame % 2;
-  const pour1 = animFrame === 0 ? '  │││  ' : '  │ │  ';
-  const pour2 = animFrame === 0 ? '  ╲│╱  ' : '  ╲ ╱  ';
-  const pour3 = animFrame === 0 ? '   ▼   ' : '   ▽   ';
+  const pour1 = animFrame === 0 ? '      │││      ' : '      │ │      ';
+  const pour2 = animFrame === 0 ? '      ╲│╱      ' : '      ╲ ╱      ';
+  const pour3 = animFrame === 0 ? '       ▼       ' : '       ▽       ';
 
-  // コーヒーカップ本体
+  // コーヒーカップ本体（横長のマグカップ形状、元の高さを維持）
   const coffeeArt = isPouring ? [
     `  ${pour1}  `,
     `  ${pour2}  `,
     `  ${pour3}  `,
-    ' ╭────────╮  ',
-    ` │${fill[0]}├─╮`,
-    ` │${fill[1]}│ │`,
-    ` │${fill[2]}│ │`,
-    ` │${fill[3]}├─╯`,
-    ` │${fill[4]}│  `,
-    ` │${fill[5]}│  `,
-    ' ╰────────╯  ',
-    '   ══════    ',
-    ' ▔▔▔▔▔▔▔▔▔▔▔▔',
+    ' ╭────────────────╮   ',
+    ` │${fill[0]}├──╮`,
+    ` │${fill[1]}│  │`,
+    ` │${fill[2]}│  │`,
+    ` │${fill[3]}├──╯`,
+    ` │${fill[4]}│   `,
+    ` │${fill[5]}│   `,
+    ' ╰────────────────╯   ',
+    '     ══════════       ',
+    ' ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔ ',
   ] : [
     `  ${steam0}  `,
     `  ${steam1}  `,
     `  ${steam2}  `,
-    ' ╭────────╮  ',
-    ` │${fill[0]}├─╮`,
-    ` │${fill[1]}│ │`,
-    ` │${fill[2]}│ │`,
-    ` │${fill[3]}├─╯`,
-    ` │${fill[4]}│  `,
-    ` │${fill[5]}│  `,
-    ' ╰────────╯  ',
-    '   ══════    ',
-    ' ▔▔▔▔▔▔▔▔▔▔▔▔',
+    ' ╭────────────────╮   ',
+    ` │${fill[0]}├──╮`,
+    ` │${fill[1]}│  │`,
+    ` │${fill[2]}│  │`,
+    ` │${fill[3]}├──╯`,
+    ` │${fill[4]}│   `,
+    ` │${fill[5]}│   `,
+    ' ╰────────────────╯   ',
+    '     ══════════       ',
+    ' ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔ ',
   ];
 
   return coffeeArt.join('\n');
