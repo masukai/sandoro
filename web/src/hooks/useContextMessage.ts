@@ -212,7 +212,7 @@ function getTimeBasedMessage(hour: number, lang: Language, tick: number): string
       ];
       return msgs[idx % msgs.length];
     }
-    if (hour >= 11 && hour <= 13) {
+    if (hour >= 11 && hour < 13) {
       const msgs = [
         'お昼時ですね。あと少し頑張りましょう',
         'ランチ前のラストスパート！',
@@ -223,7 +223,7 @@ function getTimeBasedMessage(hour: number, lang: Language, tick: number): string
       ];
       return msgs[idx % msgs.length];
     }
-    if (hour >= 14 && hour <= 17) {
+    if (hour >= 13 && hour <= 17) {
       const msgs = [
         '午後も順調ですね。その調子！',
         '午後の眠気に負けず、素晴らしいです',
@@ -271,7 +271,7 @@ function getTimeBasedMessage(hour: number, lang: Language, tick: number): string
     ];
     return msgs[idx % msgs.length];
   }
-  if (hour >= 11 && hour <= 13) {
+  if (hour >= 11 && hour < 13) {
     const msgs = [
       'Lunchtime is near. Stay focused!',
       "Pre-lunch sprint! You've got this.",
@@ -282,7 +282,7 @@ function getTimeBasedMessage(hour: number, lang: Language, tick: number): string
     ];
     return msgs[idx % msgs.length];
   }
-  if (hour >= 14 && hour <= 17) {
+  if (hour >= 13 && hour <= 17) {
     const msgs = [
       "Afternoon push! You're doing great.",
       'Beating the afternoon slump. Impressive!',
@@ -350,7 +350,7 @@ function getPausedMessage(hour: number, lang: Language, tick: number, stats?: Us
       ];
       return msgs[idx % msgs.length];
     }
-    if (hour >= 11 && hour <= 13) {
+    if (hour >= 11 && hour < 13) {
       const msgs = [
         'お昼前にもうひと頑張り？',
         'ランチ前の一仕事、始めますか？',
@@ -359,7 +359,7 @@ function getPausedMessage(hour: number, lang: Language, tick: number, stats?: Us
       ];
       return msgs[idx % msgs.length];
     }
-    if (hour >= 14 && hour <= 17) {
+    if (hour >= 13 && hour <= 17) {
       const msgs = [
         '午後のセッション、準備OK？',
         '午後も頑張りますか？',
@@ -399,7 +399,7 @@ function getPausedMessage(hour: number, lang: Language, tick: number, stats?: Us
     ];
     return msgs[idx % msgs.length];
   }
-  if (hour >= 11 && hour <= 13) {
+  if (hour >= 11 && hour < 13) {
     const msgs = [
       'Ready for a pre-lunch focus session?',
       'One more before lunch?',
@@ -408,7 +408,7 @@ function getPausedMessage(hour: number, lang: Language, tick: number, stats?: Us
     ];
     return msgs[idx % msgs.length];
   }
-  if (hour >= 14 && hour <= 17) {
+  if (hour >= 13 && hour <= 17) {
     const msgs = [
       'Ready to power through the afternoon?',
       'Afternoon session ready?',

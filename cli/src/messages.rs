@@ -293,7 +293,7 @@ fn get_time_based_message(hour: u32, lang: Language) -> &'static str {
                 ];
                 MSGS[idx % MSGS.len()]
             }
-            11..=13 => {
+            11..=12 => {
                 const MSGS: &[&str] = &[
                     "お昼時ですね。あと少し頑張りましょう",
                     "ランチ前のラストスパート！",
@@ -304,7 +304,7 @@ fn get_time_based_message(hour: u32, lang: Language) -> &'static str {
                 ];
                 MSGS[idx % MSGS.len()]
             }
-            14..=17 => {
+            13..=17 => {
                 const MSGS: &[&str] = &[
                     "午後も順調ですね。その調子！",
                     "午後の眠気に負けず、素晴らしいです",
@@ -351,7 +351,7 @@ fn get_time_based_message(hour: u32, lang: Language) -> &'static str {
                 ];
                 MSGS[idx % MSGS.len()]
             }
-            11..=13 => {
+            11..=12 => {
                 const MSGS: &[&str] = &[
                     "Lunchtime is near. Stay focused!",
                     "Pre-lunch sprint! You've got this.",
@@ -362,7 +362,7 @@ fn get_time_based_message(hour: u32, lang: Language) -> &'static str {
                 ];
                 MSGS[idx % MSGS.len()]
             }
-            14..=17 => {
+            13..=17 => {
                 const MSGS: &[&str] = &[
                     "Afternoon push! You're doing great.",
                     "Beating the afternoon slump. Impressive!",
@@ -440,7 +440,7 @@ fn get_paused_message(hour: u32, lang: Language, stats: Option<&UserStats>) -> &
                 ];
                 MSGS[idx % MSGS.len()]
             }
-            11..=13 => {
+            11..=12 => {
                 const MSGS: &[&str] = &[
                     "お昼前にもうひと頑張り？",
                     "ランチ前の一仕事、始めますか？",
@@ -449,7 +449,7 @@ fn get_paused_message(hour: u32, lang: Language, stats: Option<&UserStats>) -> &
                 ];
                 MSGS[idx % MSGS.len()]
             }
-            14..=17 => {
+            13..=17 => {
                 const MSGS: &[&str] = &[
                     "午後のセッション、準備OK？",
                     "午後も頑張りますか？",
@@ -488,7 +488,7 @@ fn get_paused_message(hour: u32, lang: Language, stats: Option<&UserStats>) -> &
                 ];
                 MSGS[idx % MSGS.len()]
             }
-            11..=13 => {
+            11..=12 => {
                 const MSGS: &[&str] = &[
                     "Ready for a pre-lunch focus session?",
                     "One more before lunch?",
@@ -497,7 +497,7 @@ fn get_paused_message(hour: u32, lang: Language, stats: Option<&UserStats>) -> &
                 ];
                 MSGS[idx % MSGS.len()]
             }
-            14..=17 => {
+            13..=17 => {
                 const MSGS: &[&str] = &[
                     "Ready to power through the afternoon?",
                     "Afternoon session ready?",
