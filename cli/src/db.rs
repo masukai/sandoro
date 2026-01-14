@@ -511,7 +511,9 @@ impl Database {
 
     /// Get all tags
     pub fn get_all_tags(&self) -> Result<Vec<Tag>> {
-        let mut stmt = self.conn.prepare("SELECT id, name, color FROM tags ORDER BY name")?;
+        let mut stmt = self
+            .conn
+            .prepare("SELECT id, name, color FROM tags ORDER BY name")?;
         let tags = stmt
             .query_map([], |row| {
                 Ok(Tag {

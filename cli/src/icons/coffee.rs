@@ -207,7 +207,7 @@ mod tests {
         // At low progress (high coffee), should show fill gradient
         let lines = render_coffee(20.0, 0);
         let fill_area = lines[4..10].join(""); // 元の範囲に戻す
-        // Should contain gradient characters
+                                               // Should contain gradient characters
         assert!(fill_area.contains("▓") || fill_area.contains("▒") || fill_area.contains("░"));
     }
 

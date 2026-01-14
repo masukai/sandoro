@@ -361,7 +361,11 @@ fn draw_main_content(f: &mut Frame, area: Rect, app: &App) {
     let lang = Language::from_str(&app.config.appearance.language);
     let context_msg = get_context_message(app.timer.state, !app.timer.is_paused, lang);
     let context_widget = Paragraph::new(context_msg)
-        .style(Style::default().fg(secondary).add_modifier(Modifier::ITALIC))
+        .style(
+            Style::default()
+                .fg(secondary)
+                .add_modifier(Modifier::ITALIC),
+        )
         .alignment(Alignment::Center)
         .block(Block::default().borders(Borders::LEFT | Borders::RIGHT));
     f.render_widget(context_widget, chunks[5]);
