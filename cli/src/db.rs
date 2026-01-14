@@ -597,6 +597,72 @@ impl Database {
         Ok(self.conn.last_insert_rowid())
     }
 
+    /// Delete a session by ID
+    pub fn delete_session(&self, session_id: i64) -> Result<()> {
+        self.conn.execute(
+            "DELETE FROM sessions WHERE id = ?1",
+            params![session_id],
+        )?;
+        Ok(())
+    }
+
+    /// Update a session's tag
+    pub fn update_session_tag(&self, session_id: i64, tag_id: Option<i64>) -> Result<()> {
+        self.conn.execute(
+            "UPDATE sessions SET tag_id = ?1 WHERE id = ?2",
+            params![tag_id, session_id],
+        )?;
+        Ok(())
+    }
+
+    /// Get recent completed work sessions
+    pub fn get_recent_sessions(&self, limit: i32) -> Result<Vec<(Session, Option<Tag>)>> {
+        let mut stmt = self.conn.prepare(
+            r#"
+            SELECT s.id, s.started_at, s.ended_at, s.duration_seconds, s.type, s.completed,
+                   t.id, t.name, t.color
+            FROM sessions s
+            LEFT JOIN tags t ON s.tag_id = t.id
+            WHERE s.type = 'work' AND s.completed = TRUE
+            ORDER BY s.started_at DESC
+            LIMIT ?1
+            "#,
+        )?;
+
+        let sessions = stmt
+            .query_map(params![limit], |row| {
+                let session = Session {
+                    id: row.get(0)?,
+                    started_at: DateTime::parse_from_rfc3339(&row.get::<_, String>(1)?)
+                        .unwrap_or_else(|_| Utc::now().into())
+                        .with_timezone(&Utc),
+                    ended_at: row.get::<_, Option<String>>(2)?.map(|s| {
+                        DateTime::parse_from_rfc3339(&s)
+                            .unwrap_or_else(|_| Utc::now().into())
+                            .with_timezone(&Utc)
+                    }),
+                    duration_seconds: row.get(3)?,
+                    session_type: row.get(4)?,
+                    completed: row.get(5)?,
+                };
+                let tag_id: Option<i64> = row.get(6)?;
+                let tag = if let Some(id) = tag_id {
+                    Some(Tag {
+                        id,
+                        name: row.get(7)?,
+                        color: row.get(8)?,
+                    })
+                } else {
+                    None
+                };
+                Ok((session, tag))
+            })?
+            .filter_map(|r| r.ok())
+            .collect();
+
+        Ok(sessions)
+    }
+
     /// Get statistics grouped by tag
     pub fn get_stats_by_tag(&self, days: i32) -> Result<Vec<(Option<Tag>, i32, i32)>> {
         let offset = format!("-{} days", days);

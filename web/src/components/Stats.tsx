@@ -1,10 +1,10 @@
 import { useState, useCallback, useMemo } from 'react';
-import { useSessionStorage, DailyStats } from '../hooks/useSessionStorage';
+import { useSessionStorage, DailyStats, Session } from '../hooks/useSessionStorage';
 import { useGoalProgress, hasGoalsEnabled } from '../hooks/useGoalProgress';
 import { useComparison, ComparisonData } from '../hooks/useComparison';
 import { useSettings } from '../hooks/useSettings';
 import { useTheme } from '../hooks/useTheme';
-import { useTags } from '../hooks/useTags';
+import { useTags, Tag } from '../hooks/useTags';
 import { Heatmap } from './Heatmap';
 import { ShareModal } from './ShareModal';
 
@@ -246,6 +246,147 @@ function ComparisonCard({ title, data }: ComparisonCardProps) {
   );
 }
 
+interface SessionHistoryProps {
+  sessions: Session[];
+  tags: Tag[];
+  getTagById: (id: string) => Tag | undefined;
+  onUpdateTag: (sessionId: string, tagId: string | undefined) => void;
+  onDelete: (sessionId: string) => void;
+  isRainbow: boolean;
+}
+
+function SessionHistory({
+  sessions,
+  tags,
+  getTagById,
+  onUpdateTag,
+  onDelete,
+  isRainbow,
+}: SessionHistoryProps) {
+  const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  // Filter and sort: only completed work sessions, newest first
+  const workSessions = useMemo(() => {
+    return sessions
+      .filter((s) => s.type === 'work' && s.completed)
+      .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())
+      .slice(0, 20); // Show last 20 sessions
+  }, [sessions]);
+
+  if (workSessions.length === 0) {
+    return (
+      <p className="text-sandoro-secondary text-sm">No work sessions recorded yet.</p>
+    );
+  }
+
+  const formatDateTime = (isoString: string) => {
+    const date = new Date(isoString);
+    return date.toLocaleString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  return (
+    <div className="space-y-2">
+      {workSessions.map((session) => {
+        const tag = session.tagId ? getTagById(session.tagId) : undefined;
+        const isEditing = editingSessionId === session.id;
+        const isDeleting = deleteConfirmId === session.id;
+
+        return (
+          <div
+            key={session.id}
+            className="flex items-center justify-between text-sm font-mono py-2 px-3 border border-sandoro-secondary/30 rounded-lg"
+            style={{ backgroundColor: 'var(--sandoro-bg)' }}
+          >
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <span className="text-sandoro-secondary whitespace-nowrap">
+                {formatDateTime(session.startedAt)}
+              </span>
+              <span className="whitespace-nowrap">
+                {formatDuration(session.durationSeconds || 0)}
+              </span>
+              {isEditing ? (
+                <select
+                  value={session.tagId || ''}
+                  onChange={(e) => {
+                    onUpdateTag(session.id, e.target.value || undefined);
+                    setEditingSessionId(null);
+                  }}
+                  onBlur={() => setEditingSessionId(null)}
+                  autoFocus
+                  className="px-2 py-0.5 text-xs rounded border border-sandoro-secondary bg-transparent"
+                >
+                  <option value="">No tag</option>
+                  {tags.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <span
+                  className={`text-xs truncate cursor-pointer hover:underline ${
+                    tag ? '' : 'text-sandoro-secondary'
+                  }`}
+                  onClick={() => setEditingSessionId(session.id)}
+                  title="Click to change tag"
+                >
+                  {tag?.name || 'No tag'}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2 ml-2">
+              {isDeleting ? (
+                <>
+                  <button
+                    onClick={() => {
+                      onDelete(session.id);
+                      setDeleteConfirmId(null);
+                    }}
+                    className="px-2 py-0.5 text-xs rounded bg-red-500 text-white hover:bg-red-600 transition-colors"
+                  >
+                    Confirm
+                  </button>
+                  <button
+                    onClick={() => setDeleteConfirmId(null)}
+                    className="px-2 py-0.5 text-xs rounded border border-sandoro-secondary hover:bg-sandoro-secondary/20 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => setEditingSessionId(session.id)}
+                    className={`px-2 py-0.5 text-xs rounded border border-sandoro-secondary hover:bg-sandoro-secondary/20 transition-colors ${
+                      isRainbow ? 'hover:rainbow-gradient-bg hover:border-transparent' : ''
+                    }`}
+                    title="Change tag"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => setDeleteConfirmId(session.id)}
+                    className="px-2 py-0.5 text-xs rounded border border-red-400 text-red-400 hover:bg-red-400 hover:text-white transition-colors"
+                    title="Delete session"
+                  >
+                    Delete
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function Stats() {
   const [view, setView] = useState<StatsView>('today');
   const [heatmapWeeks, setHeatmapWeeks] = useState<number>(12);
@@ -254,6 +395,7 @@ export function Stats() {
   const { accentColor, resolvedTheme } = useTheme();
   const isRainbow = accentColor === 'rainbow';
   const {
+    sessions,
     getTodayStats,
     getWeekStats,
     getMonthStats,
@@ -263,8 +405,10 @@ export function Stats() {
     exportToJSON,
     exportToCSV,
     getStatsByTag,
+    deleteSession,
+    updateSessionTag,
   } = useSessionStorage();
-  const { getTagById } = useTags();
+  const { tags, getTagById } = useTags();
 
   const handleExport = useCallback(
     (format: ExportFormat) => {
@@ -473,6 +617,19 @@ export function Stats() {
           </div>
         </div>
       )}
+
+      {/* Session History */}
+      <div className="pt-4 border-t border-sandoro-secondary/30">
+        <h3 className="text-sm font-semibold text-sandoro-secondary mb-3">Recent Sessions</h3>
+        <SessionHistory
+          sessions={sessions}
+          tags={tags}
+          getTagById={getTagById}
+          onUpdateTag={updateSessionTag}
+          onDelete={deleteSession}
+          isRainbow={isRainbow}
+        />
+      </div>
 
       {/* Share Modal */}
       <ShareModal

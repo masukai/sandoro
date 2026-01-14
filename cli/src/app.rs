@@ -11,7 +11,7 @@ use std::io;
 use std::time::Duration;
 
 use crate::config::Config;
-use crate::db::{Database, SessionType, Tag};
+use crate::db::{Database, Session, SessionType, Tag};
 use crate::icons::IconType;
 use crate::notification;
 use crate::theme::Theme;
@@ -44,6 +44,9 @@ pub enum SettingsItem {
     TagsHeader,
     AddTag,
     DeleteTag,
+    SessionsHeader,
+    EditSessionTag,
+    DeleteSession,
     Back,
 }
 
@@ -66,6 +69,9 @@ impl SettingsItem {
             Self::TagsHeader,
             Self::AddTag,
             Self::DeleteTag,
+            Self::SessionsHeader,
+            Self::EditSessionTag,
+            Self::DeleteSession,
             Self::Back,
         ]
     }
@@ -88,13 +94,16 @@ impl SettingsItem {
             Self::TagsHeader => "── Tags ──",
             Self::AddTag => "Add New Tag",
             Self::DeleteTag => "Delete Tag",
+            Self::SessionsHeader => "── Session History ──",
+            Self::EditSessionTag => "Change Session Tag",
+            Self::DeleteSession => "Delete Session",
             Self::Back => "← Back to Timer",
         }
     }
 
     /// Returns true if this item is a header/separator (not selectable for editing)
     pub fn is_header(&self) -> bool {
-        matches!(self, Self::TagsHeader)
+        matches!(self, Self::TagsHeader | Self::SessionsHeader)
     }
 }
 
@@ -164,6 +173,12 @@ pub struct App {
     pub tag_input_mode: bool,
     /// Index for selecting tag to delete (cycles through available tags)
     pub delete_tag_index: usize,
+    /// Recent sessions (with tags) for editing
+    pub recent_sessions: Vec<(Session, Option<Tag>)>,
+    /// Index for selecting session to edit/delete
+    pub session_edit_index: usize,
+    /// Index for selecting tag when editing session tag
+    pub session_tag_edit_index: Option<usize>,
 }
 
 impl App {
@@ -242,6 +257,12 @@ impl App {
             .and_then(|d| d.get_all_tags().ok())
             .unwrap_or_default();
 
+        // Load recent sessions for editing
+        let recent_sessions = db
+            .as_ref()
+            .and_then(|d| d.get_recent_sessions(20).ok())
+            .unwrap_or_default();
+
         Self {
             timer: Timer::with_sessions(
                 config.timer.work_duration,
@@ -280,6 +301,9 @@ impl App {
             tag_input: String::new(),
             tag_input_mode: false,
             delete_tag_index: 0,
+            recent_sessions,
+            session_edit_index: 0,
+            session_tag_edit_index: None,
         }
     }
 
@@ -439,6 +463,82 @@ impl App {
         self.delete_tag_index = (self.delete_tag_index + 1) % self.available_tags.len();
     }
 
+    /// Refresh recent sessions from database
+    pub fn refresh_recent_sessions(&mut self) {
+        self.recent_sessions = self
+            .db
+            .as_ref()
+            .and_then(|d| d.get_recent_sessions(20).ok())
+            .unwrap_or_default();
+        // Adjust index if needed
+        if self.session_edit_index >= self.recent_sessions.len() && !self.recent_sessions.is_empty()
+        {
+            self.session_edit_index = self.recent_sessions.len() - 1;
+        }
+    }
+
+    /// Delete the session at session_edit_index
+    pub fn delete_current_session(&mut self) {
+        if self.recent_sessions.is_empty() {
+            return;
+        }
+        if self.session_edit_index >= self.recent_sessions.len() {
+            self.session_edit_index = 0;
+        }
+        let session_id = self.recent_sessions[self.session_edit_index].0.id;
+        let deleted = self
+            .db
+            .as_ref()
+            .map(|db| db.delete_session(session_id).is_ok())
+            .unwrap_or(false);
+        if deleted {
+            self.refresh_recent_sessions();
+            // Update stats
+            if let Some(ref db) = self.db {
+                if let Ok(stats) = db.get_today_stats() {
+                    self.today_work_seconds = stats.total_work_seconds;
+                    self.today_sessions = stats.sessions_completed;
+                }
+            }
+        }
+    }
+
+    /// Update the tag of the session at session_edit_index
+    pub fn update_current_session_tag(&mut self, tag_id: Option<i64>) {
+        if self.recent_sessions.is_empty() {
+            return;
+        }
+        if self.session_edit_index >= self.recent_sessions.len() {
+            return;
+        }
+        let session_id = self.recent_sessions[self.session_edit_index].0.id;
+        if let Some(ref db) = self.db {
+            if db.update_session_tag(session_id, tag_id).is_ok() {
+                self.refresh_recent_sessions();
+            }
+        }
+    }
+
+    /// Cycle session_edit_index through recent sessions
+    pub fn cycle_session_edit(&mut self) {
+        if self.recent_sessions.is_empty() {
+            return;
+        }
+        self.session_edit_index = (self.session_edit_index + 1) % self.recent_sessions.len();
+    }
+
+    /// Cycle session_edit_index backwards
+    pub fn cycle_session_edit_back(&mut self) {
+        if self.recent_sessions.is_empty() {
+            return;
+        }
+        if self.session_edit_index > 0 {
+            self.session_edit_index -= 1;
+        } else {
+            self.session_edit_index = self.recent_sessions.len() - 1;
+        }
+    }
+
     /// Start recording a new session
     fn start_session_recording(&mut self) {
         if let Some(ref db) = self.db {
@@ -578,6 +678,10 @@ impl App {
                         }
                     }
                 }
+                SettingsItem::EditSessionTag | SettingsItem::DeleteSession => {
+                    // Cycle to previous session
+                    self.cycle_session_edit_back();
+                }
                 _ => {}
             }
         } else if self.settings_index > 0 {
@@ -671,6 +775,10 @@ impl App {
                 SettingsItem::DeleteTag => {
                     // Cycle to next tag for deletion
                     self.cycle_delete_tag();
+                }
+                SettingsItem::EditSessionTag | SettingsItem::DeleteSession => {
+                    // Cycle to next session
+                    self.cycle_session_edit();
                 }
                 _ => {}
             }
@@ -777,6 +885,39 @@ impl App {
                     self.editing = true;
                 }
             }
+            SettingsItem::SessionsHeader => {
+                // Header is not selectable, skip to next item
+            }
+            SettingsItem::EditSessionTag => {
+                if self.editing {
+                    // Confirm: apply the selected tag to the session
+                    let tag_id = self
+                        .session_tag_edit_index
+                        .and_then(|i| self.available_tags.get(i))
+                        .map(|t| t.id);
+                    self.update_current_session_tag(tag_id);
+                    self.editing = false;
+                    self.session_tag_edit_index = None;
+                } else if !self.recent_sessions.is_empty() {
+                    // Enter edit mode to select session and tag
+                    self.editing = true;
+                    // Initialize tag edit index based on current session's tag
+                    if let Some((_, ref tag)) = self.recent_sessions.get(self.session_edit_index) {
+                        self.session_tag_edit_index =
+                            tag.as_ref().and_then(|t| self.available_tags.iter().position(|at| at.id == t.id));
+                    }
+                }
+            }
+            SettingsItem::DeleteSession => {
+                if self.editing {
+                    // Confirm: delete the selected session
+                    self.delete_current_session();
+                    self.editing = false;
+                } else if !self.recent_sessions.is_empty() {
+                    // Enter edit mode to select which session to delete
+                    self.editing = true;
+                }
+            }
         }
     }
 
@@ -873,6 +1014,9 @@ impl App {
                 }
             }
             SettingsItem::TagsHeader | SettingsItem::AddTag | SettingsItem::DeleteTag => {
+                String::new()
+            }
+            SettingsItem::SessionsHeader | SettingsItem::EditSessionTag | SettingsItem::DeleteSession => {
                 String::new()
             }
             SettingsItem::Back => String::new(),

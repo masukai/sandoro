@@ -99,6 +99,29 @@ export function useSessionStorage() {
     });
   }, []);
 
+  // Delete a completed session (for editing history)
+  const deleteSession = useCallback((sessionId: string): void => {
+    setSessions((prev) => {
+      const updated = prev.filter((s) => s.id !== sessionId);
+      saveSessions(updated);
+      return updated;
+    });
+  }, []);
+
+  // Update the tag of a session
+  const updateSessionTag = useCallback(
+    (sessionId: string, tagId: string | undefined): void => {
+      setSessions((prev) => {
+        const updated = prev.map((s) =>
+          s.id === sessionId ? { ...s, tagId } : s
+        );
+        saveSessions(updated);
+        return updated;
+      });
+    },
+    []
+  );
+
   const getTodayStats = useCallback((): DailyStats => {
     const today = new Date().toISOString().split('T')[0];
     const todaySessions = sessions.filter(
@@ -349,6 +372,8 @@ export function useSessionStorage() {
     startSession,
     completeSession,
     cancelSession,
+    deleteSession,
+    updateSessionTag,
     getTodayStats,
     getWeekStats,
     getMonthStats,
