@@ -1,11 +1,11 @@
-import { useRef, useCallback, useState } from 'react';
+import { useRef, useCallback, useState, useEffect, useMemo } from 'react';
 import { useTimer } from '../../hooks/useTimer';
 import { useSettings, IconType } from '../../hooks/useSettings';
 import { useSessionStorage } from '../../hooks/useSessionStorage';
 import { useNotification } from '../../hooks/useNotification';
 import { useSound } from '../../hooks/useSound';
 import { useTheme } from '../../hooks/useTheme';
-import { useContextMessage } from '../../hooks/useContextMessage';
+import { useContextMessage, UserStats } from '../../hooks/useContextMessage';
 import { useTags } from '../../hooks/useTags';
 import { AsciiIcon } from './AsciiIcon';
 
@@ -30,7 +30,7 @@ export function Timer({
   const { accentColor } = useTheme();
   const isRainbow = accentColor === 'rainbow';
   const iconType = icon || settings.icon || 'hourglass';
-  const { startSession, completeSession, cancelSession, getTodayStats } =
+  const { sessions, startSession, completeSession, cancelSession, getTodayStats, getStreak, getWeekStats, getDailyBreakdown } =
     useSessionStorage();
   const { tags } = useTags();
   const [selectedTagId, setSelectedTagId] = useState<string | undefined>(undefined);
@@ -85,8 +85,47 @@ export function Timer({
   // Get today's stats for display
   const todayStats = getTodayStats();
 
+  // Rotation tick for message variety (changes every 10 seconds)
+  const [rotationTick, setRotationTick] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setRotationTick((prev) => prev + 1);
+    }, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Calculate user stats for context messages
+  const userStats: UserStats = useMemo(() => {
+    const streak = getStreak();
+    const weekStats = getWeekStats();
+    const dailyBreakdown = getDailyBreakdown(2); // Get yesterday and today
+
+    // Calculate yesterday's work seconds
+    const today = new Date().toISOString().split('T')[0];
+    const yesterdayStats = dailyBreakdown.find(d => d.date !== today);
+    const yesterdaySeconds = yesterdayStats?.totalWorkSeconds || 0;
+
+    // Weekly average (excluding today)
+    const weekAvgSeconds = weekStats.totalWorkSeconds > 0
+      ? Math.floor(weekStats.totalWorkSeconds / 7)
+      : 0;
+
+    // Total sessions ever
+    const totalSessions = sessions.filter(s => s.type === 'work' && s.completed).length;
+
+    return {
+      todayWorkSeconds: todayStats.totalWorkSeconds,
+      todaySessions: todayStats.sessionsCompleted,
+      currentStreak: streak.current,
+      longestStreak: streak.longest,
+      weekAvgSeconds,
+      yesterdaySeconds,
+      totalSessions,
+    };
+  }, [sessions, todayStats, getStreak, getWeekStats, getDailyBreakdown]);
+
   // Get context-aware message
-  const contextMessage = useContextMessage(state, isRunning, settings.language);
+  const contextMessage = useContextMessage(state, isRunning, settings.language, rotationTick, userStats);
 
   const stateLabel = {
     work: 'WORKING',

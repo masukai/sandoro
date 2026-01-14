@@ -128,6 +128,16 @@ pub struct App {
     pub today_work_seconds: i32,
     /// Today's completed sessions count
     pub today_sessions: i32,
+    /// Current streak (consecutive days)
+    pub current_streak: i32,
+    /// Longest streak ever
+    pub longest_streak: i32,
+    /// Yesterday's work seconds
+    pub yesterday_seconds: i32,
+    /// Weekly average work seconds
+    pub week_avg_seconds: i32,
+    /// Total sessions completed (all time)
+    pub total_sessions: i32,
 }
 
 impl App {
@@ -158,13 +168,47 @@ impl App {
             .position(|a| a == &config.appearance.accent)
             .unwrap_or(0); // Default to cyan (index 0)
 
-        // Open database and get today's stats
+        // Open database and get stats
         let db = Database::open().ok();
         let (today_work_seconds, today_sessions) = db
             .as_ref()
             .and_then(|d| d.get_today_stats().ok())
             .map(|s| (s.total_work_seconds, s.sessions_completed))
             .unwrap_or((0, 0));
+
+        // Get streak info
+        let (current_streak, longest_streak) = db
+            .as_ref()
+            .and_then(|d| d.get_streak().ok())
+            .map(|s| (s.current, s.longest))
+            .unwrap_or((0, 0));
+
+        // Get week stats for average
+        let week_avg_seconds = db
+            .as_ref()
+            .and_then(|d| d.get_week_stats().ok())
+            .map(|s| s.total_work_seconds / 7)
+            .unwrap_or(0);
+
+        // Get yesterday's stats
+        let yesterday_seconds = db
+            .as_ref()
+            .and_then(|d| {
+                use chrono::{Duration, Local};
+                let yesterday = (Local::now() - Duration::days(1))
+                    .format("%Y-%m-%d")
+                    .to_string();
+                d.get_date_stats(&yesterday).ok()
+            })
+            .map(|s| s.total_work_seconds)
+            .unwrap_or(0);
+
+        // Get total sessions count
+        let total_sessions = db
+            .as_ref()
+            .and_then(|d| d.get_month_stats().ok())
+            .map(|s| s.sessions_completed)
+            .unwrap_or(0);
 
         Self {
             timer: Timer::with_sessions(
@@ -193,6 +237,11 @@ impl App {
             current_session_id: None,
             today_work_seconds,
             today_sessions,
+            current_streak,
+            longest_streak,
+            yesterday_seconds,
+            week_avg_seconds,
+            total_sessions,
         }
     }
 
@@ -304,6 +353,13 @@ impl App {
                 if state == TimerState::Work {
                     self.today_work_seconds += duration as i32;
                     self.today_sessions += 1;
+                    self.total_sessions += 1;
+
+                    // Refresh streak info (may have started a new streak today)
+                    if let Ok(streak) = db.get_streak() {
+                        self.current_streak = streak.current;
+                        self.longest_streak = streak.longest;
+                    }
                 }
             }
         }

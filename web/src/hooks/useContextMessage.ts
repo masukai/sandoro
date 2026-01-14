@@ -4,45 +4,201 @@ import { Language } from './useSettings';
 export type TimerState = 'work' | 'shortBreak' | 'longBreak';
 
 /**
- * Get rotation index based on current time (changes every 10 seconds)
+ * User statistics for personalized messages
  */
-function getRotationIndex(max: number): number {
-  const now = new Date();
-  const seed = Math.floor(now.getSeconds() / 10) + now.getMinutes() * 6;
+export interface UserStats {
+  todayWorkSeconds: number;
+  todaySessions: number;
+  currentStreak: number;
+  longestStreak: number;
+  weekAvgSeconds: number; // Average daily work seconds over the past week
+  yesterdaySeconds: number;
+  totalSessions: number; // Total sessions ever completed
+}
+
+/**
+ * Get rotation index based on seed
+ */
+function getRotationIndex(max: number, seed: number): number {
   return seed % max;
 }
 
 /**
- * Hook to get context-aware greeting message based on time, timer state, and language
+ * Hook to get context-aware greeting message based on time, timer state, language, and user stats
  * Messages rotate every 10 seconds for variety
+ * @param rotationTick - External tick value that changes every 10 seconds to trigger re-render
+ * @param stats - User statistics for personalized messages
  */
 export function useContextMessage(
   state: TimerState,
   isRunning: boolean,
-  language: Language = 'ja'
+  language: Language = 'ja',
+  rotationTick: number = 0,
+  stats?: UserStats
 ): string {
   return useMemo(() => {
     const hour = new Date().getHours();
 
+    // Check for achievement messages first (these are special moments!)
+    if (stats) {
+      const achievementMsg = getAchievementMessage(stats, language, rotationTick);
+      if (achievementMsg) {
+        return achievementMsg;
+      }
+    }
+
     // State-specific messages take priority
     if (state === 'shortBreak') {
-      return getShortBreakMessage(language);
+      return getShortBreakMessage(language, rotationTick, stats);
     }
     if (state === 'longBreak') {
-      return getLongBreakMessage(language);
+      return getLongBreakMessage(language, rotationTick, stats);
     }
 
     // For work state
     if (!isRunning) {
-      return getPausedMessage(hour, language);
+      return getPausedMessage(hour, language, rotationTick, stats);
     }
 
-    return getTimeBasedMessage(hour, language);
-  }, [state, isRunning, language]);
+    // Mix in stats-based encouragement during work
+    if (stats && rotationTick % 3 === 0) {
+      const encouragement = getEncouragementMessage(stats, language);
+      if (encouragement) {
+        return encouragement;
+      }
+    }
+
+    return getTimeBasedMessage(hour, language, rotationTick);
+  }, [state, isRunning, language, rotationTick, stats]);
 }
 
-function getTimeBasedMessage(hour: number, lang: Language): string {
-  const idx = getRotationIndex(6);
+/**
+ * Achievement messages for special milestones
+ */
+function getAchievementMessage(stats: UserStats, lang: Language, tick: number): string | null {
+  const todayHours = stats.todayWorkSeconds / 3600;
+  const todayMinutes = stats.todayWorkSeconds / 60;
+
+  // Check milestones (only show occasionally based on tick)
+  if (tick % 6 !== 0) return null;
+
+  if (lang === 'ja') {
+    // First session ever!
+    if (stats.totalSessions === 1) {
+      return '🎉 記念すべき初セッション！素晴らしいスタート！';
+    }
+    // 10 sessions milestone
+    if (stats.totalSessions === 10) {
+      return '🏆 通算10セッション達成！習慣が身についてきた！';
+    }
+    // 50 sessions
+    if (stats.totalSessions === 50) {
+      return '⭐ 50セッション達成！ポモドーロの達人への道！';
+    }
+    // 100 sessions
+    if (stats.totalSessions === 100) {
+      return '👑 100セッション達成！レジェンドです！';
+    }
+    // Today's milestones
+    if (todayHours >= 4 && todayHours < 4.5) {
+      return '🔥 今日4時間突破！すごい集中力！';
+    }
+    if (todayHours >= 2 && todayHours < 2.5) {
+      return '💪 2時間達成！絶好調ですね！';
+    }
+    if (todayMinutes >= 60 && todayMinutes < 65) {
+      return '✨ 1時間達成！いいペースです！';
+    }
+    // Streak milestones
+    if (stats.currentStreak === 7) {
+      return '🔥 7日連続！1週間継続達成！';
+    }
+    if (stats.currentStreak === 30) {
+      return '🏅 30日連続！1ヶ月継続、素晴らしい！';
+    }
+    if (stats.currentStreak === 3) {
+      return '📈 3日連続！習慣になってきましたね！';
+    }
+  } else {
+    // English
+    if (stats.totalSessions === 1) {
+      return '🎉 Your very first session! Great start!';
+    }
+    if (stats.totalSessions === 10) {
+      return '🏆 10 sessions completed! Building great habits!';
+    }
+    if (stats.totalSessions === 50) {
+      return '⭐ 50 sessions! On your way to mastery!';
+    }
+    if (stats.totalSessions === 100) {
+      return '👑 100 sessions! You are a legend!';
+    }
+    if (todayHours >= 4 && todayHours < 4.5) {
+      return '🔥 4 hours today! Incredible focus!';
+    }
+    if (todayHours >= 2 && todayHours < 2.5) {
+      return '💪 2 hours done! You are on fire!';
+    }
+    if (todayMinutes >= 60 && todayMinutes < 65) {
+      return '✨ 1 hour achieved! Great pace!';
+    }
+    if (stats.currentStreak === 7) {
+      return '🔥 7-day streak! One week strong!';
+    }
+    if (stats.currentStreak === 30) {
+      return '🏅 30-day streak! A month of dedication!';
+    }
+    if (stats.currentStreak === 3) {
+      return '📈 3-day streak! Building momentum!';
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Encouragement messages based on current stats
+ */
+function getEncouragementMessage(stats: UserStats, lang: Language): string | null {
+  const todayHours = stats.todayWorkSeconds / 3600;
+
+  if (lang === 'ja') {
+    // Beating yesterday
+    if (stats.todayWorkSeconds > stats.yesterdaySeconds && stats.yesterdaySeconds > 0) {
+      return '昨日よりいいペース！その調子！';
+    }
+    // Above weekly average
+    if (stats.todayWorkSeconds > stats.weekAvgSeconds && stats.weekAvgSeconds > 0) {
+      return '週平均を超えてます！調子いいですね！';
+    }
+    // Long work day
+    if (todayHours >= 3) {
+      return 'たくさん集中できてますね。休憩も大事に';
+    }
+    // Maintaining streak
+    if (stats.currentStreak >= 5) {
+      return `${stats.currentStreak}日連続！継続は力なり`;
+    }
+  } else {
+    if (stats.todayWorkSeconds > stats.yesterdaySeconds && stats.yesterdaySeconds > 0) {
+      return 'Beating yesterday! Keep it up!';
+    }
+    if (stats.todayWorkSeconds > stats.weekAvgSeconds && stats.weekAvgSeconds > 0) {
+      return 'Above your weekly average! Nice!';
+    }
+    if (todayHours >= 3) {
+      return 'Great focus today! Remember to rest too.';
+    }
+    if (stats.currentStreak >= 5) {
+      return `${stats.currentStreak}-day streak! Consistency is key!`;
+    }
+  }
+
+  return null;
+}
+
+function getTimeBasedMessage(hour: number, lang: Language, tick: number): string {
+  const idx = getRotationIndex(6, tick);
 
   if (lang === 'ja') {
     if (hour >= 6 && hour <= 10) {
@@ -162,8 +318,27 @@ function getTimeBasedMessage(hour: number, lang: Language): string {
   return 'Keep up the great work!';
 }
 
-function getPausedMessage(hour: number, lang: Language): string {
-  const idx = getRotationIndex(4);
+function getPausedMessage(hour: number, lang: Language, tick: number, stats?: UserStats): string {
+  const idx = getRotationIndex(4, tick);
+
+  // Stats-based paused messages (show occasionally)
+  if (stats && tick % 2 === 1) {
+    if (lang === 'ja') {
+      if (stats.currentStreak > 0 && stats.todayWorkSeconds === 0) {
+        return `${stats.currentStreak}日連続中！今日も始めますか？`;
+      }
+      if (stats.todaySessions > 0) {
+        return `今日${stats.todaySessions}セッション完了。次もいきますか？`;
+      }
+    } else {
+      if (stats.currentStreak > 0 && stats.todayWorkSeconds === 0) {
+        return `${stats.currentStreak}-day streak! Ready to continue?`;
+      }
+      if (stats.todaySessions > 0) {
+        return `${stats.todaySessions} session${stats.todaySessions > 1 ? 's' : ''} today. Another one?`;
+      }
+    }
+  }
 
   if (lang === 'ja') {
     if (hour >= 6 && hour <= 10) {
@@ -263,8 +438,28 @@ function getPausedMessage(hour: number, lang: Language): string {
   return 'Press to start.';
 }
 
-function getShortBreakMessage(lang: Language): string {
-  const idx = getRotationIndex(10);
+function getShortBreakMessage(lang: Language, tick: number, stats?: UserStats): string {
+  const idx = getRotationIndex(10, tick);
+
+  // Stats-based break messages
+  if (stats && tick % 3 === 0) {
+    const todayMinutes = Math.floor(stats.todayWorkSeconds / 60);
+    if (lang === 'ja') {
+      if (stats.todaySessions >= 4) {
+        return `今日${stats.todaySessions}セッション目！よく頑張ってます！`;
+      }
+      if (todayMinutes >= 60) {
+        return `今日${todayMinutes}分の集中！いい感じ！`;
+      }
+    } else {
+      if (stats.todaySessions >= 4) {
+        return `Session #${stats.todaySessions} today! Great work!`;
+      }
+      if (todayMinutes >= 60) {
+        return `${todayMinutes} minutes focused today! Nice!`;
+      }
+    }
+  }
 
   if (lang === 'ja') {
     const msgs = [
@@ -298,8 +493,28 @@ function getShortBreakMessage(lang: Language): string {
   return msgs[idx % msgs.length];
 }
 
-function getLongBreakMessage(lang: Language): string {
-  const idx = getRotationIndex(8);
+function getLongBreakMessage(lang: Language, tick: number, stats?: UserStats): string {
+  const idx = getRotationIndex(8, tick);
+
+  // Stats-based long break messages
+  if (stats && tick % 2 === 0) {
+    const todayHours = stats.todayWorkSeconds / 3600;
+    if (lang === 'ja') {
+      if (todayHours >= 2) {
+        return `今日${Math.floor(todayHours)}時間超え！素晴らしい集中力！`;
+      }
+      if (stats.currentStreak >= 3) {
+        return `${stats.currentStreak}日連続達成中！休憩もしっかり`;
+      }
+    } else {
+      if (todayHours >= 2) {
+        return `Over ${Math.floor(todayHours)} hours today! Amazing focus!`;
+      }
+      if (stats.currentStreak >= 3) {
+        return `${stats.currentStreak}-day streak! Rest well, champion!`;
+      }
+    }
+  }
 
   if (lang === 'ja') {
     const msgs = [

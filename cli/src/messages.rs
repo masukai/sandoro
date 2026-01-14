@@ -3,6 +3,7 @@
 //! Provides friendly messages based on time of day and timer state
 //! Supports multiple languages (ja, en)
 //! Messages rotate every 10 seconds for variety
+//! Includes stats-based encouragement and achievement messages
 
 use chrono::{Local, Timelike};
 
@@ -25,6 +26,18 @@ impl Language {
     }
 }
 
+/// User statistics for context-aware messages
+#[derive(Debug, Clone, Default)]
+pub struct UserStats {
+    pub today_work_seconds: i32,
+    pub today_sessions: i32,
+    pub current_streak: i32,
+    pub longest_streak: i32,
+    pub week_avg_seconds: i32,
+    pub yesterday_seconds: i32,
+    pub total_sessions: i32,
+}
+
 /// Get rotation index based on current time (changes every 10 seconds)
 fn get_rotation_index(max: usize) -> usize {
     let now = Local::now();
@@ -33,27 +46,235 @@ fn get_rotation_index(max: usize) -> usize {
     seed % max
 }
 
-/// Get a context-aware greeting message based on current time and timer state
-pub fn get_context_message(state: TimerState, is_running: bool, lang: Language) -> &'static str {
+/// Get a context-aware greeting message based on current time, timer state, and user stats
+pub fn get_context_message(
+    state: TimerState,
+    is_running: bool,
+    lang: Language,
+    stats: Option<&UserStats>,
+) -> String {
     let hour = Local::now().hour();
 
     // State-specific messages take priority
     match state {
         TimerState::ShortBreak => {
-            return get_short_break_message(lang);
+            return get_short_break_message(lang, stats).to_string();
         }
         TimerState::LongBreak => {
-            return get_long_break_message(lang);
+            return get_long_break_message(lang, stats).to_string();
         }
         TimerState::Work => {
             if !is_running {
-                return get_paused_message(hour, lang);
+                // Check for achievement messages first when paused
+                if let Some(s) = stats {
+                    if let Some(achievement) = get_achievement_message(s, lang) {
+                        return achievement;
+                    }
+                }
+                return get_paused_message(hour, lang, stats).to_string();
+            }
+        }
+    }
+
+    // Check for encouragement messages during work
+    if let Some(s) = stats {
+        if let Some(encouragement) = get_encouragement_message(s, lang) {
+            // Mix encouragement with time-based messages (50% chance)
+            let idx = get_rotation_index(2);
+            if idx == 0 {
+                return encouragement;
             }
         }
     }
 
     // Time-based messages for working state
-    get_time_based_message(hour, lang)
+    get_time_based_message(hour, lang).to_string()
+}
+
+/// Get achievement message based on milestones
+fn get_achievement_message(stats: &UserStats, lang: Language) -> Option<String> {
+    // Check for milestone achievements
+    match lang {
+        Language::Japanese => {
+            // Session milestones
+            if stats.total_sessions == 100 {
+                return Some("🎉 通算100セッション達成！素晴らしい継続力！".to_string());
+            }
+            if stats.total_sessions == 50 {
+                return Some("🎊 50セッション達成！半分の道のり、最高！".to_string());
+            }
+            if stats.total_sessions == 10 {
+                return Some("⭐ 10セッション達成！いい調子です！".to_string());
+            }
+            if stats.total_sessions == 1 {
+                return Some("🌟 初めてのセッション完了！おめでとう！".to_string());
+            }
+
+            // Daily hour milestones
+            let today_hours = stats.today_work_seconds / 3600;
+            if today_hours >= 4 && stats.today_work_seconds % 3600 < 300 {
+                return Some("🔥 今日4時間達成！驚異的な集中力！".to_string());
+            }
+            if today_hours >= 2 && stats.today_work_seconds % 3600 < 300 {
+                return Some("💪 今日2時間達成！素晴らしい！".to_string());
+            }
+            if today_hours >= 1 && stats.today_work_seconds % 3600 < 300 {
+                return Some("✨ 今日1時間達成！いいペース！".to_string());
+            }
+
+            // Streak milestones
+            if stats.current_streak == 30 {
+                return Some("🏆 30日連続！伝説的な継続力！".to_string());
+            }
+            if stats.current_streak == 7 {
+                return Some("🌈 1週間連続達成！習慣化の第一歩！".to_string());
+            }
+            if stats.current_streak == 3 {
+                return Some("🔥 3日連続！いい流れです！".to_string());
+            }
+
+            // Longest streak beaten
+            if stats.current_streak > 0
+                && stats.current_streak == stats.longest_streak
+                && stats.longest_streak > 1
+            {
+                return Some(format!("🏅 最長記録更新！{}日連続！", stats.current_streak));
+            }
+        }
+        Language::English => {
+            // Session milestones
+            if stats.total_sessions == 100 {
+                return Some("🎉 100 sessions! Amazing dedication!".to_string());
+            }
+            if stats.total_sessions == 50 {
+                return Some("🎊 50 sessions! Halfway to greatness!".to_string());
+            }
+            if stats.total_sessions == 10 {
+                return Some("⭐ 10 sessions! You're on a roll!".to_string());
+            }
+            if stats.total_sessions == 1 {
+                return Some("🌟 First session complete! Welcome!".to_string());
+            }
+
+            // Daily hour milestones
+            let today_hours = stats.today_work_seconds / 3600;
+            if today_hours >= 4 && stats.today_work_seconds % 3600 < 300 {
+                return Some("🔥 4 hours today! Incredible focus!".to_string());
+            }
+            if today_hours >= 2 && stats.today_work_seconds % 3600 < 300 {
+                return Some("💪 2 hours today! Excellent work!".to_string());
+            }
+            if today_hours >= 1 && stats.today_work_seconds % 3600 < 300 {
+                return Some("✨ 1 hour today! Great pace!".to_string());
+            }
+
+            // Streak milestones
+            if stats.current_streak == 30 {
+                return Some("🏆 30-day streak! Legendary!".to_string());
+            }
+            if stats.current_streak == 7 {
+                return Some("🌈 1-week streak! Habit forming!".to_string());
+            }
+            if stats.current_streak == 3 {
+                return Some("🔥 3-day streak! Keep it up!".to_string());
+            }
+
+            // Longest streak beaten
+            if stats.current_streak > 0
+                && stats.current_streak == stats.longest_streak
+                && stats.longest_streak > 1
+            {
+                return Some(format!(
+                    "🏅 New record! {}-day streak!",
+                    stats.current_streak
+                ));
+            }
+        }
+    }
+
+    None
+}
+
+/// Get encouragement message based on stats comparison
+fn get_encouragement_message(stats: &UserStats, lang: Language) -> Option<String> {
+    let idx = get_rotation_index(5);
+
+    match lang {
+        Language::Japanese => {
+            // Beating yesterday
+            if stats.today_work_seconds > stats.yesterday_seconds && stats.yesterday_seconds > 0 {
+                let diff_min = (stats.today_work_seconds - stats.yesterday_seconds) / 60;
+                if diff_min >= 30 {
+                    return Some(format!("📈 昨日より{}分多く頑張ってます！", diff_min));
+                }
+            }
+
+            // Above weekly average
+            if stats.week_avg_seconds > 0 && stats.today_work_seconds > stats.week_avg_seconds {
+                let msgs = [
+                    "📊 週平均を超えてます！この調子！",
+                    "💯 今日は週平均以上の成果！",
+                ];
+                return Some(msgs[idx % msgs.len()].to_string());
+            }
+
+            // Good streak
+            if stats.current_streak >= 2 {
+                let msgs = [
+                    format!("🔥 {}日連続！素晴らしい継続力！", stats.current_streak),
+                    format!("💪 連続{}日目！いい習慣です！", stats.current_streak),
+                ];
+                return Some(msgs[idx % msgs.len()].clone());
+            }
+
+            // Multiple sessions today
+            if stats.today_sessions >= 3 {
+                let msgs = [
+                    format!("⭐ 今日{}回目！絶好調！", stats.today_sessions),
+                    format!("🌟 {}セッション完了！素晴らしい！", stats.today_sessions),
+                ];
+                return Some(msgs[idx % msgs.len()].clone());
+            }
+        }
+        Language::English => {
+            // Beating yesterday
+            if stats.today_work_seconds > stats.yesterday_seconds && stats.yesterday_seconds > 0 {
+                let diff_min = (stats.today_work_seconds - stats.yesterday_seconds) / 60;
+                if diff_min >= 30 {
+                    return Some(format!("📈 {} min more than yesterday!", diff_min));
+                }
+            }
+
+            // Above weekly average
+            if stats.week_avg_seconds > 0 && stats.today_work_seconds > stats.week_avg_seconds {
+                let msgs = [
+                    "📊 Above weekly average! Keep going!",
+                    "💯 Exceeding your weekly pace!",
+                ];
+                return Some(msgs[idx % msgs.len()].to_string());
+            }
+
+            // Good streak
+            if stats.current_streak >= 2 {
+                let msgs = [
+                    format!("🔥 {}-day streak! Amazing!", stats.current_streak),
+                    format!("💪 Day {} of your streak!", stats.current_streak),
+                ];
+                return Some(msgs[idx % msgs.len()].clone());
+            }
+
+            // Multiple sessions today
+            if stats.today_sessions >= 3 {
+                let msgs = [
+                    format!("⭐ Session {} today! On fire!", stats.today_sessions),
+                    format!("🌟 {} sessions done! Excellent!", stats.today_sessions),
+                ];
+                return Some(msgs[idx % msgs.len()].clone());
+            }
+        }
+    }
+
+    None
 }
 
 fn get_time_based_message(hour: u32, lang: Language) -> &'static str {
@@ -179,8 +400,34 @@ fn get_time_based_message(hour: u32, lang: Language) -> &'static str {
     }
 }
 
-fn get_paused_message(hour: u32, lang: Language) -> &'static str {
+fn get_paused_message(hour: u32, lang: Language, stats: Option<&UserStats>) -> &'static str {
     let idx = get_rotation_index(4);
+
+    // Stats-aware message variations (when stats available and notable)
+    if let Some(s) = stats {
+        if s.current_streak >= 3 {
+            match lang {
+                Language::Japanese => {
+                    const MSGS: &[&str] = &[
+                        "連続記録継続中！今日も始めますか？",
+                        "ストリーク維持中！準備OK？",
+                        "連続日数を伸ばしましょう！",
+                        "今日もやれば記録更新！",
+                    ];
+                    return MSGS[idx % MSGS.len()];
+                }
+                Language::English => {
+                    const MSGS: &[&str] = &[
+                        "Keep your streak going! Ready?",
+                        "Streak in progress! Start now?",
+                        "Extend your streak!",
+                        "One more day for the record!",
+                    ];
+                    return MSGS[idx % MSGS.len()];
+                }
+            }
+        }
+    }
 
     match lang {
         Language::Japanese => match hour {
@@ -282,8 +529,32 @@ fn get_paused_message(hour: u32, lang: Language) -> &'static str {
     }
 }
 
-fn get_short_break_message(lang: Language) -> &'static str {
+fn get_short_break_message(lang: Language, stats: Option<&UserStats>) -> &'static str {
     let idx = get_rotation_index(10);
+
+    // Stats-aware messages when notable
+    if let Some(s) = stats {
+        if s.today_sessions >= 4 {
+            match lang {
+                Language::Japanese => {
+                    const MSGS: &[&str] = &[
+                        "今日4セッション以上！お疲れ様！",
+                        "絶好調！しっかり休んで",
+                        "素晴らしいペース！休憩大事",
+                    ];
+                    return MSGS[idx % MSGS.len()];
+                }
+                Language::English => {
+                    const MSGS: &[&str] = &[
+                        "4+ sessions today! Great job!",
+                        "You're on fire! Rest well.",
+                        "Amazing pace! Breaks matter.",
+                    ];
+                    return MSGS[idx % MSGS.len()];
+                }
+            }
+        }
+    }
 
     match lang {
         Language::Japanese => {
@@ -319,8 +590,33 @@ fn get_short_break_message(lang: Language) -> &'static str {
     }
 }
 
-fn get_long_break_message(lang: Language) -> &'static str {
+fn get_long_break_message(lang: Language, stats: Option<&UserStats>) -> &'static str {
     let idx = get_rotation_index(8);
+
+    // Stats-aware messages for significant achievements
+    if let Some(s) = stats {
+        let hours = s.today_work_seconds / 3600;
+        if hours >= 2 {
+            match lang {
+                Language::Japanese => {
+                    const MSGS: &[&str] = &[
+                        "2時間以上達成！大休憩を満喫して",
+                        "今日は絶好調！ゆっくり休んで",
+                        "素晴らしい集中力！休憩大事！",
+                    ];
+                    return MSGS[idx % MSGS.len()];
+                }
+                Language::English => {
+                    const MSGS: &[&str] = &[
+                        "2+ hours done! Enjoy your break!",
+                        "Great progress! Rest well.",
+                        "Amazing focus! Take a real break!",
+                    ];
+                    return MSGS[idx % MSGS.len()];
+                }
+            }
+        }
+    }
 
     match lang {
         Language::Japanese => {

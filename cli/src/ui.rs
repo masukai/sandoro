@@ -11,7 +11,7 @@ use ratatui::{
 
 use crate::app::{App, AppView, SettingsItem};
 use crate::icons::{IconState, IconType};
-use crate::messages::{get_context_message, Language};
+use crate::messages::{get_context_message, Language, UserStats};
 use crate::theme::{get_rainbow_color, get_rainbow_gradient_color, ThemeColor};
 use crate::timer::TimerState;
 
@@ -359,7 +359,17 @@ fn draw_main_content(f: &mut Frame, area: Rect, app: &App) {
 
     // Draw context message (chunks[5])
     let lang = Language::from_str(&app.config.appearance.language);
-    let context_msg = get_context_message(app.timer.state, !app.timer.is_paused, lang);
+    let stats = UserStats {
+        today_work_seconds: app.today_work_seconds,
+        today_sessions: app.today_sessions,
+        current_streak: app.current_streak,
+        longest_streak: app.longest_streak,
+        week_avg_seconds: app.week_avg_seconds,
+        yesterday_seconds: app.yesterday_seconds,
+        total_sessions: app.total_sessions,
+    };
+    let context_msg =
+        get_context_message(app.timer.state, !app.timer.is_paused, lang, Some(&stats));
     let context_widget = Paragraph::new(context_msg)
         .style(
             Style::default()
