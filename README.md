@@ -1,10 +1,10 @@
 <div align="center">
 
-# sandoro
+# 🏜️ sandoro
 
 **Terminal-first Pomodoro timer with beautiful ASCII art animations**
 
-**美しいASCIIアートアニメーション付きポモドーロタイマー**
+**ターミナルファーストの美しいASCIIアートアニメーション付きポモドーロタイマー**
 
 [![CI](https://github.com/masukai/sandoro/actions/workflows/ci.yml/badge.svg)](https://github.com/masukai/sandoro/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)

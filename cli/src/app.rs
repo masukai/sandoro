@@ -336,6 +336,10 @@ impl App {
                 // Auto-start if enabled
                 if self.config.timer.auto_start {
                     self.timer.toggle_pause();
+                    // Start recording new session if transitioning to Work
+                    if self.timer.state == TimerState::Work {
+                        self.start_session_recording();
+                    }
                 }
             }
 
@@ -359,9 +363,12 @@ impl App {
         let was_paused = self.timer.is_paused;
         self.timer.toggle_pause();
 
-        // Start recording session when timer starts
-        if was_paused && !self.timer.is_paused {
-            self.start_session_recording();
+        // Start recording session when timer starts (only for Work sessions)
+        if was_paused && !self.timer.is_paused && self.timer.state == TimerState::Work {
+            // Only start new recording if there's no current session
+            if self.current_session_id.is_none() {
+                self.start_session_recording();
+            }
         }
     }
 
