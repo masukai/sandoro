@@ -2,14 +2,13 @@
 -- sandoro - Initial Schema
 -- ==========================================
 
--- Enable UUID extension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- Note: gen_random_uuid() is built-in to PostgreSQL 13+ (no extension needed)
 
 -- ==========================================
 -- Sessions table
 -- ==========================================
 CREATE TABLE public.sessions (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     session_type TEXT NOT NULL CHECK (session_type IN ('work', 'short_break', 'long_break')),
     duration_seconds INTEGER NOT NULL,
@@ -44,7 +43,7 @@ CREATE POLICY "Users can delete their own sessions"
 -- User Settings table
 -- ==========================================
 CREATE TABLE public.user_settings (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
     work_duration INTEGER NOT NULL DEFAULT 25,
     short_break_duration INTEGER NOT NULL DEFAULT 5,
@@ -80,7 +79,7 @@ CREATE POLICY "Users can update their own settings"
 -- Goals table
 -- ==========================================
 CREATE TABLE public.goals (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
     daily_sessions INTEGER,
     daily_minutes INTEGER,
