@@ -56,6 +56,7 @@ pnpm-debug.log*
 .env.*.local
 .env.development
 .env.production
+.env.supabase
 *.pem
 *.key
 secrets/

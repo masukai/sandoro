@@ -271,10 +271,20 @@ Work 25min → Break 5min → Work 25min → Break 5min → ... → Long Break 1
 mise install
 
 # CLI development
-cd cli && cargo run
+mise run dev-cli      # Run in development mode
+mise run test-cli     # Run tests
+mise run lint-cli     # Run clippy linter
 
 # Web development
-cd web && npm install && npm run dev
+mise run install-web  # Install dependencies
+mise run dev-web      # Start dev server (localhost:5173)
+mise run test-web     # Run tests
+
+# Supabase (cloud sync backend)
+# See RUNBOOK.md for full setup instructions
+mise run supabase:link     # Link to remote project
+mise run supabase:migrate  # Push migrations
+mise run supabase:types    # Generate TypeScript types
 ```
 
 <details>
@@ -284,6 +294,7 @@ cd web && npm install && npm run dev
 sandoro/
 ├── cli/          # 🦀 Rust CLI (ratatui)
 ├── web/          # ⚛️  React Web (Vite + TailwindCSS)
+├── supabase/     # 🗄️  Supabase migrations & config
 ├── shared/       # 📦 Shared resources
 └── docs/         # 📚 Documentation
 ```
