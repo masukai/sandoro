@@ -2131,20 +2131,116 @@ github: [your-username]
 | セッション履歴編集（CLI） | 過去セッションのタグ変更・削除機能 | ✅ 完了 |
 | セッション履歴編集（Web） | 過去セッションのタグ変更・削除機能 | ✅ 完了 |
 
-### Phase 3: CLI/Web統合
+### Phase 3: CLI/Web統合（Supabase クラウド同期）
+
+**決定**: A案（クラウド同期）を採用。Supabase を使用。
+
+**理由**:
+- デバイス間でデータを完全同期
+- ブラウザのデータ削除でも履歴が残る
+- Supabase 無料枠で十分（50,000 MAU、500MB DB）
+
+#### Step 1: Supabase セットアップ
 
 | タスク | 詳細 | ステータス |
 |--------|------|----------|
-| データ共有検討 | ローカルファイル共有 or クラウド同期 | ⏳ 待機中 |
-| 統計統合 | CLI/Web両方のデータを一元管理 | ⏳ 待機中 |
-| 同時使用対応 | 複数インスタンス時のデータ整合性 | ⏳ 待機中 |
+| プロジェクト作成 | Supabase ダッシュボードで作成（手動） | ⏳ 待機中 |
+| Supabase CLI 導入 | mise.toml に追加、supabase init | ⏳ 待機中 |
+| DB スキーマ設計 | sessions, settings, tags テーブル | ⏳ 待機中 |
+| RLS ポリシー設定 | ユーザーごとのデータ分離 | ⏳ 待機中 |
+| OAuth 設定 | Google, GitHub ログイン（手動） | ⏳ 待機中 |
 
-**データ共有方式の選択肢**:
-- **A案（クラウド同期）**: サーバー・認証が必要、オフライン時に制約
-- **B案（ローカルファイル共有）**: ~/.sandoro/sessions.db を共有、Web版はFile System Access API使用
-- **C案（Export/Import）**: 手動エクスポート・インポート
+#### Step 2: Web 認証
 
-現時点では **B案（ローカルファイル共有）** を推奨。シンプルでオフライン対応可能。
+| タスク | 詳細 | ステータス |
+|--------|------|----------|
+| Supabase クライアント設定 | @supabase/supabase-js 導入 | ⏳ 待機中 |
+| ログイン UI | Google/GitHub ボタン、ログアウト | ⏳ 待機中 |
+| 認証状態管理 | Zustand で管理 | ⏳ 待機中 |
+| 環境変数設定 | Vercel に SUPABASE_URL, ANON_KEY 設定 | ⏳ 待機中 |
+
+#### Step 3: Web データ同期
+
+| タスク | 詳細 | ステータス |
+|--------|------|----------|
+| セッション保存 | 完了時に Supabase に保存 | ⏳ 待機中 |
+| 設定同期 | テーマ、タグ等をクラウド保存 | ⏳ 待機中 |
+| ローカル → クラウド移行 | 既存ローカルデータのマージ | ⏳ 待機中 |
+| オフライン対応 | ローカル優先、オンライン時に同期 | ⏳ 待機中 |
+
+#### Step 4: CLI 認証・同期（P1）
+
+| タスク | 詳細 | ステータス |
+|--------|------|----------|
+| `sandoro login` | ブラウザ経由 OAuth | ⏳ 待機中 |
+| トークン管理 | ~/.sandoro/credentials に保存 | ⏳ 待機中 |
+| CLI データ同期 | SQLite ↔ Supabase 同期 | ⏳ 待機中 |
+
+#### IaC 管理（Supabase CLI）
+
+**コード管理できるもの:**
+- ✅ DB スキーマ（マイグレーション）
+- ✅ RLS ポリシー
+- ✅ シードデータ
+- ✅ Edge Functions
+
+**手動設定が必要なもの:**
+- ❌ プロジェクト作成
+- ❌ OAuth プロバイダー設定（Google, GitHub）
+- ❌ Vercel 環境変数
+
+**ディレクトリ構成:**
+```
+sandoro/
+├── supabase/
+│   ├── config.toml
+│   ├── migrations/
+│   │   └── 20250117000000_init.sql
+│   └── seed.sql
+├── web/
+├── cli/
+└── mise.toml
+```
+
+#### 手動設定手順
+
+**1. Supabase プロジェクト作成**
+1. https://supabase.com/dashboard にアクセス
+2. 「New Project」をクリック
+3. Project name: `sandoro`
+4. Database Password: 安全なパスワードを設定（控えておく）
+5. Region: Northeast Asia (Tokyo) を選択
+6. 「Create new project」をクリック
+
+**2. OAuth プロバイダー設定（Google）**
+1. Supabase Dashboard → Authentication → Providers
+2. Google を有効化
+3. Google Cloud Console で OAuth 2.0 クライアント ID を作成:
+   - https://console.cloud.google.com/apis/credentials
+   - 「OAuth 同意画面」を設定
+   - 「認証情報」→「OAuth クライアント ID」→「ウェブアプリケーション」
+   - 承認済みリダイレクト URI: `https://<project-ref>.supabase.co/auth/v1/callback`
+4. Client ID と Client Secret を Supabase に設定
+
+**3. OAuth プロバイダー設定（GitHub）**
+1. Supabase Dashboard → Authentication → Providers
+2. GitHub を有効化
+3. GitHub Settings → Developer settings → OAuth Apps → New OAuth App
+   - Application name: `sandoro`
+   - Homepage URL: `https://sandoro.vercel.app`
+   - Authorization callback URL: `https://<project-ref>.supabase.co/auth/v1/callback`
+4. Client ID と Client Secret を Supabase に設定
+
+**4. Vercel 環境変数設定**
+1. Vercel Dashboard → sandoro → Settings → Environment Variables
+2. 追加:
+   - `VITE_SUPABASE_URL`: `https://<project-ref>.supabase.co`
+   - `VITE_SUPABASE_ANON_KEY`: Supabase Dashboard → Settings → API → anon key
+
+**5. Site URL 設定**
+1. Supabase Dashboard → Authentication → URL Configuration
+2. Site URL: `https://sandoro.vercel.app`
+3. Redirect URLs: `https://sandoro.vercel.app/**`
 
 ### Phase 4: 課金機能・カスタマイズ
 
