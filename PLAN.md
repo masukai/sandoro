@@ -2073,11 +2073,11 @@ github: [your-username]
 - 設定画面、レスポンシブUI
 - ヒートマップ、Streak表示、エクスポート機能
 
-### Phase 2.5: Webデプロイ・インフラ ✅ ほぼ完了
+### Phase 2.5: Webデプロイ・インフラ ✅ 完了
 
 | タスク | 詳細 | ステータス |
 |--------|------|----------|
-| Vercel/Cloudflareデプロイ | sandoro.app公開 | ⏳ 待機中 |
+| Vercelデプロイ | sandoro.vercel.app公開 | ✅ 完了 |
 | PWA設定 | Service Worker、オフライン対応 | ✅ 完了 |
 | 通知（Web） | Web Notifications API、設定でON/OFF | ✅ 完了 |
 | 通知（CLI） | デスクトップ通知、設定でON/OFF | ✅ 完了 |
@@ -2190,8 +2190,8 @@ github: [your-username]
 
 1. ~~**Phase 2.7**: UX強化・タグ機能~~ ← **完了**
 2. ~~**Phase 2.8**: 完成度向上~~ ← **完了**
-3. **Phase 2.5**: Webデプロイ（Vercel/Cloudflare） ← **次の優先**
-4. **Phase 3**: CLI/Web統合（データ共有）
+3. ~~**Phase 2.5**: Webデプロイ（Vercel）~~ ← **完了**
+4. **Phase 3**: CLI/Web統合（データ共有） ← **次の優先**
 5. **Phase 4-6**: 課金、拡張機能、マーケティング
 
 ### 差別化を意識した開発
@@ -2202,6 +2202,18 @@ github: [your-username]
 - CLI/Web両対応で「どこでも使える」価値を提供
 - **タグ機能で「何に時間を使ったか」を可視化**
 - **気の利いたメッセージで「温かみのある体験」を提供**
+
+### デプロイ情報
+
+**Web版（Vercel）**:
+- URL: https://sandoro.vercel.app
+- ホスティング: Vercel（Hobby プラン）
+- フレームワーク: Vite + React
+- 自動デプロイ: main ブランチへの push で自動更新
+
+**将来の拡張**:
+- カスタムドメイン（sandoro.app 等）は必要に応じて設定可能
+- トラフィック増加時は Cloudflare Pages への移行も選択肢（参考: Issue #1）
 
 ---
 

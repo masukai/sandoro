@@ -27,7 +27,7 @@
 
 <br />
 
-**[🌐 Try Web App](https://sandoro.app)** · **[📦 Releases](https://github.com/masukai/sandoro/releases)** · **[📖 Docs](docs/)**
+**[🌐 Try Web App](https://sandoro.vercel.app)** · **[📦 Releases](https://github.com/masukai/sandoro/releases)** · **[📖 Docs](docs/)**
 
 </div>
 
@@ -55,7 +55,7 @@
 
 ### Web版（インストール不要）
 
-👉 **[sandoro.app](https://sandoro.app)** - PWAとしてオフラインでも利用可能
+👉 **[sandoro.vercel.app](https://sandoro.vercel.app)** - PWAとしてオフラインでも利用可能
 
 ### CLI版
 
@@ -153,7 +153,7 @@ sandoro stats     # 統計表示
 
 ### Web (No installation required)
 
-👉 **[sandoro.app](https://sandoro.app)** - Works offline as a PWA
+👉 **[sandoro.vercel.app](https://sandoro.vercel.app)** - Works offline as a PWA
 
 ### CLI
 

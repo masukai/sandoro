@@ -6,7 +6,7 @@ authors = ["K. Masuda"]
 description = "Terminal-first Pomodoro timer with ASCII art animations"
 license = "MIT"
 repository = "https://github.com/masukai/sandoro"
-homepage = "https://sandoro.app"
+homepage = "https://sandoro.vercel.app"
 keywords = ["pomodoro", "timer", "tui", "terminal", "productivity"]
 categories = ["command-line-utilities"]
 

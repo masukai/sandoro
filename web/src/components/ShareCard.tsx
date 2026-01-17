@@ -345,7 +345,7 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(
                 : { color: accentHex, opacity: 0.7 }
             }
           >
-            sandoro.app
+            sandoro.vercel.app
           </div>
         </div>
       </div>
