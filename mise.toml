@@ -19,12 +19,16 @@ rust = "1.92"        # Rust 言語（2026-01現在の最新安定版）
 node = "24"          # Node.js Active LTS（EOL: 2028-04）
 pnpm = "10"          # パッケージマネージャー最新版
 
+# === Backend (Supabase) ===
+"aqua:supabase/cli" = "2.72.7"  # Supabase CLI
+
 # ==========================================
 # 環境変数
 # ==========================================
 
 [env]
 SANDORO_ENV = "development"
+_.file = [".env.supabase"]  # Load Supabase access token if exists
 
 # ==========================================
 # タスク定義
@@ -56,6 +60,15 @@ SANDORO_ENV = "development"
 "test-web"  = { run = "pnpm test", dir = "web", description = "Run Web tests" }
 "lint-web"  = { run = "pnpm lint", dir = "web", description = "Run ESLint" }
 "install-web" = { run = "pnpm install", dir = "web", description = "Install Web dependencies" }
+
+# === Supabase ===
+"supabase:start" = { run = "supabase start", description = "Start local Supabase" }
+"supabase:stop" = { run = "supabase stop", description = "Stop local Supabase" }
+"supabase:status" = { run = "supabase status", description = "Show Supabase status" }
+"supabase:link" = { run = "supabase link --project-ref ukjsssbpfvkumflzcfrd", description = "Link to remote Supabase project" }
+"supabase:migrate" = { run = "supabase db push", description = "Push migrations to remote" }
+"supabase:reset" = { run = "supabase db reset", description = "Reset local database" }
+"supabase:types" = { run = "supabase gen types typescript --project-id ukjsssbpfvkumflzcfrd > web/src/lib/database.types.ts", description = "Generate TypeScript types" }
 
 # === 全体 ===
 "test" = """

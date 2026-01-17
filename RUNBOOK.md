@@ -29,9 +29,11 @@
 mise install
 
 # これにより以下がインストールされます（mise.toml を参照）:
-# - Rust 1.75（CLI 開発用）
-# - Node.js 20（Web 開発用）
-# - pnpm 8（パッケージマネージャ）
+# - Rust 1.92（CLI 開発用）
+# - Node.js 24（Web 開発用）
+# - pnpm 10（パッケージマネージャ）
+# - Supabase CLI 2.72.7（バックエンド管理用）
+# - gh 2.81.0（GitHub CLI）
 ```
 
 ### CLI 開発のセットアップ
@@ -76,11 +78,19 @@ pnpm test
 mise run dev-cli      # 開発モードで実行
 mise run build-cli    # ビルド
 mise run test-cli     # テスト
+mise run cli-help     # ヘルプ表示
 
 # Web 開発
 mise run dev-web      # 開発サーバー起動
 mise run build-web    # ビルド
 mise run test-web     # テスト
+mise run install-web  # 依存関係インストール
+
+# Supabase 管理
+mise run supabase:start   # ローカル Supabase 起動
+mise run supabase:stop    # ローカル Supabase 停止
+mise run supabase:migrate # マイグレーション適用
+mise run supabase:types   # TypeScript 型生成
 ```
 
 ### 認証設定
@@ -91,13 +101,34 @@ mise run test-web     # テスト
 gh auth login
 ```
 
-**Supabase（Pro機能開発時）**:
+**Supabase（クラウド同期機能）**:
 ```bash
-# Supabase CLI のインストール（必要な場合）
-npm install -g supabase
+# Supabase CLI は mise install で自動インストール
 
-# Supabase プロジェクトにリンク
-supabase link --project-ref YOUR_PROJECT_REF
+# Supabase アクセストークンの取得（初回のみ）
+# 1. https://supabase.com/dashboard/account/tokens にアクセス
+# 2. 「Generate new token」で新しいトークンを作成
+# 3. トークンをコピー
+
+# プロジェクトルートに .env.supabase を作成（gitignored）
+echo "SUPABASE_ACCESS_TOKEN=your_token_here" > .env.supabase
+# mise が自動的にこのファイルを読み込みます
+
+# プロジェクトにリンク（mise経由で実行）
+mise run supabase:link
+
+# マイグレーションをリモートに適用
+mise run supabase:migrate
+
+# TypeScript 型を生成
+mise run supabase:types
+```
+
+**Web 版の環境変数設定**:
+```bash
+# web/.env.local を作成（.env.example を参考に）
+cp web/.env.example web/.env.local
+# VITE_SUPABASE_URL と VITE_SUPABASE_ANON_KEY を設定
 ```
 
 ## 5. Git・ブランチ戦略
@@ -207,7 +238,16 @@ eval "$(mise activate bash)" && <your-command>
 - 認証情報は環境変数で管理する
 - Supabase の認証情報は `.env.local` に保存し、`.gitignore` で除外
 - ユーザーのセッションデータはローカルストレージ（SQLite/IndexedDB）に保存
-- Pro ユーザーのクラウド同期データは Supabase の Row Level Security で保護
+- クラウド同期データは Supabase の Row Level Security (RLS) で保護
+
+### Supabase セキュリティガイドライン
+| 情報 | 公開可否 | 保管場所 |
+|------|---------|---------|
+| Project URL (`xxx.supabase.co`) | 公開OK | コードに直接書いてOK |
+| anon key | 公開OK | `.env.local`（RLSで保護） |
+| service_role key | **秘密** | 絶対にコードに入れない |
+| DB パスワード | **秘密** | パスワードマネージャー |
+| Access Token | **秘密** | 環境変数 or ローカル設定 |
 
 ## 9. エスカレーション
 
@@ -220,4 +260,5 @@ eval "$(mise activate bash)" && <your-command>
 
 ## 10. 更新履歴
 
+- 2026-01-17: Supabase クラウド同期の設定手順を追加
 - 2025-01-04: sandoro プロジェクト用に初版作成
