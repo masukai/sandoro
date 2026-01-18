@@ -44,10 +44,10 @@ export function AuthButton() {
     <>
       <button
         onClick={() => setIsLoginModalOpen(true)}
-        className={`text-sm px-3 py-1.5 rounded-md border transition-colors ${
+        className={`text-sm px-3 py-1 transition-colors ${
           isRainbow
-            ? 'rainbow-gradient border-sandoro-secondary hover:border-sandoro-fg'
-            : 'text-sandoro-primary border-sandoro-primary hover:bg-sandoro-primary hover:text-sandoro-bg'
+            ? 'rainbow-gradient'
+            : 'text-sandoro-primary hover:opacity-80'
         }`}
       >
         Sign in
