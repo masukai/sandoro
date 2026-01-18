@@ -5,6 +5,7 @@ import { Stats } from './components/Stats';
 import { IconPreview } from './components/IconPreview';
 import { Footer } from './components/Footer';
 import { PrivacyPolicy } from './components/PrivacyPolicy';
+import { AuthButton } from './components/AuthButton';
 import { useTheme } from './hooks/useTheme';
 import { useSettings } from './hooks/useSettings';
 import { useClock } from './hooks/useClock';
@@ -48,7 +49,10 @@ function App() {
           <h1 className="text-xl font-bold">sandoro</h1>
           <span className="text-sm text-sandoro-secondary">v0.1.0</span>
         </div>
-        <span className="text-sm text-sandoro-secondary font-mono">{currentTime}</span>
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-sandoro-secondary font-mono">{currentTime}</span>
+          <AuthButton />
+        </div>
       </header>
 
       <main className="p-4 pb-16">

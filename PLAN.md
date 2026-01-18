@@ -2140,24 +2140,24 @@ github: [your-username]
 - ブラウザのデータ削除でも履歴が残る
 - Supabase 無料枠で十分（50,000 MAU、500MB DB）
 
-#### Step 1: Supabase セットアップ
+#### Step 1: Supabase セットアップ ✅ 完了
 
 | タスク | 詳細 | ステータス |
 |--------|------|----------|
-| プロジェクト作成 | Supabase ダッシュボードで作成（手動） | ⏳ 待機中 |
-| Supabase CLI 導入 | mise.toml に追加、supabase init | ⏳ 待機中 |
-| DB スキーマ設計 | sessions, settings, tags テーブル | ⏳ 待機中 |
-| RLS ポリシー設定 | ユーザーごとのデータ分離 | ⏳ 待機中 |
-| OAuth 設定 | Google, GitHub ログイン（手動） | ⏳ 待機中 |
+| プロジェクト作成 | Supabase ダッシュボードで作成（手動） | ✅ 完了 |
+| Supabase CLI 導入 | mise.toml に追加、supabase init | ✅ 完了 |
+| DB スキーマ設計 | sessions, user_settings, goals テーブル | ✅ 完了 |
+| RLS ポリシー設定 | ユーザーごとのデータ分離 | ✅ 完了 |
+| OAuth 設定 | Google, GitHub ログイン（手動） | ✅ 完了 |
 
 #### Step 2: Web 認証
 
 | タスク | 詳細 | ステータス |
 |--------|------|----------|
-| Supabase クライアント設定 | @supabase/supabase-js 導入 | ⏳ 待機中 |
+| Supabase クライアント設定 | @supabase/supabase-js 導入 | ✅ 完了 |
 | ログイン UI | Google/GitHub ボタン、ログアウト | ⏳ 待機中 |
 | 認証状態管理 | Zustand で管理 | ⏳ 待機中 |
-| 環境変数設定 | Vercel に SUPABASE_URL, ANON_KEY 設定 | ⏳ 待機中 |
+| 環境変数設定 | Vercel に SUPABASE_URL, ANON_KEY 設定 | ✅ 完了 |
 
 #### Step 3: Web データ同期
 
@@ -2287,7 +2287,7 @@ sandoro/
 1. ~~**Phase 2.7**: UX強化・タグ機能~~ ← **完了**
 2. ~~**Phase 2.8**: 完成度向上~~ ← **完了**
 3. ~~**Phase 2.5**: Webデプロイ（Vercel）~~ ← **完了**
-4. **Phase 3**: CLI/Web統合（データ共有） ← **次の優先**
+4. **Phase 3**: CLI/Web統合（データ共有） ← **進行中（Step 1完了、Step 2進行中）**
 5. **Phase 4-6**: 課金、拡張機能、マーケティング
 
 ### 差別化を意識した開発
