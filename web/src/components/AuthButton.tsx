@@ -1,15 +1,18 @@
+import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
+import { LoginModal } from './LoginModal';
 
 export function AuthButton() {
-  const { user, loading, signInWithGoogle, signInWithGitHub, signOut } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const { accentColor } = useTheme();
   const isRainbow = accentColor === 'rainbow';
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   if (loading) {
     return (
       <div className="text-sm text-sandoro-secondary">
-        Loading...
+        ...
       </div>
     );
   }
@@ -31,36 +34,28 @@ export function AuthButton() {
           onClick={signOut}
           className="text-sm text-sandoro-secondary hover:text-sandoro-fg transition-colors"
         >
-          Logout
+          Sign out
         </button>
       </div>
     );
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <>
       <button
-        onClick={signInWithGoogle}
-        className={`text-sm px-2 py-1 rounded transition-colors ${
+        onClick={() => setIsLoginModalOpen(true)}
+        className={`text-sm px-3 py-1.5 rounded-md border transition-colors ${
           isRainbow
-            ? 'rainbow-gradient'
-            : 'text-sandoro-primary hover:opacity-80'
+            ? 'rainbow-gradient border-transparent'
+            : 'text-sandoro-primary border-sandoro-primary hover:bg-sandoro-primary hover:text-sandoro-bg'
         }`}
-        title="Sign in with Google"
       >
-        Google
+        Sign in
       </button>
-      <button
-        onClick={signInWithGitHub}
-        className={`text-sm px-2 py-1 rounded transition-colors ${
-          isRainbow
-            ? 'rainbow-gradient'
-            : 'text-sandoro-primary hover:opacity-80'
-        }`}
-        title="Sign in with GitHub"
-      >
-        GitHub
-      </button>
-    </div>
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+      />
+    </>
   );
 }
