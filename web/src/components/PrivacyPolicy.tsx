@@ -15,15 +15,31 @@ export function PrivacyPolicy() {
       <section className="mb-6">
         <h2 className="text-lg font-semibold mb-2">Data Collection</h2>
         <p className="text-sandoro-secondary mb-2">
-          <strong>We do not collect any personal data.</strong>
+          <strong>Without sign-in:</strong> We do not collect any personal data. All data stays on your device.
         </p>
-        <ul className="list-disc list-inside text-sandoro-secondary space-y-1">
-          <li>All your timer sessions, statistics, and settings are stored locally on your device</li>
+        <ul className="list-disc list-inside text-sandoro-secondary space-y-1 mb-4">
+          <li>Timer sessions, statistics, and settings are stored locally</li>
           <li>Web version uses browser localStorage</li>
           <li>CLI version uses local SQLite database (~/.sandoro/)</li>
           <li>No data is sent to external servers</li>
-          <li>No analytics or tracking</li>
-          <li>No cookies (except for essential functionality)</li>
+        </ul>
+        <p className="text-sandoro-secondary mb-2">
+          <strong>With sign-in (optional):</strong> If you choose to sign in, we collect minimal data to enable cloud sync:
+        </p>
+        <ul className="list-disc list-inside text-sandoro-secondary space-y-1">
+          <li>Authentication info from your OAuth provider (Google/GitHub): email, name, avatar</li>
+          <li>Your timer sessions and settings (synced to Supabase cloud)</li>
+          <li>Data is stored securely and only accessible by you</li>
+          <li>You can delete your account and all cloud data at any time</li>
+        </ul>
+      </section>
+
+      <section className="mb-6">
+        <h2 className="text-lg font-semibold mb-2">Analytics & Tracking</h2>
+        <ul className="list-disc list-inside text-sandoro-secondary space-y-1">
+          <li>No analytics or user tracking</li>
+          <li>No advertising</li>
+          <li>No cookies (except for authentication sessions when signed in)</li>
         </ul>
       </section>
 
@@ -50,8 +66,15 @@ export function PrivacyPolicy() {
 
       <section className="mb-6">
         <h2 className="text-lg font-semibold mb-2">Third-Party Services</h2>
-        <p className="text-sandoro-secondary">
-          sandoro does not integrate with any third-party services, analytics platforms, or advertising networks.
+        <p className="text-sandoro-secondary mb-2">
+          sandoro does not use analytics platforms or advertising networks. When you sign in, we use:
+        </p>
+        <ul className="list-disc list-inside text-sandoro-secondary space-y-1">
+          <li><strong>Supabase:</strong> For authentication and cloud data storage</li>
+          <li><strong>Google/GitHub OAuth:</strong> For secure sign-in (you choose which to use)</li>
+        </ul>
+        <p className="text-sandoro-secondary mt-2">
+          If you don't sign in, no third-party services are used.
         </p>
       </section>
 

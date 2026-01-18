@@ -46,7 +46,7 @@ export function AuthButton() {
         onClick={() => setIsLoginModalOpen(true)}
         className={`text-sm px-3 py-1.5 rounded-md border transition-colors ${
           isRainbow
-            ? 'rainbow-gradient border-transparent'
+            ? 'rainbow-gradient border-sandoro-secondary hover:border-sandoro-fg'
             : 'text-sandoro-primary border-sandoro-primary hover:bg-sandoro-primary hover:text-sandoro-bg'
         }`}
       >
