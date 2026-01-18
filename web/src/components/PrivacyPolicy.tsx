@@ -15,20 +15,19 @@ export function PrivacyPolicy() {
       <section className="mb-6">
         <h2 className="text-lg font-semibold mb-2">Data Collection</h2>
         <p className="text-sandoro-secondary mb-2">
-          <strong>Without sign-in:</strong> We do not collect any personal data. All data stays on your device.
+          <strong>Without sign-in:</strong> You can use the timer without signing in. No data is collected or stored.
         </p>
         <ul className="list-disc list-inside text-sandoro-secondary space-y-1 mb-4">
-          <li>Timer sessions, statistics, and settings are stored locally</li>
-          <li>Web version uses browser localStorage</li>
+          <li>Timer works fully offline</li>
+          <li>Session history and statistics require sign-in</li>
           <li>CLI version uses local SQLite database (~/.sandoro/)</li>
-          <li>No data is sent to external servers</li>
         </ul>
         <p className="text-sandoro-secondary mb-2">
-          <strong>With sign-in (optional):</strong> If you choose to sign in, we collect minimal data to enable cloud sync:
+          <strong>With sign-in:</strong> To access statistics, settings, and session history, sign-in is required:
         </p>
         <ul className="list-disc list-inside text-sandoro-secondary space-y-1">
           <li>Authentication info from your OAuth provider (Google/GitHub): email, name, avatar</li>
-          <li>Your timer sessions and settings (synced to Supabase cloud)</li>
+          <li>Your timer sessions and settings (stored in Supabase cloud)</li>
           <li>Data is stored securely and only accessible by you</li>
           <li>You can delete your account and all cloud data at any time</li>
         </ul>
@@ -56,26 +55,24 @@ export function PrivacyPolicy() {
       <section className="mb-6">
         <h2 className="text-lg font-semibold mb-2">Data Storage</h2>
         <p className="text-sandoro-secondary">
-          Your data remains on your device. You can clear all data at any time:
+          Your data is stored securely in the cloud when signed in. You can delete your data at any time:
         </p>
         <ul className="list-disc list-inside text-sandoro-secondary space-y-1 mt-2">
-          <li><strong>Web:</strong> Clear browser localStorage for this site</li>
-          <li><strong>CLI:</strong> Delete the ~/.sandoro/ directory</li>
+          <li><strong>Web:</strong> Sign in and delete your account from settings (coming soon)</li>
+          <li><strong>CLI:</strong> Delete the ~/.sandoro/ directory for local data</li>
         </ul>
       </section>
 
       <section className="mb-6">
         <h2 className="text-lg font-semibold mb-2">Third-Party Services</h2>
         <p className="text-sandoro-secondary mb-2">
-          sandoro does not use analytics platforms or advertising networks. When you sign in, we use:
+          sandoro does not use analytics platforms or advertising networks. We use the following services:
         </p>
         <ul className="list-disc list-inside text-sandoro-secondary space-y-1">
           <li><strong>Supabase:</strong> For authentication and cloud data storage</li>
           <li><strong>Google/GitHub OAuth:</strong> For secure sign-in (you choose which to use)</li>
+          <li><strong>Vercel:</strong> For web hosting</li>
         </ul>
-        <p className="text-sandoro-secondary mt-2">
-          If you don't sign in, no third-party services are used.
-        </p>
       </section>
 
       <section className="mb-6">
