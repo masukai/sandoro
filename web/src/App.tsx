@@ -44,12 +44,12 @@ function App() {
       className="min-h-screen"
       style={{ backgroundColor: 'var(--sandoro-bg)', color: 'var(--sandoro-fg)' }}
     >
-      <header className="flex justify-between items-center p-4 border-b border-sandoro-secondary gap-4">
+      <header className="flex justify-between items-center p-4 border-b border-sandoro-secondary gap-2">
         <div className="flex items-center gap-2 flex-shrink-0">
           <h1 className="text-xl font-bold whitespace-nowrap">sandoro</h1>
-          <span className="text-sm text-sandoro-secondary whitespace-nowrap">v0.1.0</span>
+          <span className="text-sm text-sandoro-secondary whitespace-nowrap hidden sm:inline">v0.1.0</span>
         </div>
-        <div className="flex items-center gap-4 flex-shrink-0">
+        <div className="flex items-center gap-2 sm:gap-4">
           <span className="text-sm text-sandoro-secondary font-mono whitespace-nowrap">{currentTime}</span>
           <AuthButton />
         </div>

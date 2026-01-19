@@ -27,7 +27,7 @@ export function AuthButton() {
             className="w-6 h-6 rounded-full flex-shrink-0"
           />
         )}
-        <span className="text-sm text-sandoro-secondary hidden sm:inline truncate max-w-[100px]">
+        <span className="text-sm text-sandoro-secondary hidden md:inline truncate max-w-[80px]">
           {user.user_metadata?.name || user.email?.split('@')[0] || 'User'}
         </span>
         <button
