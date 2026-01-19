@@ -114,10 +114,11 @@ fn get_unsynced_sessions(conn: &Connection) -> Result<Vec<LocalSession>> {
     }
 
     let mut stmt = conn.prepare(
-        "SELECT id, session_type, duration_seconds, completed_at, tag, cloud_id
-         FROM sessions
-         WHERE cloud_id IS NULL
-         ORDER BY completed_at ASC",
+        "SELECT s.id, s.type, s.duration_seconds, s.ended_at, t.name, s.cloud_id
+         FROM sessions s
+         LEFT JOIN tags t ON s.tag_id = t.id
+         WHERE s.cloud_id IS NULL AND s.completed = 1
+         ORDER BY s.ended_at ASC",
     )?;
 
     let sessions = stmt
@@ -154,14 +155,18 @@ fn insert_cloud_session(conn: &Connection, session: &CloudSession) -> Result<()>
         }
     }
 
+    // Parse completed_at to get started_at (subtract duration)
+    let ended_at = &session.completed_at;
+
     conn.execute(
-        "INSERT INTO sessions (session_type, duration_seconds, completed_at, tag, cloud_id)
-         VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO sessions (type, duration_seconds, ended_at, started_at, completed, cloud_id)
+         VALUES (?, ?, ?, datetime(?, '-' || ? || ' seconds'), 1, ?)",
         rusqlite::params![
             session.session_type,
             session.duration_seconds,
-            session.completed_at,
-            session.tag,
+            ended_at,
+            ended_at,
+            session.duration_seconds,
             session.id,
         ],
     )?;
@@ -285,13 +290,13 @@ pub fn get_sync_status(conn: &Connection) -> Result<String> {
 
         if has_cloud_id {
             conn.query_row(
-                "SELECT COUNT(*) FROM sessions WHERE cloud_id IS NULL",
+                "SELECT COUNT(*) FROM sessions WHERE cloud_id IS NULL AND completed = 1",
                 [],
                 |row| row.get(0),
             )
             .unwrap_or(0)
         } else {
-            conn.query_row("SELECT COUNT(*) FROM sessions", [], |row| row.get(0))
+            conn.query_row("SELECT COUNT(*) FROM sessions WHERE completed = 1", [], |row| row.get(0))
                 .unwrap_or(0)
         }
     };

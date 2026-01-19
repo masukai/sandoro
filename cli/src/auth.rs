@@ -11,8 +11,8 @@ use tiny_http::{Response, Server};
 use url::Url;
 
 /// Supabase configuration
-const SUPABASE_URL: &str = "https://oiurcnwofjkxdtjbtqkj.supabase.co";
-const SUPABASE_ANON_KEY: &str = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9pdXJjbndvZmpreGR0amJ0cWtqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzcxMTIzMDAsImV4cCI6MjA1MjY4ODMwMH0.kWC8Jz1HCr-yZj2pWyFdaKNqoevyQsyWQzdcKg7dHZA";
+const SUPABASE_URL: &str = "https://ukjsssbpfvkumflzcfrd.supabase.co";
+const SUPABASE_ANON_KEY: &str = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVranNzc2JwZnZrdW1mbHpjZnJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2NDE2MTksImV4cCI6MjA4NDIxNzYxOX0.cAq7YgrFoHMf2M20CWFrdokxZpxPoDPahEgkw-ug5BM";
 
 /// Local callback server port
 const CALLBACK_PORT: u16 = 54321;
@@ -210,8 +210,12 @@ fn wait_for_callback(server: &Server) -> Result<(String, String)> {
                         params.get("access_token"),
                         params.get("refresh_token")
                     ) {
-                        // Send success page
-                        let response = Response::from_string(success_html());
+                        // Send success page with proper Content-Type
+                        let response = Response::from_string(success_html())
+                            .with_header(tiny_http::Header::from_bytes(
+                                &b"Content-Type"[..],
+                                &b"text/html; charset=utf-8"[..],
+                            ).unwrap());
                         let _ = request.respond(response);
 
                         return Ok((access.to_string(), refresh.to_string()));
@@ -236,8 +240,12 @@ fn wait_for_callback(server: &Server) -> Result<(String, String)> {
                         params.get("access_token"),
                         params.get("refresh_token")
                     ) {
-                        // Send final success page
-                        let response = Response::from_string(success_html());
+                        // Send final success page with proper Content-Type
+                        let response = Response::from_string(success_html())
+                            .with_header(tiny_http::Header::from_bytes(
+                                &b"Content-Type"[..],
+                                &b"text/html; charset=utf-8"[..],
+                            ).unwrap());
                         let _ = request.respond(response);
 
                         return Ok((access.to_string(), refresh.to_string()));

@@ -9,19 +9,24 @@ use serde::{Deserialize, Serialize};
 use crate::auth;
 
 /// Supabase configuration
-const SUPABASE_URL: &str = "https://oiurcnwofjkxdtjbtqkj.supabase.co";
-const SUPABASE_ANON_KEY: &str = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9pdXJjbndvZmpreGR0amJ0cWtqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzcxMTIzMDAsImV4cCI6MjA1MjY4ODMwMH0.kWC8Jz1HCr-yZj2pWyFdaKNqoevyQsyWQzdcKg7dHZA";
+const SUPABASE_URL: &str = "https://ukjsssbpfvkumflzcfrd.supabase.co";
+const SUPABASE_ANON_KEY: &str = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVranNzc2JwZnZrdW1mbHpjZnJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2NDE2MTksImV4cCI6MjA4NDIxNzYxOX0.cAq7YgrFoHMf2M20CWFrdokxZpxPoDPahEgkw-ug5BM";
 
 /// Session record from Supabase
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CloudSession {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,
     pub user_id: String,
     pub session_type: String, // "work", "shortBreak", "longBreak"
     pub duration_seconds: i32,
     pub completed_at: String, // ISO 8601
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub tag: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub created_at: Option<String>,
+    /// Not stored in DB, used only for sync logic (skip when serializing)
+    #[serde(skip_serializing, default)]
     pub synced_from_cli: Option<bool>,
 }
 
