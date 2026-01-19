@@ -39,6 +39,22 @@ chrono = { version = "0.4", features = ["serde"] }
 # Directories (for config/data paths)
 dirs = "5"
 
+# HTTP client for Supabase API
+reqwest = { version = "0.12", features = ["json", "blocking"] }
+
+# UUID generation
+uuid = { version = "1", features = ["v4"] }
+
+# URL handling
+url = "2"
+urlencoding = "2"
+
+# For opening browser
+open = "5"
+
+# Local HTTP server for OAuth callback
+tiny_http = "0.12"
+
 # Notifications (optional)
 notify-rust = { version = "4", optional = true }
 

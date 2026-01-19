@@ -6,11 +6,14 @@ use anyhow::Result;
 use clap::{Parser, Subcommand};
 
 mod app;
+mod auth;
 mod config;
 mod db;
 mod icons;
 mod messages;
 mod notification;
+mod supabase;
+mod sync;
 
 use config::Config;
 use db::DailyStats;
@@ -24,7 +27,7 @@ mod ui;
 #[command(version)]
 #[command(about = "Terminal-first Pomodoro timer with ASCII art animations")]
 #[command(after_help = "\
-PRIVACY: All data is stored locally (~/.sandoro/). No external data transmission.
+PRIVACY: Data is stored locally (~/.sandoro/). Cloud sync (optional) uses Supabase.
 CONTACT: https://github.com/masukai/sandoro/issues
 LICENSE: MIT - (c) 2025 K. Masuda")]
 struct Cli {
@@ -89,6 +92,20 @@ enum Commands {
         /// Show stats grouped by tag
         #[arg(short = 't', long)]
         by_tag: bool,
+    },
+    /// Login to sync data with cloud
+    Login {
+        /// OAuth provider to use
+        #[arg(short, long, default_value = "google")]
+        provider: String,
+    },
+    /// Logout and remove stored credentials
+    Logout,
+    /// Sync local data with cloud
+    Sync {
+        /// Show sync status only
+        #[arg(short, long)]
+        status: bool,
     },
 }
 
@@ -1084,9 +1101,122 @@ fn main() -> Result<()> {
                 by_tag,
             )?;
         }
+        Some(Commands::Login { provider }) => {
+            handle_login(&provider)?;
+        }
+        Some(Commands::Logout) => {
+            handle_logout()?;
+        }
+        Some(Commands::Sync { status }) => {
+            handle_sync(status)?;
+        }
         None => {
             // Default: start timer with settings from config file
             app::run()?;
+        }
+    }
+
+    Ok(())
+}
+
+fn handle_login(provider: &str) -> Result<()> {
+    // Validate provider
+    let provider = provider.to_lowercase();
+    if provider != "google" && provider != "github" {
+        println!("Error: Invalid provider '{}'. Use 'google' or 'github'.", provider);
+        return Ok(());
+    }
+
+    // Check if already logged in
+    if auth::is_logged_in() {
+        if let Ok(Some((user_id, email))) = auth::get_current_user() {
+            println!("Already logged in as: {}", email.as_deref().unwrap_or(&user_id));
+            println!("Use 'sandoro logout' to log out first.");
+            return Ok(());
+        }
+    }
+
+    println!("Logging in with {}...", provider);
+    println!();
+
+    match auth::login(&provider) {
+        Ok(creds) => {
+            println!();
+            println!("✓ Successfully logged in!");
+            println!("  User: {}", creds.email.as_deref().unwrap_or(&creds.user_id));
+            println!();
+            println!("Your sessions will now sync with the cloud.");
+            println!("Run 'sandoro sync' to sync existing sessions.");
+        }
+        Err(e) => {
+            println!("Error: Failed to login: {}", e);
+        }
+    }
+
+    Ok(())
+}
+
+fn handle_logout() -> Result<()> {
+    if !auth::is_logged_in() {
+        println!("Not logged in.");
+        return Ok(());
+    }
+
+    // Get user info before logout
+    let user_info = auth::get_current_user()?.map(|(id, email)| {
+        email.unwrap_or(id)
+    });
+
+    auth::delete_credentials()?;
+
+    if let Some(user) = user_info {
+        println!("✓ Logged out from: {}", user);
+    } else {
+        println!("✓ Logged out.");
+    }
+    println!("Your local data is preserved.");
+
+    Ok(())
+}
+
+fn handle_sync(status_only: bool) -> Result<()> {
+    let db = db::Database::open()?;
+
+    if status_only {
+        let status = sync::get_sync_status(db.connection())?;
+        println!();
+        println!("  ☁️  Sync Status");
+        println!("  ─────────────");
+        for line in status.lines() {
+            println!("  {}", line);
+        }
+        return Ok(());
+    }
+
+    if !auth::is_logged_in() {
+        println!("Not logged in. Run 'sandoro login' first.");
+        return Ok(());
+    }
+
+    println!("Syncing with cloud...");
+    println!();
+
+    match sync::sync(db.connection()) {
+        Ok(result) => {
+            println!("✓ Sync complete!");
+            println!("  Uploaded:   {} sessions", result.uploaded);
+            println!("  Downloaded: {} sessions", result.downloaded);
+
+            if !result.errors.is_empty() {
+                println!();
+                println!("  Warnings:");
+                for error in &result.errors {
+                    println!("    - {}", error);
+                }
+            }
+        }
+        Err(e) => {
+            println!("Error: Sync failed: {}", e);
         }
     }
 

@@ -86,6 +86,11 @@ impl Database {
         Ok(db)
     }
 
+    /// Get a reference to the underlying connection (for sync operations)
+    pub fn connection(&self) -> &Connection {
+        &self.conn
+    }
+
     /// Initialize database schema
     fn init_schema(&self) -> Result<()> {
         // Create tables first (without tag_id index since column might not exist yet)
