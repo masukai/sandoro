@@ -5,8 +5,10 @@ import { useComparison, ComparisonData } from '../hooks/useComparison';
 import { useSettings } from '../hooks/useSettings';
 import { useTheme } from '../hooks/useTheme';
 import { useTags, Tag } from '../hooks/useTags';
+import { useAuth } from '../hooks/useAuth';
 import { Heatmap } from './Heatmap';
 import { ShareModal } from './ShareModal';
+import { LoginRequired } from './LoginRequired';
 
 type StatsView = 'today' | 'week' | 'month';
 type ExportFormat = 'json' | 'csv';
@@ -388,6 +390,7 @@ function SessionHistory({
 }
 
 export function Stats() {
+  const { user, loading } = useAuth();
   const [view, setView] = useState<StatsView>('today');
   const [heatmapWeeks, setHeatmapWeeks] = useState<number>(12);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -409,6 +412,7 @@ export function Stats() {
     updateSessionTag,
   } = useSessionStorage();
   const { tags, getTagById } = useTags();
+  const { weekComparison, monthComparison } = useComparison();
 
   const handleExport = useCallback(
     (format: ExportFormat) => {
@@ -427,12 +431,6 @@ export function Stats() {
     [exportToJSON, exportToCSV]
   );
 
-  const todayStats = getTodayStats();
-  const weekStats = getWeekStats();
-  const monthStats = getMonthStats();
-  const heatmapData = getHeatmapData(heatmapWeeks);
-  const streak = getStreak();
-  const { weekComparison, monthComparison } = useComparison();
   const tagStats = getStatsByTag(30);
 
   // Convert tag stats to array for rendering
@@ -457,8 +455,38 @@ export function Stats() {
     return result;
   }, [tagStats, getTagById]);
 
+  // Show login required screen if not authenticated
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="text-sandoro-secondary">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <LoginRequired
+        title="Sign in to view stats"
+        description="Track your focus sessions, view streaks, and analyze your productivity."
+        features={[
+          'Session history and daily breakdown',
+          'Streak tracking',
+          'Activity heatmap',
+          'Export to JSON/CSV',
+        ]}
+      />
+    );
+  }
+
+  const todayStats = getTodayStats();
+  const weekStats = getWeekStats();
+  const monthStats = getMonthStats();
+  const heatmapData = getHeatmapData(heatmapWeeks);
+  const streak = getStreak();
+
   return (
-    <div className="space-y-6 pb-32">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Statistics</h2>
         <div className="flex gap-2">

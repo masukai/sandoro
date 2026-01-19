@@ -5,6 +5,7 @@ import { Stats } from './components/Stats';
 import { IconPreview } from './components/IconPreview';
 import { Footer } from './components/Footer';
 import { PrivacyPolicy } from './components/PrivacyPolicy';
+import { AuthButton } from './components/AuthButton';
 import { useTheme } from './hooks/useTheme';
 import { useSettings } from './hooks/useSettings';
 import { useClock } from './hooks/useClock';
@@ -43,15 +44,18 @@ function App() {
       className="min-h-screen"
       style={{ backgroundColor: 'var(--sandoro-bg)', color: 'var(--sandoro-fg)' }}
     >
-      <header className="flex justify-between items-center p-4 border-b border-sandoro-secondary">
-        <div className="flex items-center gap-2">
-          <h1 className="text-xl font-bold">sandoro</h1>
-          <span className="text-sm text-sandoro-secondary">v0.1.0</span>
+      <header className="flex justify-between items-center p-4 border-b border-sandoro-secondary gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <h1 className="text-xl font-bold whitespace-nowrap">sandoro</h1>
+          <span className="text-sm text-sandoro-secondary whitespace-nowrap hidden sm:inline">v0.1.0</span>
         </div>
-        <span className="text-sm text-sandoro-secondary font-mono">{currentTime}</span>
+        <div className="flex items-center gap-2 sm:gap-4">
+          <span className="text-sm text-sandoro-secondary font-mono whitespace-nowrap">{currentTime}</span>
+          <AuthButton />
+        </div>
       </header>
 
-      <main className="p-4 pb-16">
+      <main className="p-4">
         {isDebugMode ? (
           <IconPreview />
         ) : (
@@ -74,6 +78,12 @@ function App() {
         )}
       </main>
 
+      {/* Footer - shown on all views except privacy */}
+      {view !== 'privacy' && <Footer onPrivacyClick={() => navigateTo('privacy')} />}
+
+      {/* Spacer for fixed bottom nav */}
+      <div className="h-14" />
+
       {view === 'privacy' ? (
         <nav
           className="fixed bottom-0 left-0 right-0 py-2 border-t border-sandoro-secondary z-50"
@@ -89,44 +99,41 @@ function App() {
           </div>
         </nav>
       ) : (
-        <>
-          <Footer onPrivacyClick={() => navigateTo('privacy')} />
-          <nav
-            className="fixed bottom-0 left-0 right-0 flex justify-around py-2 border-t border-sandoro-secondary z-50"
-            style={{ backgroundColor: 'var(--sandoro-bg)' }}
+        <nav
+          className="fixed bottom-0 left-0 right-0 flex justify-around py-2 border-t border-sandoro-secondary z-50"
+          style={{ backgroundColor: 'var(--sandoro-bg)' }}
+        >
+          <button
+            onClick={() => navigateTo('timer')}
+            className={`px-3 py-1 text-sm ${
+              view === 'timer'
+                ? isRainbow ? 'rainbow-gradient' : 'text-sandoro-primary'
+                : 'text-sandoro-secondary'
+            }`}
           >
-            <button
-              onClick={() => navigateTo('timer')}
-              className={`px-3 py-1 text-sm ${
-                view === 'timer'
-                  ? isRainbow ? 'rainbow-gradient' : 'text-sandoro-primary'
-                  : 'text-sandoro-secondary'
-              }`}
-            >
-              Timer
-            </button>
-            <button
-              onClick={() => navigateTo('stats')}
-              className={`px-3 py-1 text-sm ${
-                view === 'stats'
-                  ? isRainbow ? 'rainbow-gradient' : 'text-sandoro-primary'
-                  : 'text-sandoro-secondary'
-              }`}
-            >
-              Stats
-            </button>
-            <button
-              onClick={() => navigateTo('settings')}
-              className={`px-3 py-1 text-sm ${
-                view === 'settings'
-                  ? isRainbow ? 'rainbow-gradient' : 'text-sandoro-primary'
-                  : 'text-sandoro-secondary'
-              }`}
-            >
-              Settings
-            </button>
-          </nav>
-        </>
+            Timer
+          </button>
+          <button
+            onClick={() => navigateTo('stats')}
+            className={`px-3 py-1 text-sm ${
+              view === 'stats'
+                ? isRainbow ? 'rainbow-gradient' : 'text-sandoro-primary'
+                : 'text-sandoro-secondary'
+            }`}
+          >
+            Stats
+          </button>
+          <button
+            onClick={() => navigateTo('settings')}
+            className={`px-3 py-1 text-sm ${
+              view === 'settings'
+                ? isRainbow ? 'rainbow-gradient' : 'text-sandoro-primary'
+                : 'text-sandoro-secondary'
+            }`}
+          >
+            Settings
+          </button>
+        </nav>
       )}
     </div>
   );

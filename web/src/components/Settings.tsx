@@ -4,6 +4,8 @@ import { useSettings, IconType, Language } from '../hooks/useSettings';
 import { useNotification } from '../hooks/useNotification';
 import { useSound, SOUND_PATTERN_OPTIONS } from '../hooks/useSound';
 import { useTags } from '../hooks/useTags';
+import { useAuth } from '../hooks/useAuth';
+import { LoginRequired } from './LoginRequired';
 
 const LANGUAGE_OPTIONS: { value: Language; label: string; icon: string }[] = [
   { value: 'ja', label: '日本語', icon: '🇯🇵' },
@@ -103,6 +105,7 @@ function ToggleButton({ label, enabled, onToggle, extra, isRainbow = false }: To
 }
 
 export function Settings() {
+  const { user, loading } = useAuth();
   const { mode, accentColor, setMode, setAccentColor } = useTheme();
   const isRainbow = accentColor === 'rainbow';
   const { settings, setSettings, resetSettings } = useSettings();
@@ -112,6 +115,30 @@ export function Settings() {
   const [newTagName, setNewTagName] = useState('');
   const [editingTagId, setEditingTagId] = useState<string | null>(null);
   const [editingTagName, setEditingTagName] = useState('');
+
+  // Show login required screen if not authenticated
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="text-sandoro-secondary">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <LoginRequired
+        title="Sign in to access settings"
+        description="Customize your timer, themes, and preferences."
+        features={[
+          'Timer duration settings',
+          'Theme and accent color',
+          'Notifications and sounds',
+          'Tag management',
+        ]}
+      />
+    );
+  }
 
   const handleNotificationToggle = async () => {
     if (!settings.notificationsEnabled) {
