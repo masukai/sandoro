@@ -412,6 +412,48 @@ export function Stats() {
     updateSessionTag,
   } = useSessionStorage();
   const { tags, getTagById } = useTags();
+  const { weekComparison, monthComparison } = useComparison();
+
+  const handleExport = useCallback(
+    (format: ExportFormat) => {
+      const content = format === 'json' ? exportToJSON() : exportToCSV();
+      const mimeType = format === 'json' ? 'application/json' : 'text/csv';
+      const filename = `sandoro-sessions.${format}`;
+
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    },
+    [exportToJSON, exportToCSV]
+  );
+
+  const tagStats = getStatsByTag(30);
+
+  // Convert tag stats to array for rendering
+  const tagStatsArray = useMemo(() => {
+    const result: Array<{
+      tagId: string | undefined;
+      tagName: string;
+      totalSeconds: number;
+      sessionsCount: number;
+    }> = [];
+    tagStats.forEach((stats, tagId) => {
+      const tag = tagId ? getTagById(tagId) : undefined;
+      result.push({
+        tagId,
+        tagName: tag?.name || 'No tag',
+        totalSeconds: stats.totalSeconds,
+        sessionsCount: stats.sessionsCount,
+      });
+    });
+    // Sort by total seconds descending
+    result.sort((a, b) => b.totalSeconds - a.totalSeconds);
+    return result;
+  }, [tagStats, getTagById]);
 
   // Show login required screen if not authenticated
   if (loading) {
@@ -437,52 +479,11 @@ export function Stats() {
     );
   }
 
-  const handleExport = useCallback(
-    (format: ExportFormat) => {
-      const content = format === 'json' ? exportToJSON() : exportToCSV();
-      const mimeType = format === 'json' ? 'application/json' : 'text/csv';
-      const filename = `sandoro-sessions.${format}`;
-
-      const blob = new Blob([content], { type: mimeType });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
-    },
-    [exportToJSON, exportToCSV]
-  );
-
   const todayStats = getTodayStats();
   const weekStats = getWeekStats();
   const monthStats = getMonthStats();
   const heatmapData = getHeatmapData(heatmapWeeks);
   const streak = getStreak();
-  const { weekComparison, monthComparison } = useComparison();
-  const tagStats = getStatsByTag(30);
-
-  // Convert tag stats to array for rendering
-  const tagStatsArray = useMemo(() => {
-    const result: Array<{
-      tagId: string | undefined;
-      tagName: string;
-      totalSeconds: number;
-      sessionsCount: number;
-    }> = [];
-    tagStats.forEach((stats, tagId) => {
-      const tag = tagId ? getTagById(tagId) : undefined;
-      result.push({
-        tagId,
-        tagName: tag?.name || 'No tag',
-        totalSeconds: stats.totalSeconds,
-        sessionsCount: stats.sessionsCount,
-      });
-    });
-    // Sort by total seconds descending
-    result.sort((a, b) => b.totalSeconds - a.totalSeconds);
-    return result;
-  }, [tagStats, getTagById]);
 
   return (
     <div className="space-y-6 pb-32">
