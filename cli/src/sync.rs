@@ -275,6 +275,137 @@ pub fn sync(conn: &Connection) -> Result<SyncResult> {
     Ok(result)
 }
 
+/// Try to sync a single session immediately after completion
+/// Returns Ok(true) if synced, Ok(false) if not logged in or offline, Err on error
+pub fn try_sync_session(conn: &Connection, session_id: i64) -> Result<bool> {
+    // Check if logged in
+    let creds = match auth::load_credentials()? {
+        Some(c) => c,
+        None => return Ok(false), // Not logged in, skip silently
+    };
+
+    // Ensure sync table exists
+    ensure_sync_table(conn)?;
+
+    // Ensure cloud_id column exists
+    let has_cloud_id: bool = conn
+        .query_row(
+            "SELECT COUNT(*) > 0 FROM pragma_table_info('sessions') WHERE name = 'cloud_id'",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap_or(false);
+
+    if !has_cloud_id {
+        conn.execute("ALTER TABLE sessions ADD COLUMN cloud_id TEXT", [])?;
+    }
+
+    // Get the session details
+    let session: Option<LocalSession> = conn
+        .query_row(
+            "SELECT s.id, s.type, s.duration_seconds, s.ended_at, t.name, s.cloud_id
+             FROM sessions s
+             LEFT JOIN tags t ON s.tag_id = t.id
+             WHERE s.id = ? AND s.completed = 1",
+            [session_id],
+            |row| {
+                Ok(LocalSession {
+                    id: row.get(0)?,
+                    session_type: row.get(1)?,
+                    duration_seconds: row.get(2)?,
+                    completed_at: row.get(3)?,
+                    tag: row.get(4)?,
+                    cloud_id: row.get(5)?,
+                })
+            },
+        )
+        .ok();
+
+    let session = match session {
+        Some(s) => s,
+        None => return Ok(false), // Session not found or not completed
+    };
+
+    // Already synced?
+    if session.cloud_id.is_some() {
+        return Ok(true);
+    }
+
+    // Create Supabase client
+    let client = match SupabaseClient::new()? {
+        Some(c) => c,
+        None => return Ok(false), // No valid credentials
+    };
+
+    // Upload the session
+    let cloud_session = CloudSession {
+        id: Some(uuid::Uuid::new_v4().to_string()),
+        user_id: creds.user_id,
+        session_type: session.session_type,
+        duration_seconds: session.duration_seconds,
+        completed_at: session.completed_at,
+        tag: session.tag,
+        created_at: Some(Utc::now().to_rfc3339()),
+        synced_from_cli: Some(true),
+    };
+
+    match client.upload_session(&cloud_session) {
+        Ok(_) => {
+            if let Some(cloud_id) = &cloud_session.id {
+                let _ = mark_synced(conn, session.id, cloud_id);
+            }
+            Ok(true)
+        }
+        Err(_) => Ok(false), // Network error, will retry later
+    }
+}
+
+/// Try to sync all unsynced sessions (called on startup)
+pub fn try_sync_pending(conn: &Connection) -> Result<usize> {
+    // Check if logged in
+    let creds = match auth::load_credentials()? {
+        Some(c) => c,
+        None => return Ok(0),
+    };
+
+    // Ensure sync table exists
+    ensure_sync_table(conn)?;
+
+    // Create Supabase client
+    let client = match SupabaseClient::new()? {
+        Some(c) => c,
+        None => return Ok(0),
+    };
+
+    let unsynced = get_unsynced_sessions(conn)?;
+    let mut synced_count = 0;
+
+    for local in &unsynced {
+        let cloud_session = CloudSession {
+            id: Some(uuid::Uuid::new_v4().to_string()),
+            user_id: creds.user_id.clone(),
+            session_type: local.session_type.clone(),
+            duration_seconds: local.duration_seconds,
+            completed_at: local.completed_at.clone(),
+            tag: local.tag.clone(),
+            created_at: Some(Utc::now().to_rfc3339()),
+            synced_from_cli: Some(true),
+        };
+
+        if client.upload_session(&cloud_session).is_ok() {
+            if let Some(cloud_id) = &cloud_session.id {
+                let _ = mark_synced(conn, local.id, cloud_id);
+            }
+            synced_count += 1;
+        } else {
+            // Stop on first failure (likely offline)
+            break;
+        }
+    }
+
+    Ok(synced_count)
+}
+
 /// Get sync status
 pub fn get_sync_status(conn: &Connection) -> Result<String> {
     ensure_sync_table(conn)?;

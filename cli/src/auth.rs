@@ -335,12 +335,12 @@ fn success_html() -> String {
 
 /// HTML page that extracts tokens from URL fragment
 fn fragment_extractor_html() -> String {
-    format!(r#"<!DOCTYPE html>
+    r#"<!DOCTYPE html>
 <html>
 <head>
     <title>sandoro - Authenticating...</title>
     <style>
-        body {{
+        body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             display: flex;
             justify-content: center;
@@ -349,10 +349,10 @@ fn fragment_extractor_html() -> String {
             margin: 0;
             background: #1a1a1a;
             color: #22d3ee;
-        }}
-        .container {{ text-align: center; padding: 2rem; }}
-        h1 {{ font-size: 2rem; }}
-        .spinner {{
+        }
+        .container { text-align: center; padding: 2rem; }
+        h1 { font-size: 2rem; }
+        .spinner {
             border: 4px solid #333;
             border-top: 4px solid #22d3ee;
             border-radius: 50%;
@@ -360,11 +360,11 @@ fn fragment_extractor_html() -> String {
             height: 40px;
             animation: spin 1s linear infinite;
             margin: 2rem auto;
-        }}
-        @keyframes spin {{
-            0% {{ transform: rotate(0deg); }}
-            100% {{ transform: rotate(360deg); }}
-        }}
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -380,16 +380,16 @@ fn fragment_extractor_html() -> String {
         const accessToken = params.get('access_token');
         const refreshToken = params.get('refresh_token');
 
-        if (accessToken && refreshToken) {{
+        if (accessToken && refreshToken) {
             // Redirect to token endpoint with tokens as query params
             window.location.href = '/token?access_token=' + encodeURIComponent(accessToken) +
                 '&refresh_token=' + encodeURIComponent(refreshToken);
-        }} else {{
+        } else {
             document.body.innerHTML = '<div class="container"><h1>Error</h1><p>Authentication failed. Please try again.</p></div>';
-        }}
+        }
     </script>
 </body>
-</html>"#)
+</html>"#.to_string()
 }
 
 /// Get the current user's access token (refreshing if needed)

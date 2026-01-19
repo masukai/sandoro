@@ -14,6 +14,7 @@ use crate::config::Config;
 use crate::db::{Database, Session, SessionType, Tag};
 use crate::icons::IconType;
 use crate::notification;
+use crate::sync;
 use crate::theme::Theme;
 use crate::timer::{Timer, TimerState};
 use crate::ui;
@@ -211,6 +212,12 @@ impl App {
 
         // Open database and get stats
         let db = Database::open().ok();
+
+        // Try to sync any pending sessions from previous offline usage
+        if let Some(ref d) = db {
+            let _ = sync::try_sync_pending(d.connection());
+        }
+
         let (today_work_seconds, today_sessions) = db
             .as_ref()
             .and_then(|d| d.get_today_stats().ok())
@@ -577,6 +584,9 @@ impl App {
 
             if completed {
                 let _ = db.complete_session(session_id, duration as i32);
+
+                // Try to sync to cloud (silently fails if offline or not logged in)
+                let _ = sync::try_sync_session(db.connection(), session_id);
 
                 // Update today's stats for work sessions
                 if state == TimerState::Work {
