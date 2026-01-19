@@ -54,7 +54,7 @@ _.file = [".env.supabase"]  # Load Supabase access token if exists
 "cli:login" = { run = "cargo run -- login --provider google", dir = "cli", description = "Login to cloud sync (Google)" }
 "cli:logout" = { run = "cargo run -- logout", dir = "cli", description = "Logout from cloud sync" }
 "cli:sync" = { run = "cargo run -- sync", dir = "cli", description = "Sync sessions with cloud" }
-"cli:status" = { run = "cargo run -- status", dir = "cli", description = "Show sync status" }
+"cli:status" = { run = "cargo run -- sync --status", dir = "cli", description = "Show sync status" }
 
 "build-cli" = { run = "cargo build --release", dir = "cli", description = "Build CLI release" }
 "test-cli"  = { run = "cargo test", dir = "cli", description = "Run CLI tests" }
