@@ -2183,9 +2183,9 @@ github: [your-username]
 
 | タスク | 詳細 | ステータス |
 |--------|------|----------|
-| `sandoro login` | ブラウザ経由 OAuth | ⏳ 待機中 |
-| トークン管理 | ~/.sandoro/credentials に保存 | ⏳ 待機中 |
-| CLI データ同期 | SQLite ↔ Supabase 同期 | ⏳ 待機中 |
+| `sandoro login` | ブラウザ経由 OAuth | ✅ 完了 |
+| トークン管理 | ~/.sandoro/credentials に保存 | ✅ 完了 |
+| CLI データ同期 | SQLite ↔ Supabase 同期 | ✅ 完了 |
 
 #### IaC 管理（Supabase CLI）
 
