@@ -1,12 +1,12 @@
 import { useRef, useCallback, useState, useEffect, useMemo } from 'react';
 import { useTimer } from '../../hooks/useTimer';
-import { useSettings, IconType } from '../../hooks/useSettings';
-import { useSessionStorage } from '../../hooks/useSessionStorage';
+import { useSettings, useTags, type IconType } from '../../hooks/useSupabaseSettings';
+import { useSessionStorage } from '../../hooks/useSupabaseSession';
 import { useNotification } from '../../hooks/useNotification';
 import { useSound } from '../../hooks/useSound';
 import { useTheme } from '../../hooks/useTheme';
+import { useAuth } from '../../hooks/useAuth';
 import { useContextMessage, UserStats } from '../../hooks/useContextMessage';
-import { useTags } from '../../hooks/useTags';
 import { AsciiIcon } from './AsciiIcon';
 
 interface TimerProps {
@@ -28,6 +28,7 @@ export function Timer({
 }: TimerProps) {
   const { settings } = useSettings();
   const { accentColor } = useTheme();
+  const { user } = useAuth();
   const isRainbow = accentColor === 'rainbow';
   const iconType = icon || settings.icon || 'hourglass';
   const { sessions, startSession, completeSession, cancelSession, getTodayStats, getStreak, getWeekStats, getDailyBreakdown } =
@@ -167,8 +168,8 @@ export function Timer({
         [ {stateLabel}{!isRunning ? ' - PAUSED' : ''} ]
       </div>
 
-      {/* Tag Selection */}
-      {tags.length > 0 && (
+      {/* Tag Selection - only show when logged in */}
+      {user && tags.length > 0 && (
         <div className="flex items-center gap-2">
           <span className="text-sm text-sandoro-secondary">Tag:</span>
           <select
@@ -237,6 +238,15 @@ export function Timer({
       <div className="text-sm italic" style={{ color: 'var(--sandoro-fg)', opacity: 0.7 }}>
         {contextMessage}
       </div>
+
+      {/* Sound notice */}
+      {settings.soundEnabled && (
+        <div className="text-xs text-sandoro-secondary mt-2">
+          {settings.language === 'ja'
+            ? '* タイマー終了時に音が鳴ります'
+            : '* Sound will play when timer ends'}
+        </div>
+      )}
     </div>
   );
 }

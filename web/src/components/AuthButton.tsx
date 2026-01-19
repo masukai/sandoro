@@ -31,7 +31,9 @@ export function AuthButton() {
           {user.user_metadata?.name || user.email?.split('@')[0] || 'User'}
         </span>
         <button
-          onClick={signOut}
+          onClick={() => {
+            signOut().catch((err) => console.error('Sign out failed:', err));
+          }}
           className="text-sm text-sandoro-secondary hover:text-sandoro-fg transition-colors whitespace-nowrap"
         >
           Sign out

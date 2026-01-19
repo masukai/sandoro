@@ -1,7 +1,7 @@
 import { forwardRef, useMemo } from 'react';
-import { DailyStats, StreakInfo } from '../hooks/useSessionStorage';
+import { type DailyStats, type StreakInfo } from '../hooks/useSupabaseSession';
 import { AccentColor, ACCENT_COLORS } from '../hooks/useTheme';
-import { IconType } from '../hooks/useSettings';
+import { type IconType } from '../hooks/useSupabaseSettings';
 
 export interface ShareCardData {
   todayStats: DailyStats;

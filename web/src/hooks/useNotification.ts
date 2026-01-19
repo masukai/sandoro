@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useSettings } from './useSettings';
+import { useSettings } from './useSupabaseSettings';
 
 export type NotificationPermission = 'default' | 'granted' | 'denied';
 

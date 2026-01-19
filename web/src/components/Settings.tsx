@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { useTheme, ThemeMode, ACCENT_COLORS } from '../hooks/useTheme';
-import { useSettings, IconType, Language } from '../hooks/useSettings';
+import { useSettings, useTags, type IconType, type Language } from '../hooks/useSupabaseSettings';
 import { useNotification } from '../hooks/useNotification';
 import { useSound, SOUND_PATTERN_OPTIONS } from '../hooks/useSound';
-import { useTags } from '../hooks/useTags';
 import { useAuth } from '../hooks/useAuth';
 import { LoginRequired } from './LoginRequired';
 
@@ -104,6 +103,78 @@ function ToggleButton({ label, enabled, onToggle, extra, isRainbow = false }: To
   );
 }
 
+// Preview component for unauthenticated users
+function SettingsPreview() {
+  return (
+    <div className="flex flex-col gap-4 select-none">
+      <h2 className="text-base font-bold">Settings</h2>
+
+      {/* Appearance Section */}
+      <div className="flex flex-col gap-2">
+        <h3 className="text-xs font-semibold" style={{ color: 'var(--sandoro-secondary)' }}>Appearance</h3>
+        <div className="flex items-center gap-2">
+          <span className="text-xs w-12" style={{ color: 'var(--sandoro-fg)' }}>Mode:</span>
+          <div className="flex gap-0.5 rounded-lg p-0.5 bg-sandoro-secondary/20">
+            <div className="px-2 py-0.5 text-xs rounded bg-sandoro-primary/30">○ Light</div>
+            <div className="px-2 py-0.5 text-xs rounded">● Dark</div>
+            <div className="px-2 py-0.5 text-xs rounded">◐ System</div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs w-12" style={{ color: 'var(--sandoro-fg)' }}>Accent:</span>
+          <div className="flex gap-1 flex-wrap">
+            {['#ef4444', '#22c55e', '#3b82f6', '#a855f7', '#22d3ee'].map((color) => (
+              <div
+                key={color}
+                className="w-4 h-4 rounded-full"
+                style={{ backgroundColor: color }}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Timer Section */}
+      <div className="flex flex-col gap-2">
+        <h3 className="text-xs font-semibold text-sandoro-secondary">Timer</h3>
+        <div className="flex flex-col gap-2 bg-sandoro-secondary/10 rounded-lg p-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs" style={{ color: 'var(--sandoro-fg)' }}>Work Duration</span>
+            <div className="flex items-center gap-1.5">
+              <div className="w-6 h-6 rounded bg-sandoro-secondary/50 flex items-center justify-center text-xs">-</div>
+              <span className="w-16 text-center font-mono text-xs">25 min</span>
+              <div className="w-6 h-6 rounded bg-sandoro-secondary/50 flex items-center justify-center text-xs">+</div>
+            </div>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-xs" style={{ color: 'var(--sandoro-fg)' }}>Short Break</span>
+            <div className="flex items-center gap-1.5">
+              <div className="w-6 h-6 rounded bg-sandoro-secondary/50 flex items-center justify-center text-xs">-</div>
+              <span className="w-16 text-center font-mono text-xs">5 min</span>
+              <div className="w-6 h-6 rounded bg-sandoro-secondary/50 flex items-center justify-center text-xs">+</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Goals Section */}
+      <div className="flex flex-col gap-2">
+        <h3 className="text-xs font-semibold text-sandoro-secondary">Goals</h3>
+        <div className="flex flex-col gap-2 bg-sandoro-secondary/10 rounded-lg p-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs" style={{ color: 'var(--sandoro-fg)' }}>Daily Sessions</span>
+            <span className="font-mono text-xs">5</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-xs" style={{ color: 'var(--sandoro-fg)' }}>Daily Minutes</span>
+            <span className="font-mono text-xs">120 min</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function Settings() {
   const { user, loading } = useAuth();
   const { mode, accentColor, setMode, setAccentColor } = useTheme();
@@ -128,14 +199,24 @@ export function Settings() {
   if (!user) {
     return (
       <LoginRequired
-        title="Sign in to access settings"
-        description="Customize your timer, themes, and preferences."
+        title="Make it yours"
+        titleJa="自分好みにカスタマイズ"
+        description="Personalize your timer, themes, sounds, and more."
+        descriptionJa="タイマー、テーマ、サウンドなどを自由に設定できます。"
+        icon="⚙️"
         features={[
-          'Timer duration settings',
-          'Theme and accent color',
-          'Notifications and sounds',
-          'Tag management',
+          'Customize work and break durations',
+          'Choose your favorite theme',
+          'Set up notifications and sounds',
+          'Organize with custom tags',
         ]}
+        featuresJa={[
+          '作業・休憩時間をカスタマイズ',
+          'お気に入りのテーマを選択',
+          '通知とサウンドを設定',
+          'タグで整理',
+        ]}
+        previewContent={<SettingsPreview />}
       />
     );
   }

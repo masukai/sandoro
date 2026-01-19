@@ -1,13 +1,19 @@
 import { useState, useCallback, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+import { useAuth } from './useAuth';
+import type { Tables } from '../lib/database.types';
+
+// Session type from Supabase
+type SupabaseSession = Tables<'sessions'>;
 
 export interface Session {
   id: string;
-  startedAt: string; // ISO string
-  endedAt: string | null;
+  startedAt: string; // ISO string (maps to completed_at - when the session was completed)
+  endedAt: string | null; // Not used in new schema, kept for compatibility
   durationSeconds: number | null;
   type: 'work' | 'shortBreak' | 'longBreak';
   completed: boolean;
-  tagId?: string; // Optional tag ID for categorization
+  tagId?: string; // Maps to 'tag' in Supabase
 }
 
 export interface DailyStats {
@@ -17,116 +23,197 @@ export interface DailyStats {
 }
 
 export interface StreakInfo {
-  current: number; // Current consecutive days
-  longest: number; // Longest streak ever
+  current: number;
+  longest: number;
 }
 
-const STORAGE_KEY = 'sandoro_sessions';
-
-function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+// Convert Supabase session to local format
+function toLocalSession(s: SupabaseSession): Session {
+  return {
+    id: s.id,
+    startedAt: s.completed_at,
+    endedAt: s.completed_at,
+    durationSeconds: s.duration_seconds,
+    type: s.session_type as 'work' | 'shortBreak' | 'longBreak',
+    completed: true, // All Supabase sessions are completed
+    tagId: s.tag || undefined,
+  };
 }
 
-function loadSessions(): Session[] {
-  try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
-  } catch {
-    return [];
-  }
+// Helper to format date as YYYY-MM-DD in local timezone
+function formatDateStr(d: Date): string {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
-function saveSessions(sessions: Session[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
-}
+// Alias for backwards compatibility
+export const useSessionStorage = useSupabaseSession;
 
-export function useSessionStorage() {
+export function useSupabaseSession() {
+  const { user } = useAuth();
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Load sessions on mount
+  // Fetch sessions from Supabase on mount and when user changes
   useEffect(() => {
-    setSessions(loadSessions());
-  }, []);
+    if (!user) {
+      setSessions([]);
+      setLoading(false);
+      return;
+    }
+
+    const fetchSessions = async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('sessions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('completed_at', { ascending: false });
+
+      if (error) {
+        console.error('Failed to fetch sessions:', error);
+        setSessions([]);
+      } else {
+        setSessions((data || []).map(toLocalSession));
+      }
+      setLoading(false);
+    };
+
+    fetchSessions();
+  }, [user]);
+
+  // Start session - returns session ID (but doesn't save to Supabase yet)
+  // We track the pending session locally until it's completed
+  const [pendingSession, setPendingSession] = useState<{
+    id: string;
+    type: 'work' | 'shortBreak' | 'longBreak';
+    tagId?: string;
+    startTime: Date;
+  } | null>(null);
 
   const startSession = useCallback(
     (type: 'work' | 'shortBreak' | 'longBreak', tagId?: string): string => {
-      const session: Session = {
-        id: generateId(),
-        startedAt: new Date().toISOString(),
-        endedAt: null,
-        durationSeconds: null,
+      // If not logged in, return a dummy ID
+      if (!user) {
+        return `local-${Date.now()}`;
+      }
+
+      const id = crypto.randomUUID();
+      setPendingSession({
+        id,
         type,
-        completed: false,
         tagId,
-      };
-
-      setSessions((prev) => {
-        const updated = [...prev, session];
-        saveSessions(updated);
-        return updated;
+        startTime: new Date(),
       });
-
-      return session.id;
+      return id;
     },
-    []
+    [user]
   );
 
+  // Complete session - saves to Supabase
   const completeSession = useCallback(
-    (sessionId: string, durationSeconds: number): void => {
-      setSessions((prev) => {
-        const updated = prev.map((s) =>
-          s.id === sessionId
-            ? {
-                ...s,
-                endedAt: new Date().toISOString(),
-                durationSeconds,
-                completed: true,
-              }
-            : s
-        );
-        saveSessions(updated);
-        return updated;
-      });
+    async (sessionId: string, durationSeconds: number): Promise<void> => {
+      // If not logged in, do nothing
+      if (!user) {
+        setPendingSession(null);
+        return;
+      }
+
+      if (!pendingSession || pendingSession.id !== sessionId) {
+        console.warn('No pending session to complete');
+        return;
+      }
+
+      const completedAt = new Date().toISOString();
+
+      // Map session type for Supabase (shortBreak -> short_break, etc.)
+      const sessionType = pendingSession.type === 'shortBreak'
+        ? 'short_break'
+        : pendingSession.type === 'longBreak'
+        ? 'long_break'
+        : 'work';
+
+      const { data, error } = await supabase
+        .from('sessions')
+        .insert({
+          user_id: user.id,
+          session_type: sessionType,
+          duration_seconds: durationSeconds,
+          completed_at: completedAt,
+          tag: pendingSession.tagId || null,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Failed to save session:', error);
+      } else if (data) {
+        // Add to local state
+        setSessions((prev) => [toLocalSession(data), ...prev]);
+      }
+
+      setPendingSession(null);
     },
-    []
+    [user, pendingSession]
   );
 
-  const cancelSession = useCallback((sessionId: string): void => {
-    setSessions((prev) => {
-      const updated = prev.filter((s) => s.id !== sessionId);
-      saveSessions(updated);
-      return updated;
-    });
+  // Cancel session - just clear pending
+  const cancelSession = useCallback((_sessionId: string): void => {
+    setPendingSession(null);
   }, []);
 
-  // Delete a completed session (for editing history)
-  const deleteSession = useCallback((sessionId: string): void => {
-    setSessions((prev) => {
-      const updated = prev.filter((s) => s.id !== sessionId);
-      saveSessions(updated);
-      return updated;
-    });
-  }, []);
+  // Delete a session
+  const deleteSession = useCallback(
+    async (sessionId: string): Promise<void> => {
+      if (!user) return;
 
-  // Update the tag of a session
+      const { error } = await supabase
+        .from('sessions')
+        .delete()
+        .eq('id', sessionId)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Failed to delete session:', error);
+      } else {
+        setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+      }
+    },
+    [user]
+  );
+
+  // Update session tag
   const updateSessionTag = useCallback(
-    (sessionId: string, tagId: string | undefined): void => {
-      setSessions((prev) => {
-        const updated = prev.map((s) =>
-          s.id === sessionId ? { ...s, tagId } : s
+    async (sessionId: string, tagId: string | undefined): Promise<void> => {
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('sessions')
+        .update({ tag: tagId || null })
+        .eq('id', sessionId)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Failed to update session tag:', error);
+      } else {
+        setSessions((prev) =>
+          prev.map((s) => (s.id === sessionId ? { ...s, tagId } : s))
         );
-        saveSessions(updated);
-        return updated;
-      });
+      }
     },
-    []
+    [user]
   );
 
+  // Get today's stats
   const getTodayStats = useCallback((): DailyStats => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = formatDateStr(new Date());
     const todaySessions = sessions.filter(
       (s) =>
-        s.startedAt.startsWith(today) && s.type === 'work' && s.completed
+        formatDateStr(new Date(s.startedAt)) === today &&
+        s.type === 'work' &&
+        s.completed
     );
 
     return {
@@ -139,14 +226,13 @@ export function useSessionStorage() {
     };
   }, [sessions]);
 
+  // Get week stats
   const getWeekStats = useCallback((): DailyStats => {
     const now = new Date();
     const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const weekSessions = sessions.filter(
       (s) =>
-        new Date(s.startedAt) >= weekAgo &&
-        s.type === 'work' &&
-        s.completed
+        new Date(s.startedAt) >= weekAgo && s.type === 'work' && s.completed
     );
 
     return {
@@ -159,14 +245,13 @@ export function useSessionStorage() {
     };
   }, [sessions]);
 
+  // Get month stats
   const getMonthStats = useCallback((): DailyStats => {
     const now = new Date();
     const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const monthSessions = sessions.filter(
       (s) =>
-        new Date(s.startedAt) >= monthAgo &&
-        s.type === 'work' &&
-        s.completed
+        new Date(s.startedAt) >= monthAgo && s.type === 'work' && s.completed
     );
 
     return {
@@ -179,6 +264,7 @@ export function useSessionStorage() {
     };
   }, [sessions]);
 
+  // Get daily breakdown
   const getDailyBreakdown = useCallback(
     (days: number): DailyStats[] => {
       const now = new Date();
@@ -186,10 +272,10 @@ export function useSessionStorage() {
 
       for (let i = 0; i < days; i++) {
         const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-        const dateStr = date.toISOString().split('T')[0];
+        const dateStr = formatDateStr(date);
         const daySessions = sessions.filter(
           (s) =>
-            s.startedAt.startsWith(dateStr) &&
+            formatDateStr(new Date(s.startedAt)) === dateStr &&
             s.type === 'work' &&
             s.completed
         );
@@ -211,20 +297,12 @@ export function useSessionStorage() {
     [sessions]
   );
 
-  // Get heatmap data for the past N weeks (includes all days, even with 0 activity)
+  // Get heatmap data
   const getHeatmapData = useCallback(
     (weeks: number = 12): Map<string, DailyStats> => {
       const now = new Date();
       const result = new Map<string, DailyStats>();
       const days = weeks * 7;
-
-      // Helper to format date as YYYY-MM-DD in local timezone
-      const formatDateStr = (d: Date): string => {
-        const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-      };
 
       // Initialize all days with 0
       for (let i = 0; i < days; i++) {
@@ -241,9 +319,7 @@ export function useSessionStorage() {
       sessions
         .filter((s) => s.type === 'work' && s.completed)
         .forEach((s) => {
-          // Parse ISO string and format in local timezone
-          const sessionDate = new Date(s.startedAt);
-          const dateStr = formatDateStr(sessionDate);
+          const dateStr = formatDateStr(new Date(s.startedAt));
           const existing = result.get(dateStr);
           if (existing) {
             existing.totalWorkSeconds += s.durationSeconds || 0;
@@ -256,38 +332,24 @@ export function useSessionStorage() {
     [sessions]
   );
 
-  // Get streak information
+  // Get streak info
   const getStreak = useCallback((): StreakInfo => {
-    // Helper to format date as YYYY-MM-DD in local timezone
-    const formatDateStr = (d: Date): string => {
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    };
-
-    // Get unique dates with completed work sessions
     const workDates = new Set<string>();
     sessions
       .filter((s) => s.type === 'work' && s.completed)
       .forEach((s) => {
-        const sessionDate = new Date(s.startedAt);
-        workDates.add(formatDateStr(sessionDate));
+        workDates.add(formatDateStr(new Date(s.startedAt)));
       });
 
     if (workDates.size === 0) {
       return { current: 0, longest: 0 };
     }
 
-    // Sort dates in descending order
     const sortedDates = Array.from(workDates).sort().reverse();
-
-    // Calculate current streak (from today backwards)
     const today = formatDateStr(new Date());
     let currentStreak = 0;
     const checkDate = new Date();
 
-    // Check if today has activity, if not start from yesterday
     if (!workDates.has(today)) {
       checkDate.setDate(checkDate.getDate() - 1);
     }
@@ -297,14 +359,15 @@ export function useSessionStorage() {
       checkDate.setDate(checkDate.getDate() - 1);
     }
 
-    // Calculate longest streak
     let longestStreak = 0;
     let tempStreak = 1;
 
     for (let i = 0; i < sortedDates.length - 1; i++) {
       const current = new Date(sortedDates[i]);
       const next = new Date(sortedDates[i + 1]);
-      const diffDays = Math.round((current.getTime() - next.getTime()) / (1000 * 60 * 60 * 24));
+      const diffDays = Math.round(
+        (current.getTime() - next.getTime()) / (1000 * 60 * 60 * 24)
+      );
 
       if (diffDays === 1) {
         tempStreak++;
@@ -318,14 +381,22 @@ export function useSessionStorage() {
     return { current: currentStreak, longest: longestStreak };
   }, [sessions]);
 
-  // Export sessions to JSON
+  // Export to JSON
   const exportToJSON = useCallback((): string => {
     return JSON.stringify(sessions, null, 2);
   }, [sessions]);
 
-  // Export sessions to CSV
+  // Export to CSV
   const exportToCSV = useCallback((): string => {
-    const headers = ['id', 'startedAt', 'endedAt', 'durationSeconds', 'type', 'completed', 'tagId'];
+    const headers = [
+      'id',
+      'startedAt',
+      'endedAt',
+      'durationSeconds',
+      'type',
+      'completed',
+      'tagId',
+    ];
     const rows = sessions.map((s) => [
       s.id,
       s.startedAt,
@@ -338,14 +409,17 @@ export function useSessionStorage() {
     return [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
   }, [sessions]);
 
-  // Get statistics grouped by tag
+  // Get stats by tag
   const getStatsByTag = useCallback(
     (
       days: number
     ): Map<string | undefined, { totalSeconds: number; sessionsCount: number }> => {
       const now = new Date();
       const cutoff = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-      const result = new Map<string | undefined, { totalSeconds: number; sessionsCount: number }>();
+      const result = new Map<
+        string | undefined,
+        { totalSeconds: number; sessionsCount: number }
+      >();
 
       sessions
         .filter(
@@ -369,6 +443,7 @@ export function useSessionStorage() {
 
   return {
     sessions,
+    loading,
     startSession,
     completeSession,
     cancelSession,

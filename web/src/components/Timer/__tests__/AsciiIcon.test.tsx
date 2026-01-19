@@ -1,8 +1,46 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { AsciiIcon } from '../AsciiIcon';
 import { ThemeProvider } from '../../../hooks/useTheme';
 import type { ReactNode } from 'react';
+
+// Mock useAuth
+vi.mock('../../../hooks/useAuth', () => ({
+  useAuth: () => ({
+    user: null,
+    loading: false,
+  }),
+}));
+
+// Mock Supabase
+vi.mock('../../../lib/supabase', () => ({
+  supabase: {
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        }),
+      }),
+      update: () => ({
+        eq: () => vi.fn().mockResolvedValue({ error: null }),
+      }),
+    }),
+  },
+}));
+
+// Mock matchMedia
+const matchMediaMock = vi.fn().mockImplementation((query: string) => ({
+  matches: query === '(prefers-color-scheme: dark)',
+  media: query,
+  onchange: null,
+  addEventListener: vi.fn(),
+  removeEventListener: vi.fn(),
+  addListener: vi.fn(),
+  removeListener: vi.fn(),
+  dispatchEvent: vi.fn(),
+}));
+
+Object.defineProperty(window, 'matchMedia', { value: matchMediaMock });
 
 // Wrapper component for providing ThemeContext
 function wrapper({ children }: { children: ReactNode }) {
@@ -15,6 +53,10 @@ function renderWithTheme(ui: React.ReactElement) {
 }
 
 describe('AsciiIcon', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   describe('Hourglass Icon', () => {
     it('should render hourglass icon', () => {
       renderWithTheme(<AsciiIcon type="hourglass" progress={50} isBreak={false} />);

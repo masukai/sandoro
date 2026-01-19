@@ -1,23 +1,42 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { ThemeProvider, useTheme, ACCENT_COLORS, RAINBOW_COLORS } from '../useTheme';
 import type { ReactNode } from 'react';
 
-// Mock localStorage
-const localStorageMock = (() => {
-  let store: Record<string, string> = {};
-  return {
-    getItem: vi.fn((key: string) => store[key] || null),
-    setItem: vi.fn((key: string, value: string) => {
-      store[key] = value;
-    }),
-    clear: () => {
-      store = {};
-    },
-  };
-})();
+// Mock useAuth
+const mockUser = {
+  id: 'test-user-id',
+  email: 'test@example.com',
+};
 
-Object.defineProperty(window, 'localStorage', { value: localStorageMock });
+let mockAuthLoading = false;
+let mockAuthUser: typeof mockUser | null = null;
+
+vi.mock('../useAuth', () => ({
+  useAuth: () => ({
+    user: mockAuthUser,
+    loading: mockAuthLoading,
+  }),
+}));
+
+// Mock Supabase
+const mockThemeSelect = vi.fn();
+const mockThemeUpdate = vi.fn();
+
+vi.mock('../../lib/supabase', () => ({
+  supabase: {
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          single: mockThemeSelect,
+        }),
+      }),
+      update: (data: unknown) => ({
+        eq: () => mockThemeUpdate(data),
+      }),
+    }),
+  },
+}));
 
 // Mock matchMedia
 const matchMediaMock = vi.fn().mockImplementation((query: string) => ({
@@ -40,15 +59,24 @@ function wrapper({ children }: { children: ReactNode }) {
 
 describe('useTheme', () => {
   beforeEach(() => {
-    localStorageMock.clear();
     vi.clearAllMocks();
+    mockAuthLoading = false;
+    mockAuthUser = null;
+    mockThemeSelect.mockResolvedValue({ data: null, error: null });
+    mockThemeUpdate.mockResolvedValue({ error: null });
     document.documentElement.removeAttribute('data-theme');
     document.documentElement.removeAttribute('data-accent');
   });
 
   describe('ThemeProvider', () => {
-    it('should provide default theme values', () => {
+    it('should provide default theme values when not authenticated', async () => {
+      mockAuthUser = null;
+
       const { result } = renderHook(() => useTheme(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
 
       expect(result.current.mode).toBe('system');
       expect(result.current.accentColor).toBe('cyan');
@@ -60,11 +88,56 @@ describe('useTheme', () => {
         renderHook(() => useTheme());
       }).toThrow('useTheme must be used within a ThemeProvider');
     });
+
+    it('should fetch theme from Supabase when authenticated', async () => {
+      mockAuthUser = mockUser;
+      mockThemeSelect.mockResolvedValue({
+        data: {
+          theme: 'light',
+          accent_color: 'purple',
+        },
+        error: null,
+      });
+
+      const { result } = renderHook(() => useTheme(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
+
+      expect(result.current.mode).toBe('light');
+      expect(result.current.accentColor).toBe('purple');
+    });
+
+    it('should map default theme to system mode', async () => {
+      mockAuthUser = mockUser;
+      mockThemeSelect.mockResolvedValue({
+        data: {
+          theme: 'default',
+          accent_color: 'cyan',
+        },
+        error: null,
+      });
+
+      const { result } = renderHook(() => useTheme(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
+
+      expect(result.current.mode).toBe('system');
+    });
   });
 
   describe('setMode', () => {
-    it('should update mode to light', () => {
+    it('should update mode to light', async () => {
+      mockAuthUser = null;
+
       const { result } = renderHook(() => useTheme(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
 
       act(() => {
         result.current.setMode('light');
@@ -72,11 +145,16 @@ describe('useTheme', () => {
 
       expect(result.current.mode).toBe('light');
       expect(result.current.resolvedTheme).toBe('light');
-      expect(localStorageMock.setItem).toHaveBeenCalledWith('sandoro-theme-mode', 'light');
     });
 
-    it('should update mode to dark', () => {
+    it('should update mode to dark', async () => {
+      mockAuthUser = null;
+
       const { result } = renderHook(() => useTheme(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
 
       act(() => {
         result.current.setMode('dark');
@@ -84,11 +162,16 @@ describe('useTheme', () => {
 
       expect(result.current.mode).toBe('dark');
       expect(result.current.resolvedTheme).toBe('dark');
-      expect(localStorageMock.setItem).toHaveBeenCalledWith('sandoro-theme-mode', 'dark');
     });
 
-    it('should update mode to system', () => {
+    it('should update mode to system', async () => {
+      mockAuthUser = null;
+
       const { result } = renderHook(() => useTheme(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
 
       // First set to light
       act(() => {
@@ -103,22 +186,55 @@ describe('useTheme', () => {
       expect(result.current.mode).toBe('system');
       expect(result.current.resolvedTheme).toBe('dark'); // matchMedia mock returns dark
     });
+
+    it('should save to Supabase when authenticated', async () => {
+      mockAuthUser = mockUser;
+      mockThemeSelect.mockResolvedValue({ data: null, error: null });
+
+      const { result } = renderHook(() => useTheme(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
+
+      act(() => {
+        result.current.setMode('dark');
+      });
+
+      await waitFor(() => {
+        expect(mockThemeUpdate).toHaveBeenCalled();
+      });
+
+      const savedData = mockThemeUpdate.mock.calls[0][0];
+      expect(savedData.theme).toBe('dark');
+    });
   });
 
   describe('setAccentColor', () => {
-    it('should update accent color to rainbow', () => {
+    it('should update accent color to rainbow', async () => {
+      mockAuthUser = null;
+
       const { result } = renderHook(() => useTheme(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
 
       act(() => {
         result.current.setAccentColor('rainbow');
       });
 
       expect(result.current.accentColor).toBe('rainbow');
-      expect(localStorageMock.setItem).toHaveBeenCalledWith('sandoro-accent-color', 'rainbow');
     });
 
-    it('should update accent color from rainbow to cyan', () => {
+    it('should update accent color from rainbow to cyan', async () => {
+      mockAuthUser = null;
+
       const { result } = renderHook(() => useTheme(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
 
       act(() => {
         result.current.setAccentColor('rainbow');
@@ -131,8 +247,14 @@ describe('useTheme', () => {
       expect(result.current.accentColor).toBe('cyan');
     });
 
-    it('should update accent color to any valid color', () => {
+    it('should update accent color to any valid color', async () => {
+      mockAuthUser = null;
+
       const { result } = renderHook(() => useTheme(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
 
       const testColors = ['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'purple', 'pink'] as const;
 
@@ -144,76 +266,69 @@ describe('useTheme', () => {
         expect(result.current.accentColor).toBe(color);
       }
     });
-  });
 
-  describe('localStorage persistence', () => {
-    it('should load saved mode from localStorage', () => {
-      localStorageMock.getItem.mockImplementation((key: string) => {
-        if (key === 'sandoro-theme-mode') return 'light';
-        if (key === 'sandoro-accent-color') return 'purple';
-        return null;
-      });
+    it('should save to Supabase when authenticated', async () => {
+      mockAuthUser = mockUser;
+      mockThemeSelect.mockResolvedValue({ data: null, error: null });
 
       const { result } = renderHook(() => useTheme(), { wrapper });
 
-      expect(result.current.mode).toBe('light');
-      expect(result.current.accentColor).toBe('purple');
-    });
-
-    it('should use defaults for invalid localStorage values', () => {
-      localStorageMock.getItem.mockImplementation((key: string) => {
-        if (key === 'sandoro-theme-mode') return 'invalid-mode';
-        if (key === 'sandoro-accent-color') return 'invalid-color';
-        return null;
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
       });
 
-      const { result } = renderHook(() => useTheme(), { wrapper });
+      act(() => {
+        result.current.setAccentColor('purple');
+      });
 
-      expect(result.current.mode).toBe('system');
-      expect(result.current.accentColor).toBe('cyan');
+      await waitFor(() => {
+        expect(mockThemeUpdate).toHaveBeenCalled();
+      });
+
+      const savedData = mockThemeUpdate.mock.calls[0][0];
+      expect(savedData.accent_color).toBe('purple');
     });
   });
 
   describe('document attributes', () => {
-    it('should set data-theme attribute on document', () => {
-      renderHook(() => useTheme(), { wrapper });
+    it('should set data-theme attribute on document', async () => {
+      mockAuthUser = null;
+
+      const { result } = renderHook(() => useTheme(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
 
       expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
     });
 
-    it('should set data-accent attribute on document', () => {
-      renderHook(() => useTheme(), { wrapper });
+    it('should set data-accent attribute on document', async () => {
+      mockAuthUser = null;
+
+      const { result } = renderHook(() => useTheme(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
 
       expect(document.documentElement.getAttribute('data-accent')).toBe('cyan');
     });
 
-    it('should update data-accent when accent color changes', () => {
+    it('should update data-accent when accent color changes', async () => {
+      mockAuthUser = null;
+
       const { result } = renderHook(() => useTheme(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.loading).toBe(false);
+      });
 
       act(() => {
         result.current.setAccentColor('rainbow');
       });
 
       expect(document.documentElement.getAttribute('data-accent')).toBe('rainbow');
-    });
-  });
-
-  describe('shared context across components', () => {
-    it('should share state between multiple consumers', () => {
-      const { result: result1 } = renderHook(() => useTheme(), { wrapper });
-
-      // Change color in first hook
-      act(() => {
-        result1.current.setAccentColor('pink');
-      });
-
-      // Verify the change is reflected
-      expect(result1.current.accentColor).toBe('pink');
-
-      // Note: In a real scenario with shared context, a second renderHook
-      // would also see 'pink', but since each renderHook creates its own
-      // wrapper with a fresh ThemeProvider, we verify state persistence via localStorage
-      expect(localStorageMock.setItem).toHaveBeenCalledWith('sandoro-accent-color', 'pink');
     });
   });
 });

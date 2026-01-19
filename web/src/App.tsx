@@ -7,7 +7,7 @@ import { Footer } from './components/Footer';
 import { PrivacyPolicy } from './components/PrivacyPolicy';
 import { AuthButton } from './components/AuthButton';
 import { useTheme } from './hooks/useTheme';
-import { useSettings } from './hooks/useSettings';
+import { useSettings } from './hooks/useSupabaseSettings';
 import { useClock } from './hooks/useClock';
 
 type ViewType = 'timer' | 'stats' | 'settings' | 'privacy';

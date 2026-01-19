@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { useSettings, GoalSettings } from './useSettings';
-import { useSessionStorage } from './useSessionStorage';
+import { useSettings, type GoalSettings } from './useSupabaseSettings';
+import { useSessionStorage } from './useSupabaseSession';
 
 export interface GoalProgress {
   daily: {

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { hasGoalsEnabled } from '../useGoalProgress';
-import { GoalSettings } from '../useSettings';
+import { type GoalSettings } from '../useSupabaseSettings';
 
 describe('hasGoalsEnabled', () => {
   it('should return false when all goals are 0', () => {

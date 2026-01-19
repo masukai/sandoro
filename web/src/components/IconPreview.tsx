@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { AsciiIcon } from './Timer/AsciiIcon';
-import { IconType } from '../hooks/useSettings';
+import { type IconType } from '../hooks/useSupabaseSettings';
 
 const ICON_TYPES: IconType[] = ['progress', 'hourglass', 'tomato', 'coffee'];
 

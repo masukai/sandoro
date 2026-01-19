@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { DailyStats } from '../hooks/useSessionStorage';
+import { type DailyStats } from '../hooks/useSupabaseSession';
 import { useTheme, AccentColor } from '../hooks/useTheme';
 
 type WeekRange = number;

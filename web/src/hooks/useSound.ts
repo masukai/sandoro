@@ -1,5 +1,5 @@
 import { useCallback, useRef } from 'react';
-import { useSettings, SoundPattern } from './useSettings';
+import { useSettings, type SoundPattern } from './useSupabaseSettings';
 
 type OscillatorType = 'sine' | 'square' | 'sawtooth' | 'triangle';
 
@@ -220,4 +220,4 @@ export const SOUND_PATTERN_OPTIONS: { value: SoundPattern; label: string; descri
 ];
 
 // Re-export SoundPattern type
-export type { SoundPattern } from './useSettings';
+export type { SoundPattern } from './useSupabaseSettings';
