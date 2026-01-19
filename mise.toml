@@ -51,7 +51,7 @@ _.file = [".env.supabase"]  # Load Supabase access token if exists
 "stats-cli:export-csv" = { run = "cargo run -- stats --export csv", dir = "cli", description = "Export sessions to CSV" }
 
 # === CLI版 クラウド同期 ===
-"cli:login" = { run = "cargo run -- login google", dir = "cli", description = "Login to cloud sync (Google)" }
+"cli:login" = { run = "cargo run -- login --provider google", dir = "cli", description = "Login to cloud sync (Google)" }
 "cli:logout" = { run = "cargo run -- logout", dir = "cli", description = "Logout from cloud sync" }
 "cli:sync" = { run = "cargo run -- sync", dir = "cli", description = "Sync sessions with cloud" }
 "cli:status" = { run = "cargo run -- status", dir = "cli", description = "Show sync status" }

@@ -3,7 +3,7 @@
 //! Handles bidirectional sync of sessions between local SQLite and cloud.
 
 use anyhow::Result;
-use chrono::{DateTime, NaiveDateTime, Utc};
+use chrono::{DateTime, Utc};
 use rusqlite::Connection;
 
 use crate::auth;
@@ -54,6 +54,7 @@ fn set_last_sync(conn: &Connection, timestamp: &DateTime<Utc>) -> Result<()> {
 }
 
 /// Get cloud session ID if this local session was synced
+#[allow(dead_code)]
 fn get_cloud_id(conn: &Connection, local_id: i64) -> Result<Option<String>> {
     let result: Option<String> = conn
         .query_row(
@@ -95,6 +96,7 @@ struct LocalSession {
     duration_seconds: i32,
     completed_at: String,
     tag: Option<String>,
+    #[allow(dead_code)]
     cloud_id: Option<String>,
 }
 

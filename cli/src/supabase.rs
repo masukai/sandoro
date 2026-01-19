@@ -2,7 +2,7 @@
 //!
 //! Handles session and settings synchronization with Supabase.
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
@@ -31,6 +31,7 @@ pub struct CloudSession {
 }
 
 /// User settings from Supabase
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CloudSettings {
     pub user_id: String,
@@ -114,6 +115,7 @@ impl SupabaseClient {
     }
 
     /// Upload multiple sessions to Supabase
+    #[allow(dead_code)]
     pub fn upload_sessions(&self, sessions: &[CloudSession]) -> Result<usize> {
         if sessions.is_empty() {
             return Ok(0);
@@ -139,6 +141,7 @@ impl SupabaseClient {
     }
 
     /// Get user settings from Supabase
+    #[allow(dead_code)]
     pub fn get_settings(&self) -> Result<Option<CloudSettings>> {
         let url = format!("{}/rest/v1/user_settings?select=*", SUPABASE_URL);
 
@@ -186,6 +189,7 @@ impl SupabaseClient {
     }
 
     /// Delete a session from Supabase
+    #[allow(dead_code)]
     pub fn delete_session(&self, session_id: &str) -> Result<()> {
         let url = format!("{}/rest/v1/sessions?id=eq.{}", SUPABASE_URL, session_id);
 
@@ -207,6 +211,7 @@ impl SupabaseClient {
 }
 
 /// Convert local session to cloud format
+#[allow(dead_code)]
 pub fn to_cloud_session(
     user_id: &str,
     session_type: &str,
