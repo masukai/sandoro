@@ -14,8 +14,8 @@ export function LoginRequired({ title, description, features }: LoginRequiredPro
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[50vh] text-center px-4">
-      <div className="text-4xl mb-4">🔒</div>
+    <div className="flex flex-col items-center justify-center py-12 text-center px-4">
+      <div className="text-3xl mb-3">🔒</div>
       <h2 className={`text-xl font-semibold mb-2 ${isRainbow ? 'rainbow-gradient' : ''}`}>
         {title}
       </h2>
@@ -31,10 +31,10 @@ export function LoginRequired({ title, description, features }: LoginRequiredPro
       )}
       <button
         onClick={() => setIsLoginModalOpen(true)}
-        className={`px-6 py-2 rounded-md border transition-colors ${
+        className={`px-4 py-1.5 rounded text-sm transition-colors ${
           isRainbow
-            ? 'rainbow-gradient-bg border-transparent text-white'
-            : 'bg-sandoro-primary text-white border-sandoro-primary hover:opacity-80'
+            ? 'rainbow-gradient-bg text-white'
+            : 'bg-sandoro-primary text-white hover:opacity-80'
         }`}
       >
         Sign in
