@@ -19,20 +19,20 @@ export function AuthButton() {
 
   if (user) {
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-shrink-0">
         {user.user_metadata?.avatar_url && (
           <img
             src={user.user_metadata.avatar_url}
             alt="Avatar"
-            className="w-6 h-6 rounded-full"
+            className="w-6 h-6 rounded-full flex-shrink-0"
           />
         )}
-        <span className="text-sm text-sandoro-secondary hidden sm:inline">
+        <span className="text-sm text-sandoro-secondary hidden sm:inline truncate max-w-[100px]">
           {user.user_metadata?.name || user.email?.split('@')[0] || 'User'}
         </span>
         <button
           onClick={signOut}
-          className="text-sm text-sandoro-secondary hover:text-sandoro-fg transition-colors"
+          className="text-sm text-sandoro-secondary hover:text-sandoro-fg transition-colors whitespace-nowrap"
         >
           Sign out
         </button>
