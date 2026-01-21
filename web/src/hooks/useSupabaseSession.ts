@@ -27,6 +27,18 @@ export interface StreakInfo {
   longest: number;
 }
 
+// Map Supabase session_type to local type
+function mapSessionType(supabaseType: string): 'work' | 'shortBreak' | 'longBreak' {
+  switch (supabaseType) {
+    case 'short_break':
+      return 'shortBreak';
+    case 'long_break':
+      return 'longBreak';
+    default:
+      return 'work';
+  }
+}
+
 // Convert Supabase session to local format
 function toLocalSession(s: SupabaseSession): Session {
   return {
@@ -34,7 +46,7 @@ function toLocalSession(s: SupabaseSession): Session {
     startedAt: s.completed_at,
     endedAt: s.completed_at,
     durationSeconds: s.duration_seconds,
-    type: s.session_type as 'work' | 'shortBreak' | 'longBreak',
+    type: mapSessionType(s.session_type),
     completed: true, // All Supabase sessions are completed
     tagId: s.tag || undefined,
   };

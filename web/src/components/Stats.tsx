@@ -33,16 +33,13 @@ function StatsCard({
       className="p-4 rounded-lg border border-sandoro-secondary"
       style={{ backgroundColor: 'var(--sandoro-bg)' }}
     >
-      <h3 className="text-sm text-sandoro-secondary mb-2">{title}</h3>
-      <div className="space-y-2">
-        <div className="flex justify-between">
-          <span>Total time</span>
-          <span className="font-mono">{formatDuration(stats.totalWorkSeconds)}</span>
-        </div>
-        <div className="flex justify-between">
-          <span>Sessions</span>
-          <span className="font-mono">{stats.sessionsCompleted}</span>
-        </div>
+      <h3 className="text-sm text-sandoro-secondary mb-3">{title}</h3>
+      {/* Time prominently displayed as primary metric */}
+      <div className="text-2xl font-mono font-semibold mb-2" style={{ color: 'var(--sandoro-primary)' }}>
+        {formatDuration(stats.totalWorkSeconds)}
+      </div>
+      <div className="text-sm text-sandoro-secondary">
+        {stats.sessionsCompleted} sessions
       </div>
     </div>
   );
@@ -62,11 +59,14 @@ function DailyBreakdown({ days }: { days: DailyStats[] }) {
         {days.map((day) => (
           <div
             key={day.date}
-            className="flex justify-between text-sm font-mono py-1 border-b border-sandoro-secondary/30"
+            className="flex justify-between items-center text-sm font-mono py-1 border-b border-sandoro-secondary/30"
           >
-            <span>{day.date}</span>
-            <span>{formatDuration(day.totalWorkSeconds)}</span>
-            <span>{day.sessionsCompleted} sessions</span>
+            <span className="text-sandoro-secondary">{day.date}</span>
+            {/* Time is the primary metric, displayed prominently */}
+            <span className="font-semibold" style={{ color: 'var(--sandoro-primary)' }}>
+              {formatDuration(day.totalWorkSeconds)}
+            </span>
+            <span className="text-sandoro-secondary text-xs">{day.sessionsCompleted} sessions</span>
           </div>
         ))}
       </div>
@@ -127,10 +127,19 @@ function GoalProgress() {
     >
       <h3 className="text-sm font-semibold text-sandoro-secondary">Goals</h3>
 
-      {/* Daily Goals */}
+      {/* Daily Goals - Time first (primary metric) */}
       {(settings.goals.dailySessionsGoal > 0 || settings.goals.dailyMinutesGoal > 0) && (
         <div className="space-y-2">
           <div className="text-xs text-sandoro-secondary/70">Daily</div>
+          {/* Time goal shown first as primary metric */}
+          <GoalBar
+            label="Time"
+            current={progress.daily.minutes.current}
+            goal={progress.daily.minutes.goal}
+            percentage={progress.daily.minutes.percentage}
+            unit="min"
+            isRainbow={isRainbow}
+          />
           <GoalBar
             label="Sessions"
             current={progress.daily.sessions.current}
@@ -139,35 +148,28 @@ function GoalProgress() {
             unit=""
             isRainbow={isRainbow}
           />
-          <GoalBar
-            label="Minutes"
-            current={progress.daily.minutes.current}
-            goal={progress.daily.minutes.goal}
-            percentage={progress.daily.minutes.percentage}
-            unit="min"
-            isRainbow={isRainbow}
-          />
         </div>
       )}
 
-      {/* Weekly Goals */}
+      {/* Weekly Goals - Time first (primary metric) */}
       {(settings.goals.weeklySessionsGoal > 0 || settings.goals.weeklyMinutesGoal > 0) && (
         <div className="space-y-2">
           <div className="text-xs text-sandoro-secondary/70">Weekly</div>
+          {/* Time goal shown first as primary metric */}
+          <GoalBar
+            label="Time"
+            current={progress.weekly.minutes.current}
+            goal={progress.weekly.minutes.goal}
+            percentage={progress.weekly.minutes.percentage}
+            unit="min"
+            isRainbow={isRainbow}
+          />
           <GoalBar
             label="Sessions"
             current={progress.weekly.sessions.current}
             goal={progress.weekly.sessions.goal}
             percentage={progress.weekly.sessions.percentage}
             unit=""
-            isRainbow={isRainbow}
-          />
-          <GoalBar
-            label="Minutes"
-            current={progress.weekly.minutes.current}
-            goal={progress.weekly.minutes.goal}
-            percentage={progress.weekly.minutes.percentage}
-            unit="min"
             isRainbow={isRainbow}
           />
         </div>
@@ -209,6 +211,18 @@ function ComparisonCard({ title, data }: ComparisonCardProps) {
     >
       <h3 className="text-sm text-sandoro-secondary mb-3">{title}</h3>
       <div className="space-y-2 text-sm">
+        {/* Time shown first as primary metric */}
+        <div className="flex justify-between items-center">
+          <span className="font-semibold">Time</span>
+          <div className="flex items-center gap-2">
+            <span className="font-mono font-semibold" style={{ color: 'var(--sandoro-primary)' }}>
+              {formatDuration(data.current.totalWorkSeconds)}
+              <span className="text-sandoro-secondary text-xs mx-1 font-normal">vs</span>
+              <span className="text-sandoro-secondary font-normal">{formatDuration(data.previous.totalWorkSeconds)}</span>
+            </span>
+            <ChangeIndicator value={data.change.totalWorkSeconds} />
+          </div>
+        </div>
         <div className="flex justify-between items-center">
           <span>Sessions</span>
           <div className="flex items-center gap-2">
@@ -218,17 +232,6 @@ function ComparisonCard({ title, data }: ComparisonCardProps) {
               {data.previous.sessionsCompleted}
             </span>
             <ChangeIndicator value={data.change.sessionsCompleted} />
-          </div>
-        </div>
-        <div className="flex justify-between items-center">
-          <span>Total time</span>
-          <div className="flex items-center gap-2">
-            <span className="font-mono">
-              {formatDuration(data.current.totalWorkSeconds)}
-              <span className="text-sandoro-secondary text-xs mx-1">vs</span>
-              {formatDuration(data.previous.totalWorkSeconds)}
-            </span>
-            <ChangeIndicator value={data.change.totalWorkSeconds} />
           </div>
         </div>
         <div className="flex justify-between items-center">
@@ -424,21 +427,17 @@ function StatsPreview() {
         </div>
       </div>
 
-      {/* Mock Stats Card */}
+      {/* Mock Stats Card - Time prominently displayed */}
       <div
         className="p-4 rounded-lg border border-sandoro-secondary"
         style={{ backgroundColor: 'var(--sandoro-bg)' }}
       >
-        <h3 className="text-sm text-sandoro-secondary mb-2">Today</h3>
-        <div className="space-y-2">
-          <div className="flex justify-between">
-            <span>Total time</span>
-            <span className="font-mono">2h 30m</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Sessions</span>
-            <span className="font-mono">5</span>
-          </div>
+        <h3 className="text-sm text-sandoro-secondary mb-3">Today</h3>
+        <div className={`text-2xl font-mono font-semibold mb-2 ${isRainbow ? 'rainbow-gradient' : 'text-sandoro-primary'}`}>
+          2h 30m
+        </div>
+        <div className="text-sm text-sandoro-secondary">
+          5 sessions
         </div>
       </div>
 
@@ -706,7 +705,7 @@ export function Stats() {
         />
       </div>
 
-      {/* Tag Stats */}
+      {/* Tag Stats - Time focused */}
       {tagStatsArray.length > 0 && (
         <div className="pt-4 border-t border-sandoro-secondary/30">
           <h3 className="text-sm font-semibold text-sandoro-secondary mb-3">Stats by Tag (Last 30 days)</h3>
@@ -722,9 +721,12 @@ export function Stats() {
                 <span className={stat.tagId ? '' : 'text-sandoro-secondary'}>
                   {stat.tagName}
                 </span>
-                <div className="flex gap-4">
-                  <span>{formatDuration(stat.totalSeconds)}</span>
-                  <span className="text-sandoro-secondary">{stat.sessionsCount} sessions</span>
+                <div className="flex items-center gap-4">
+                  {/* Time prominently displayed */}
+                  <span className="font-semibold" style={{ color: 'var(--sandoro-primary)' }}>
+                    {formatDuration(stat.totalSeconds)}
+                  </span>
+                  <span className="text-sandoro-secondary text-xs">{stat.sessionsCount} sessions</span>
                 </div>
               </div>
             ))}

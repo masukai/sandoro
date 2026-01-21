@@ -43,6 +43,8 @@ pub struct CloudSettings {
     pub long_break_duration: Option<i32>,
     pub sound_enabled: Option<bool>,
     pub notifications_enabled: Option<bool>,
+    pub focus_mode: Option<String>,
+    pub break_snooze_enabled: Option<bool>,
 }
 
 /// Supabase API client
