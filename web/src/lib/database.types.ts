@@ -78,13 +78,17 @@ export type Database = {
         Row: {
           accent_color: string
           auto_start: boolean
+          break_snooze_enabled: boolean
+          focus_mode: string
           icon_style: string
           id: string
+          language: string
           long_break_duration: number
           notifications_enabled: boolean
           sessions_until_long_break: number
           short_break_duration: number
           sound_enabled: boolean
+          sound_pattern: string
           sound_volume: number
           tags: string[]
           theme: string
@@ -95,13 +99,17 @@ export type Database = {
         Insert: {
           accent_color?: string
           auto_start?: boolean
+          break_snooze_enabled?: boolean
+          focus_mode?: string
           icon_style?: string
           id?: string
+          language?: string
           long_break_duration?: number
           notifications_enabled?: boolean
           sessions_until_long_break?: number
           short_break_duration?: number
           sound_enabled?: boolean
+          sound_pattern?: string
           sound_volume?: number
           tags?: string[]
           theme?: string
@@ -112,13 +120,17 @@ export type Database = {
         Update: {
           accent_color?: string
           auto_start?: boolean
+          break_snooze_enabled?: boolean
+          focus_mode?: string
           icon_style?: string
           id?: string
+          language?: string
           long_break_duration?: number
           notifications_enabled?: boolean
           sessions_until_long_break?: number
           short_break_duration?: number
           sound_enabled?: boolean
+          sound_pattern?: string
           sound_volume?: number
           tags?: string[]
           theme?: string

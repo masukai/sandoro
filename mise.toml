@@ -49,6 +49,13 @@ _.file = [".env.supabase"]  # Load Supabase access token if exists
 "stats-cli:interactive" = { run = "cargo run -- stats --interactive", dir = "cli", description = "Interactive heatmap navigation" }
 "stats-cli:export-json" = { run = "cargo run -- stats --export json", dir = "cli", description = "Export sessions to JSON" }
 "stats-cli:export-csv" = { run = "cargo run -- stats --export csv", dir = "cli", description = "Export sessions to CSV" }
+
+# === CLI版 クラウド同期 ===
+"cli:login" = { run = "cargo run -- login --provider google", dir = "cli", description = "Login to cloud sync (Google)" }
+"cli:logout" = { run = "cargo run -- logout", dir = "cli", description = "Logout from cloud sync" }
+"cli:sync" = { run = "cargo run -- sync", dir = "cli", description = "Sync sessions with cloud" }
+"cli:status" = { run = "cargo run -- sync --status", dir = "cli", description = "Show sync status" }
+
 "build-cli" = { run = "cargo build --release", dir = "cli", description = "Build CLI release" }
 "test-cli"  = { run = "cargo test", dir = "cli", description = "Run CLI tests" }
 "lint-cli"  = { run = "cargo clippy -- -D warnings", dir = "cli", description = "Run Clippy linter" }

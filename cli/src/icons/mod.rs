@@ -139,6 +139,7 @@ pub struct IconState {
     pub percent: f32,
     pub animation_frame: u8,
     pub is_animating: bool,
+    pub is_flowtime_work: bool,
 }
 
 impl IconState {
@@ -148,6 +149,7 @@ impl IconState {
             percent: 100.0,
             animation_frame: 0,
             is_animating: false,
+            is_flowtime_work: false,
         }
     }
 
@@ -156,26 +158,34 @@ impl IconState {
         self.render_with_direction(false)
     }
 
-    /// Render the icon with break direction support
+    /// Render the icon with break direction support and flowtime work mode
     pub fn render_with_direction(&self, is_break: bool) -> Vec<String> {
         match self.icon_type {
             IconType::None => vec![],
-            IconType::Progress => progress::render_progress_with_direction(
+            IconType::Progress => progress::render_progress_with_options(
                 self.percent,
                 self.animation_frame,
                 is_break,
+                self.is_flowtime_work,
             ),
-            IconType::Hourglass => hourglass::render_hourglass_with_direction(
+            IconType::Hourglass => hourglass::render_hourglass_with_options(
                 self.percent,
                 self.animation_frame,
                 is_break,
+                self.is_flowtime_work,
             ),
-            IconType::Tomato => {
-                tomato::render_tomato_with_direction(self.percent, self.animation_frame, is_break)
-            }
-            IconType::Coffee => {
-                coffee::render_coffee_with_direction(self.percent, self.animation_frame, is_break)
-            }
+            IconType::Tomato => tomato::render_tomato_with_options(
+                self.percent,
+                self.animation_frame,
+                is_break,
+                self.is_flowtime_work,
+            ),
+            IconType::Coffee => coffee::render_coffee_with_options(
+                self.percent,
+                self.animation_frame,
+                is_break,
+                self.is_flowtime_work,
+            ),
             _ => vec!["[Icon not implemented]".to_string()],
         }
     }

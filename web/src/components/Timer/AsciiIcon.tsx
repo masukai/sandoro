@@ -6,9 +6,10 @@ interface AsciiIconProps {
   progress: number; // 0-100
   isBreak?: boolean; // 休憩中は砂が上に戻る演出
   isPaused?: boolean; // 一時停止中はアニメーション停止
+  isFlowtimeWork?: boolean; // Flowtime作業中は特別なアニメーション
 }
 
-export function AsciiIcon({ type, progress, isBreak = false, isPaused = false }: AsciiIconProps) {
+export function AsciiIcon({ type, progress, isBreak = false, isPaused = false, isFlowtimeWork = false }: AsciiIconProps) {
   const { accentColor } = useTheme();
   const isRainbow = accentColor === 'rainbow';
   // アニメーションフレーム（CLIと同じく500msで更新）
@@ -32,17 +33,17 @@ export function AsciiIcon({ type, progress, isBreak = false, isPaused = false }:
       case 'none':
         return ''; // アイコンなし
       case 'progress':
-        return renderProgressBar(progress, isBreak, animationFrame);
+        return renderProgressBar(progress, isBreak, animationFrame, isFlowtimeWork);
       case 'hourglass':
-        return renderHourglass(progress, isBreak, animationFrame);
+        return renderHourglass(progress, isBreak, animationFrame, isFlowtimeWork);
       case 'tomato':
-        return renderTomato(progress, isBreak, animationFrame);
+        return renderTomato(progress, isBreak, animationFrame, isFlowtimeWork);
       case 'coffee':
-        return renderCoffee(progress, isBreak, animationFrame);
+        return renderCoffee(progress, isBreak, animationFrame, isFlowtimeWork);
       default:
         return '';
     }
-  }, [type, progress, isBreak, animationFrame]);
+  }, [type, progress, isBreak, animationFrame, isFlowtimeWork]);
 
   if (type === 'none') return <pre data-testid="ascii-icon" className="text-sandoro-primary"></pre>;
 
@@ -54,13 +55,47 @@ export function AsciiIcon({ type, progress, isBreak = false, isPaused = false }:
   return <pre data-testid="ascii-icon" className={`${sizeClass} ${colorClass}`}>{ascii}</pre>;
 }
 
-function renderProgressBar(progress: number, isBreak: boolean, animationFrame: number): string {
+function renderProgressBar(progress: number, isBreak: boolean, animationFrame: number, isFlowtimeWork: boolean = false): string {
   // シンプルなプログレスバー
   // 作業中: 左から右へ塗りつぶし
   // 休憩中: 右から左へ戻る（矢印で補充中を表現）
+  // Flowtime作業中: 波のアニメーション
+
+  const LINE_WIDTH = 32;
+  const WIDTH = 20;
+
+  if (isFlowtimeWork) {
+    // Flowtime作業中は波のアニメーション（左→右へ大きく動く）
+    // 8フレームで全体を横断する波パターン
+    const wavePatterns = [
+      '▓█▓▒░░░░░░░░░░░░░░░░',
+      '░▓█▓▒░░░░░░░░░░░░░░░',
+      '░░▓█▓▒░░░░░░░░░░░░░░',
+      '░░░▓█▓▒░░░░░░░░░░░░░',
+      '░░░░░▓█▓▒░░░░░░░░░░░',
+      '░░░░░░░▓█▓▒░░░░░░░░░',
+      '░░░░░░░░░▓█▓▒░░░░░░░',
+      '░░░░░░░░░░░▓█▓▒░░░░░',
+    ];
+    const bar = wavePatterns[animationFrame % 8];
+    const barLine = `[${bar.slice(0, WIDTH)}]`;  // 22文字
+    const barPadLeft = Math.floor((LINE_WIDTH - barLine.length) / 2);
+    const barPadRight = LINE_WIDTH - barLine.length - barPadLeft;
+
+    const flowTextPatterns = ['～ FLOW ～', '~ FLOW ~', '～ FLOW ～', '∿ FLOW ∿'];
+    const flowText = flowTextPatterns[animationFrame % 4];
+    const flowPadLeft = Math.floor((LINE_WIDTH - flowText.length) / 2);
+    const flowPadRight = LINE_WIDTH - flowText.length - flowPadLeft;
+
+    return [
+      ' '.repeat(LINE_WIDTH),
+      ' '.repeat(barPadLeft) + barLine + ' '.repeat(barPadRight),
+      ' '.repeat(flowPadLeft) + flowText + ' '.repeat(flowPadRight),
+      ' '.repeat(LINE_WIDTH),
+    ].join('\n');
+  }
 
   const effectiveProgress = isBreak ? (100 - progress) : progress;
-  const WIDTH = 20;
   const filled = Math.round((effectiveProgress / 100) * WIDTH);
 
   const bar = '█'.repeat(filled) + '░'.repeat(WIDTH - filled);
@@ -68,8 +103,6 @@ function renderProgressBar(progress: number, isBreak: boolean, animationFrame: n
   // 休憩中かつ進行中 = 補充中の演出
   const isRefilling = isBreak && progress > 0 && progress < 100;
 
-  // すべての行を同じ幅（32文字）に揃える
-  const LINE_WIDTH = 32;
   const barLine = `[${bar}]`;  // 22文字
   const refillText = isRefilling ? ' ← REFILL' : '';
   const barWithRefill = barLine + refillText;
@@ -91,9 +124,10 @@ function renderProgressBar(progress: number, isBreak: boolean, animationFrame: n
   ].join('\n');
 }
 
-function renderHourglass(progress: number, isBreak: boolean, animationFrame: number): string {
+function renderHourglass(progress: number, isBreak: boolean, animationFrame: number, isFlowtimeWork: boolean = false): string {
   // 作業中: 砂が上から下へ落ちる（progress: 0%→100%）
   // 休憩中: 砂が下から上へ戻る（progress: 0%→100% だが表示は逆）
+  // Flowtime作業中: 常に砂が流れているアニメーション
   //
   // グラデーション + 半ブロックで滑らかなアニメーション
   // 6行 × 3段階グラデーション = 18段階の解像度
@@ -105,7 +139,12 @@ function renderHourglass(progress: number, isBreak: boolean, animationFrame: num
   let bottomLevel: number;
   let flowDirection: 'down' | 'up';
 
-  if (isBreak) {
+  if (isFlowtimeWork) {
+    // Flowtime作業中: 中間状態で常に流れているように見せる
+    topLevel = Math.round(MAX_LEVEL * 0.5);
+    bottomLevel = Math.round(MAX_LEVEL * 0.5);
+    flowDirection = 'down';
+  } else if (isBreak) {
     topLevel = Math.round(MAX_LEVEL * progress / 100);
     bottomLevel = Math.round(MAX_LEVEL * (100 - progress) / 100);
     flowDirection = 'up';
@@ -115,7 +154,8 @@ function renderHourglass(progress: number, isBreak: boolean, animationFrame: num
     flowDirection = 'down';
   }
 
-  const flowing = progress > 0 && progress < 100;
+  // Flowtime作業中は常にflowing
+  const flowing = isFlowtimeWork || (progress > 0 && progress < 100);
   const W = 10;
 
   // 上部の砂を生成（重力で下に溜まる、上が薄く下が濃い）
@@ -249,14 +289,15 @@ function renderHourglass(progress: number, isBreak: boolean, animationFrame: num
   return hourglassArt.join('\n');
 }
 
-function renderTomato(progress: number, isBreak: boolean, animationFrame: number): string {
+function renderTomato(progress: number, isBreak: boolean, animationFrame: number, isFlowtimeWork: boolean = false): string {
   // プチトマト2個 - 各トマトが5段階で減っていく（合計10段階）
   // 作業中: 右トマトが先に減り、次に左トマトが減る
   // 休憩中: 逆に増えていく
+  // Flowtime作業中: 常に揺れるアニメーション
   // progress: 0% = 満タン、100% = 空
 
-  // 休憩中は逆方向
-  const effectiveProgress = isBreak ? (100 - progress) : progress;
+  // 休憩中は逆方向、Flowtime作業中は満タン
+  const effectiveProgress = isFlowtimeWork ? 0 : (isBreak ? (100 - progress) : progress);
 
   // 残りレベル（0-10）
   const totalLevel = Math.round(10 * (100 - effectiveProgress) / 100);
@@ -268,8 +309,8 @@ function renderTomato(progress: number, isBreak: boolean, animationFrame: number
   // 休憩中かつ進行中 = 実っている演出
   const isGrowing = isBreak && progress > 0 && progress < 100;
 
-  // 作業中かつ進行中 = 揺れる演出
-  const isWorking = !isBreak && progress > 0 && progress < 100;
+  // 作業中かつ進行中 = 揺れる演出（Flowtime作業中も常に揺れる）
+  const isWorking = isFlowtimeWork || (!isBreak && progress > 0 && progress < 100);
   const workFrame = animationFrame % 2;
 
   // トマトの中身を生成（レベル0-5で塗りつぶし量が変わる）
@@ -356,29 +397,30 @@ function renderTomato(progress: number, isBreak: boolean, animationFrame: number
   return stemAndTomatoes.join('\n');
 }
 
-function renderCoffee(progress: number, isBreak: boolean, animationFrame: number): string {
+function renderCoffee(progress: number, isBreak: boolean, animationFrame: number, isFlowtimeWork: boolean = false): string {
   // コーヒーカップ - 飲み進めると中身が減る
   // 作業中: コーヒーが減っていく
   // 休憩中: コーヒーが補充されていく（おかわり）+ 上から注ぐアニメーション
+  // Flowtime作業中: 湯気が常に立ち上るアニメーション
   // progress: 0% = 満タン、100% = 空（作業中）/ 逆（休憩中）
 
   const ROWS = 6; // 元の高さを維持（滑らかな進捗表示）
   const MAX_LEVEL = 18;
 
-  // 休憩中は逆方向（空→満タンへ補充）
-  const effectiveProgress = isBreak ? (100 - progress) : progress;
+  // 休憩中は逆方向（空→満タンへ補充）、Flowtime作業中は満タン
+  const effectiveProgress = isFlowtimeWork ? 0 : (isBreak ? (100 - progress) : progress);
 
   // 残りのコーヒー量
   const remainingLevel = Math.round(MAX_LEVEL * (100 - effectiveProgress) / 100);
 
-  // 蒸気表示（effectiveProgress 60%未満 = コーヒーがまだ熱い/新しく注がれた）
-  const showSteam = effectiveProgress < 60;
+  // 蒸気表示（effectiveProgress 60%未満 = コーヒーがまだ熱い/新しく注がれた）、Flowtime作業中は常に表示
+  const showSteam = isFlowtimeWork || effectiveProgress < 60;
 
   // 休憩中かつ進行中 = 注いでいる演出
   const isPouring = isBreak && progress > 0 && progress < 100;
 
-  // 作業中かつ進行中 = 湯気が動く演出（4段階で上昇）
-  const isWorking = !isBreak && progress > 0 && progress < 100;
+  // 作業中かつ進行中 = 湯気が動く演出（4段階で上昇）、Flowtime作業中も動く
+  const isWorking = isFlowtimeWork || (!isBreak && progress > 0 && progress < 100);
   const workFrame = animationFrame % 4;
 
   // コーヒーの中身を生成（横幅を広げた、高さは維持）

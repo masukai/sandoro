@@ -11,11 +11,35 @@ pub enum TimerState {
 }
 
 impl TimerState {
+    #[allow(dead_code)]
     pub fn label(&self) -> &'static str {
+        self.label_with_lang("en")
+    }
+
+    pub fn label_with_lang(&self, lang: &str) -> &'static str {
+        let is_ja = lang == "ja";
         match self {
-            TimerState::Work => "WORKING",
-            TimerState::ShortBreak => "SHORT BREAK",
-            TimerState::LongBreak => "LONG BREAK",
+            TimerState::Work => {
+                if is_ja {
+                    "作業中"
+                } else {
+                    "WORKING"
+                }
+            }
+            TimerState::ShortBreak => {
+                if is_ja {
+                    "短い休憩"
+                } else {
+                    "SHORT BREAK"
+                }
+            }
+            TimerState::LongBreak => {
+                if is_ja {
+                    "長い休憩"
+                } else {
+                    "LONG BREAK"
+                }
+            }
         }
     }
 }
@@ -24,8 +48,10 @@ impl TimerState {
 pub struct Timer {
     /// Current state
     pub state: TimerState,
-    /// Remaining time in seconds
+    /// Remaining time in seconds (used for countdown in classic mode or break)
     pub remaining_seconds: u32,
+    /// Elapsed time in seconds (used for count-up in flowtime work mode)
+    pub elapsed_seconds: u32,
     /// Whether the timer is paused
     pub is_paused: bool,
     /// Work duration in minutes
@@ -42,6 +68,10 @@ pub struct Timer {
     last_tick: Instant,
     /// Accumulated time since last second
     accumulated: Duration,
+    /// Whether we're in flowtime mode
+    pub is_flowtime: bool,
+    /// Calculated flowtime break duration in seconds
+    pub flowtime_break_seconds: u32,
 }
 
 impl Timer {
@@ -59,6 +89,7 @@ impl Timer {
         Self {
             state: TimerState::Work,
             remaining_seconds: work_minutes * 60,
+            elapsed_seconds: 0,
             is_paused: true,
             work_duration: work_minutes,
             short_break_duration: short_break_minutes,
@@ -67,6 +98,17 @@ impl Timer {
             session_count: 1,
             last_tick: Instant::now(),
             accumulated: Duration::ZERO,
+            is_flowtime: false,
+            flowtime_break_seconds: 0,
+        }
+    }
+
+    /// Set flowtime mode
+    pub fn set_flowtime(&mut self, is_flowtime: bool) {
+        self.is_flowtime = is_flowtime;
+        if is_flowtime && self.state == TimerState::Work {
+            // In flowtime work mode, start counting up from 0
+            self.elapsed_seconds = 0;
         }
     }
 
@@ -82,16 +124,23 @@ impl Timer {
         self.last_tick = now;
         self.accumulated += elapsed;
 
-        // Decrement seconds
+        // Handle time changes
         while self.accumulated >= Duration::from_secs(1) {
             self.accumulated -= Duration::from_secs(1);
-            if self.remaining_seconds > 0 {
-                self.remaining_seconds -= 1;
+
+            if self.is_flowtime && self.state == TimerState::Work {
+                // Flowtime work mode: count up (no auto-transition)
+                self.elapsed_seconds += 1;
+            } else {
+                // Classic mode or flowtime break: count down
+                if self.remaining_seconds > 0 {
+                    self.remaining_seconds -= 1;
+                }
             }
         }
 
-        // Check for completion
-        if self.remaining_seconds == 0 {
+        // Check for completion (only in countdown mode)
+        if (!self.is_flowtime || self.state != TimerState::Work) && self.remaining_seconds == 0 {
             self.transition_to_next_state();
         }
     }
@@ -106,18 +155,48 @@ impl Timer {
 
     /// Reset current timer
     pub fn reset(&mut self) {
-        self.remaining_seconds = self.duration_for_state(self.state) * 60;
+        if self.is_flowtime && self.state == TimerState::Work {
+            self.elapsed_seconds = 0;
+        } else {
+            self.remaining_seconds = self.duration_for_state(self.state) * 60;
+        }
         self.is_paused = true;
         self.accumulated = Duration::ZERO;
     }
 
-    /// Skip to next state
+    /// Skip to next state (for classic mode or flowtime break)
     pub fn skip(&mut self) {
-        self.transition_to_next_state();
+        if self.is_flowtime && self.state == TimerState::Work {
+            // In flowtime work mode, use end_work instead
+            self.end_work();
+        } else {
+            self.transition_to_next_state();
+        }
+    }
+
+    /// End work session (for flowtime mode) - transitions to break with calculated duration
+    pub fn end_work(&mut self) {
+        if !self.is_flowtime || self.state != TimerState::Work {
+            return;
+        }
+
+        // Calculate break duration: work time / 5 (minimum 1 minute)
+        let calculated_break_seconds = std::cmp::max(60, self.elapsed_seconds / 5);
+        self.flowtime_break_seconds = calculated_break_seconds;
+
+        // Transition to short break (flowtime doesn't use long breaks)
+        self.state = TimerState::ShortBreak;
+        self.remaining_seconds = calculated_break_seconds;
+        self.is_paused = true;
+        self.accumulated = Duration::ZERO;
     }
 
     /// Get progress percentage (0.0 - 100.0)
     pub fn progress_percent(&self) -> f32 {
+        // In flowtime work mode, there's no progress (infinite)
+        if self.is_flowtime && self.state == TimerState::Work {
+            return 0.0;
+        }
         let total = self.duration_for_state(self.state) * 60;
         if total == 0 {
             return 0.0;
@@ -130,7 +209,33 @@ impl Timer {
         (self.remaining_seconds / 60, self.remaining_seconds % 60)
     }
 
+    /// Get elapsed time as (minutes, seconds) - for flowtime work mode
+    pub fn elapsed_time(&self) -> (u32, u32) {
+        (self.elapsed_seconds / 60, self.elapsed_seconds % 60)
+    }
+
+    /// Get display time - elapsed for flowtime work, remaining otherwise
+    pub fn display_time(&self) -> (u32, u32) {
+        if self.is_flowtime && self.state == TimerState::Work {
+            self.elapsed_time()
+        } else {
+            self.remaining_time()
+        }
+    }
+
+    /// Get formatted display time string
+    /// Format: MM:SS for <100 min, or M...M:SS for longer sessions (e.g., 100:00, 150:30)
+    pub fn formatted_display_time(&self) -> String {
+        let (min, sec) = self.display_time();
+        if min >= 100 {
+            format!("{}:{:02}", min, sec)
+        } else {
+            format!("{:02}:{:02}", min, sec)
+        }
+    }
+
     /// Get formatted remaining time string
+    #[allow(dead_code)]
     pub fn formatted_time(&self) -> String {
         let (min, sec) = self.remaining_time();
         format!("{:02}:{:02}", min, sec)
@@ -165,7 +270,15 @@ impl Timer {
                 TimerState::Work
             }
         };
-        self.remaining_seconds = self.duration_for_state(self.state) * 60;
+
+        // Reset timers based on new state
+        if self.is_flowtime && self.state == TimerState::Work {
+            // Flowtime work: reset elapsed time for count-up
+            self.elapsed_seconds = 0;
+        } else {
+            self.remaining_seconds = self.duration_for_state(self.state) * 60;
+        }
+
         self.is_paused = true;
         self.accumulated = Duration::ZERO;
     }
@@ -184,9 +297,16 @@ impl Timer {
     pub fn full_reset(&mut self) {
         self.state = TimerState::Work;
         self.remaining_seconds = self.work_duration * 60;
+        self.elapsed_seconds = 0;
         self.is_paused = true;
         self.accumulated = Duration::ZERO;
         self.session_count = 1;
+        self.flowtime_break_seconds = 0;
+    }
+
+    /// Add time to the timer (for snooze functionality)
+    pub fn add_time(&mut self, seconds: u32) {
+        self.remaining_seconds += seconds;
     }
 }
 

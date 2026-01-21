@@ -10,10 +10,11 @@ use ratatui::{backend::CrosstermBackend, Terminal};
 use std::io;
 use std::time::Duration;
 
-use crate::config::Config;
+use crate::config::{Config, FocusMode};
 use crate::db::{Database, Session, SessionType, Tag};
 use crate::icons::IconType;
 use crate::notification;
+use crate::sync;
 use crate::theme::Theme;
 use crate::timer::{Timer, TimerState};
 use crate::ui;
@@ -35,6 +36,8 @@ pub enum SettingsItem {
     ShortBreak,
     LongBreak,
     AutoStart,
+    FocusMode,
+    BreakSnooze,
     SoundEnabled,
     DesktopNotification,
     DailySessionsGoal,
@@ -60,6 +63,8 @@ impl SettingsItem {
             Self::ShortBreak,
             Self::LongBreak,
             Self::AutoStart,
+            Self::FocusMode,
+            Self::BreakSnooze,
             Self::SoundEnabled,
             Self::DesktopNotification,
             Self::DailySessionsGoal,
@@ -76,28 +81,168 @@ impl SettingsItem {
         ]
     }
 
+    #[allow(dead_code)]
     pub fn label(&self) -> &'static str {
+        self.label_with_lang("en")
+    }
+
+    pub fn label_with_lang(&self, lang: &str) -> &'static str {
+        let is_ja = lang == "ja";
         match self {
-            Self::Theme => "Theme",
-            Self::AccentColor => "Accent Color",
-            Self::Icon => "Icon",
-            Self::WorkDuration => "Work Duration",
-            Self::ShortBreak => "Short Break",
-            Self::LongBreak => "Long Break",
-            Self::AutoStart => "Auto Start",
-            Self::SoundEnabled => "Sound",
-            Self::DesktopNotification => "Desktop Notification",
-            Self::DailySessionsGoal => "Daily Sessions Goal",
-            Self::DailyMinutesGoal => "Daily Minutes Goal",
-            Self::WeeklySessionsGoal => "Weekly Sessions Goal",
-            Self::WeeklyMinutesGoal => "Weekly Minutes Goal",
-            Self::TagsHeader => "── Tags ──",
-            Self::AddTag => "Add New Tag",
-            Self::DeleteTag => "Delete Tag",
-            Self::SessionsHeader => "── Session History ──",
-            Self::EditSessionTag => "Change Session Tag",
-            Self::DeleteSession => "Delete Session",
-            Self::Back => "← Back to Timer",
+            Self::Theme => {
+                if is_ja {
+                    "テーマ"
+                } else {
+                    "Theme"
+                }
+            }
+            Self::AccentColor => {
+                if is_ja {
+                    "アクセントカラー"
+                } else {
+                    "Accent Color"
+                }
+            }
+            Self::Icon => {
+                if is_ja {
+                    "アイコン"
+                } else {
+                    "Icon"
+                }
+            }
+            Self::WorkDuration => {
+                if is_ja {
+                    "作業時間"
+                } else {
+                    "Work Duration"
+                }
+            }
+            Self::ShortBreak => {
+                if is_ja {
+                    "短い休憩"
+                } else {
+                    "Short Break"
+                }
+            }
+            Self::LongBreak => {
+                if is_ja {
+                    "長い休憩"
+                } else {
+                    "Long Break"
+                }
+            }
+            Self::AutoStart => {
+                if is_ja {
+                    "自動開始"
+                } else {
+                    "Auto Start"
+                }
+            }
+            Self::FocusMode => {
+                if is_ja {
+                    "フォーカスモード"
+                } else {
+                    "Focus Mode"
+                }
+            }
+            Self::BreakSnooze => {
+                if is_ja {
+                    "休憩延長"
+                } else {
+                    "Break Snooze"
+                }
+            }
+            Self::SoundEnabled => {
+                if is_ja {
+                    "サウンド"
+                } else {
+                    "Sound"
+                }
+            }
+            Self::DesktopNotification => {
+                if is_ja {
+                    "デスクトップ通知"
+                } else {
+                    "Desktop Notification"
+                }
+            }
+            Self::DailySessionsGoal => {
+                if is_ja {
+                    "1日のセッション目標"
+                } else {
+                    "Daily Sessions Goal"
+                }
+            }
+            Self::DailyMinutesGoal => {
+                if is_ja {
+                    "1日の作業時間目標"
+                } else {
+                    "Daily Minutes Goal"
+                }
+            }
+            Self::WeeklySessionsGoal => {
+                if is_ja {
+                    "週間セッション目標"
+                } else {
+                    "Weekly Sessions Goal"
+                }
+            }
+            Self::WeeklyMinutesGoal => {
+                if is_ja {
+                    "週間作業時間目標"
+                } else {
+                    "Weekly Minutes Goal"
+                }
+            }
+            Self::TagsHeader => {
+                if is_ja {
+                    "── タグ ──"
+                } else {
+                    "── Tags ──"
+                }
+            }
+            Self::AddTag => {
+                if is_ja {
+                    "新しいタグを追加"
+                } else {
+                    "Add New Tag"
+                }
+            }
+            Self::DeleteTag => {
+                if is_ja {
+                    "タグを削除"
+                } else {
+                    "Delete Tag"
+                }
+            }
+            Self::SessionsHeader => {
+                if is_ja {
+                    "── セッション履歴 ──"
+                } else {
+                    "── Session History ──"
+                }
+            }
+            Self::EditSessionTag => {
+                if is_ja {
+                    "セッションのタグを変更"
+                } else {
+                    "Change Session Tag"
+                }
+            }
+            Self::DeleteSession => {
+                if is_ja {
+                    "セッションを削除"
+                } else {
+                    "Delete Session"
+                }
+            }
+            Self::Back => {
+                if is_ja {
+                    "← タイマーに戻る"
+                } else {
+                    "← Back to Timer"
+                }
+            }
         }
     }
 
@@ -133,6 +278,8 @@ pub struct App {
     pub accent_index: usize,
     /// Available accent colors
     pub available_accents: Vec<String>,
+    /// Focus mode selection index (when editing focus mode)
+    pub focus_mode_index: usize,
     /// Is currently editing a setting
     pub editing: bool,
     /// Animation frame counter
@@ -209,8 +356,20 @@ impl App {
             .position(|a| a == &config.appearance.accent)
             .unwrap_or(0); // Default to cyan (index 0)
 
+        // Focus mode index
+        let focus_mode_index = match config.focus.mode {
+            FocusMode::Classic => 0,
+            FocusMode::Flowtime => 1,
+        };
+
         // Open database and get stats
         let db = Database::open().ok();
+
+        // Try to sync any pending sessions from previous offline usage
+        if let Some(ref d) = db {
+            let _ = sync::try_sync_pending(d.connection());
+        }
+
         let (today_work_seconds, today_sessions) = db
             .as_ref()
             .and_then(|d| d.get_today_stats().ok())
@@ -263,13 +422,17 @@ impl App {
             .and_then(|d| d.get_recent_sessions(20).ok())
             .unwrap_or_default();
 
+        // Create timer and set flowtime mode
+        let mut timer = Timer::with_sessions(
+            config.timer.work_duration,
+            config.timer.short_break,
+            config.timer.long_break,
+            config.timer.sessions_until_long,
+        );
+        timer.set_flowtime(config.focus.mode == FocusMode::Flowtime);
+
         Self {
-            timer: Timer::with_sessions(
-                config.timer.work_duration,
-                config.timer.short_break,
-                config.timer.long_break,
-                config.timer.sessions_until_long,
-            ),
+            timer,
             should_quit: false,
             view: AppView::Timer,
             settings_index: 0,
@@ -281,6 +444,7 @@ impl App {
             available_icons,
             accent_index,
             available_accents,
+            focus_mode_index,
             editing: false,
             animation_frame: 0,
             animation_tick: 0,
@@ -413,6 +577,41 @@ impl App {
     pub fn selected_tag(&self) -> Option<&Tag> {
         self.selected_tag_index
             .and_then(|idx| self.available_tags.get(idx))
+    }
+
+    /// Cycle through focus modes (Classic -> Flowtime -> Classic)
+    pub fn cycle_focus_mode(&mut self) {
+        self.focus_mode_index = (self.focus_mode_index + 1) % 2;
+        self.config.focus.mode = match self.focus_mode_index {
+            0 => FocusMode::Classic,
+            _ => FocusMode::Flowtime,
+        };
+        // Update timer flowtime mode
+        self.timer
+            .set_flowtime(self.config.focus.mode == FocusMode::Flowtime);
+        // Save config
+        let _ = self.config.save();
+    }
+
+    /// Snooze break - add current break duration to timer
+    pub fn snooze_break(&mut self) {
+        // Only snooze during breaks and if snooze is enabled
+        if !self.config.focus.break_snooze_enabled {
+            return;
+        }
+        match self.timer.state {
+            TimerState::ShortBreak => {
+                let snooze_seconds = self.config.timer.short_break * 60;
+                self.timer.add_time(snooze_seconds);
+            }
+            TimerState::LongBreak => {
+                let snooze_seconds = self.config.timer.long_break * 60;
+                self.timer.add_time(snooze_seconds);
+            }
+            TimerState::Work => {
+                // Do nothing during work
+            }
+        }
     }
 
     /// Add a new tag
@@ -578,6 +777,9 @@ impl App {
             if completed {
                 let _ = db.complete_session(session_id, duration as i32);
 
+                // Try to sync to cloud (silently fails if offline or not logged in)
+                let _ = sync::try_sync_session(db.connection(), session_id);
+
                 // Update today's stats for work sessions
                 if state == TimerState::Work {
                     self.today_work_seconds += duration as i32;
@@ -644,6 +846,24 @@ impl App {
                 }
                 SettingsItem::AutoStart => {
                     self.config.timer.auto_start = !self.config.timer.auto_start;
+                }
+                SettingsItem::FocusMode => {
+                    if self.focus_mode_index > 0 {
+                        self.focus_mode_index -= 1;
+                    } else {
+                        self.focus_mode_index = 1; // Cycle: Classic(0) <-> Flowtime(1)
+                    }
+                    self.config.focus.mode = match self.focus_mode_index {
+                        0 => FocusMode::Classic,
+                        _ => FocusMode::Flowtime,
+                    };
+                    // Update timer flowtime mode
+                    self.timer
+                        .set_flowtime(self.config.focus.mode == FocusMode::Flowtime);
+                }
+                SettingsItem::BreakSnooze => {
+                    self.config.focus.break_snooze_enabled =
+                        !self.config.focus.break_snooze_enabled;
                 }
                 SettingsItem::SoundEnabled => {
                     self.config.notifications.sound = !self.config.notifications.sound;
@@ -743,6 +963,24 @@ impl App {
                 SettingsItem::AutoStart => {
                     self.config.timer.auto_start = !self.config.timer.auto_start;
                 }
+                SettingsItem::FocusMode => {
+                    if self.focus_mode_index < 1 {
+                        self.focus_mode_index += 1;
+                    } else {
+                        self.focus_mode_index = 0; // Cycle: Flowtime(1) -> Classic(0)
+                    }
+                    self.config.focus.mode = match self.focus_mode_index {
+                        0 => FocusMode::Classic,
+                        _ => FocusMode::Flowtime,
+                    };
+                    // Update timer flowtime mode
+                    self.timer
+                        .set_flowtime(self.config.focus.mode == FocusMode::Flowtime);
+                }
+                SettingsItem::BreakSnooze => {
+                    self.config.focus.break_snooze_enabled =
+                        !self.config.focus.break_snooze_enabled;
+                }
                 SettingsItem::SoundEnabled => {
                     self.config.notifications.sound = !self.config.notifications.sound;
                 }
@@ -841,6 +1079,20 @@ impl App {
             SettingsItem::AutoStart => {
                 // Toggle auto-start directly (no editing mode needed)
                 self.config.timer.auto_start = !self.config.timer.auto_start;
+                self.apply_settings();
+            }
+            SettingsItem::FocusMode => {
+                if self.editing {
+                    // Apply changes
+                    self.editing = false;
+                    self.apply_settings();
+                } else {
+                    self.editing = true;
+                }
+            }
+            SettingsItem::BreakSnooze => {
+                // Toggle break snooze directly
+                self.config.focus.break_snooze_enabled = !self.config.focus.break_snooze_enabled;
                 self.apply_settings();
             }
             SettingsItem::SoundEnabled => {
@@ -1021,6 +1273,17 @@ impl App {
                     format!("{} min", self.config.goals.weekly_minutes)
                 }
             }
+            SettingsItem::FocusMode => {
+                let modes = ["🍅 Classic", "🌊 Flowtime"];
+                modes[self.focus_mode_index].to_string()
+            }
+            SettingsItem::BreakSnooze => {
+                if self.config.focus.break_snooze_enabled {
+                    "ON (+5min)".to_string()
+                } else {
+                    "OFF".to_string()
+                }
+            }
             SettingsItem::TagsHeader | SettingsItem::AddTag | SettingsItem::DeleteTag => {
                 String::new()
             }
@@ -1079,6 +1342,8 @@ pub fn run() -> Result<()> {
                         KeyCode::Char('R') => app.full_reset(),
                         KeyCode::Char('s') => app.skip(),
                         KeyCode::Char('t') => app.cycle_tag(),
+                        KeyCode::Char('m') => app.cycle_focus_mode(),
+                        KeyCode::Char('z') => app.snooze_break(),
                         KeyCode::Tab => app.toggle_settings(),
                         _ => {}
                     },

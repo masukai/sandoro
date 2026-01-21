@@ -1,13 +1,18 @@
 import { useRef, useCallback, useState, useEffect, useMemo } from 'react';
 import { useTimer } from '../../hooks/useTimer';
-import { useSettings, IconType } from '../../hooks/useSettings';
-import { useSessionStorage } from '../../hooks/useSessionStorage';
+import { useSettings, useTags, type IconType, type FocusMode } from '../../hooks/useSupabaseSettings';
+import { useSessionStorage } from '../../hooks/useSupabaseSession';
 import { useNotification } from '../../hooks/useNotification';
 import { useSound } from '../../hooks/useSound';
 import { useTheme } from '../../hooks/useTheme';
+import { useAuth } from '../../hooks/useAuth';
 import { useContextMessage, UserStats } from '../../hooks/useContextMessage';
-import { useTags } from '../../hooks/useTags';
 import { AsciiIcon } from './AsciiIcon';
+
+const FOCUS_MODE_OPTIONS: { value: FocusMode; label: string; icon: string }[] = [
+  { value: 'classic', label: 'Classic', icon: '🍅' },
+  { value: 'flowtime', label: 'Flow', icon: '🌊' },
+];
 
 interface TimerProps {
   workDuration?: number;
@@ -28,6 +33,7 @@ export function Timer({
 }: TimerProps) {
   const { settings } = useSettings();
   const { accentColor } = useTheme();
+  const { user } = useAuth();
   const isRainbow = accentColor === 'rainbow';
   const iconType = icon || settings.icon || 'hourglass';
   const { sessions, startSession, completeSession, cancelSession, getTodayStats, getStreak, getWeekStats, getDailyBreakdown } =
@@ -73,17 +79,31 @@ export function Timer({
     }
   }, [cancelSession]);
 
-  const { state, formattedTime, isRunning, progress, sessionCount, togglePause, reset, skip, fullReset } =
+  // Current focus mode (can be changed in timer, defaults to settings)
+  const [currentFocusMode, setCurrentFocusMode] = useState<FocusMode>(settings.focusMode);
+
+  const { state, formattedTime, isRunning, progress, sessionCount, togglePause, reset, skip, fullReset, addTime, endWork, isFlowtime } =
     useTimer({
       workDuration,
       shortBreakDuration,
       longBreakDuration,
       sessionsUntilLongBreak,
       autoStart,
+      focusMode: currentFocusMode,
       onSessionStart: handleSessionStart,
       onSessionComplete: handleSessionComplete,
       onSessionCancel: handleSessionCancel,
     });
+
+  // Get current break duration for snooze (in seconds)
+  const currentBreakDuration = state === 'longBreak'
+    ? (longBreakDuration ?? settings.longBreak * 60)
+    : (shortBreakDuration ?? settings.shortBreak * 60);
+
+  // Handle snooze - add current break duration
+  const handleSnooze = useCallback(() => {
+    addTime(currentBreakDuration);
+  }, [addTime, currentBreakDuration]);
 
   // Get today's stats for display
   const todayStats = getTodayStats();
@@ -156,7 +176,7 @@ export function Timer({
     <div className="flex flex-col items-center gap-3 py-2">
       {/* ASCII Art Icon */}
       <div className="text-center">
-        <AsciiIcon type={iconType} progress={progress} isBreak={state !== 'work'} isPaused={!isRunning} />
+        <AsciiIcon type={iconType} progress={progress} isBreak={state !== 'work'} isPaused={!isRunning} isFlowtimeWork={isFlowtime && state === 'work'} />
       </div>
 
       {/* Timer Display */}
@@ -167,8 +187,34 @@ export function Timer({
         [ {stateLabel}{!isRunning ? ' - PAUSED' : ''} ]
       </div>
 
-      {/* Tag Selection */}
-      {tags.length > 0 && (
+      {/* Focus Mode Selector */}
+      <div className="flex items-center gap-1">
+        {FOCUS_MODE_OPTIONS.map((option) => {
+          const isSelected = currentFocusMode === option.value;
+          return (
+            <button
+              key={option.value}
+              onClick={() => setCurrentFocusMode(option.value)}
+              className={`px-2 py-0.5 text-xs rounded transition-colors ${
+                isSelected && isRainbow ? 'rainbow-gradient-bg' : ''
+              }`}
+              style={{
+                backgroundColor: isSelected && !isRainbow ? 'var(--sandoro-primary)' : 'transparent',
+                color: isSelected && !isRainbow ? 'var(--sandoro-bg)' : 'var(--sandoro-fg)',
+                fontWeight: isSelected ? 'bold' : 'normal',
+                opacity: isSelected ? 1 : 0.6,
+              }}
+              title={option.label}
+            >
+              <span className="mr-0.5">{option.icon}</span>
+              {option.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Tag Selection - only show when logged in */}
+      {user && tags.length > 0 && (
         <div className="flex items-center gap-2">
           <span className="text-sm text-sandoro-secondary">Tag:</span>
           <select
@@ -217,12 +263,35 @@ export function Timer({
         >
           Full Reset
         </button>
-        <button
-          onClick={skip}
-          className="px-3 py-1 text-xs border border-sandoro-secondary rounded hover:bg-sandoro-secondary/20 transition-colors"
-        >
-          Skip
-        </button>
+        {/* In Flowtime work mode, show "End Work" button instead of Skip */}
+        {isFlowtime && state === 'work' ? (
+          <button
+            onClick={endWork}
+            className={`px-3 py-1 text-xs rounded font-bold hover:opacity-80 transition-opacity ${
+              isRainbow ? 'rainbow-gradient-bg text-sandoro-bg' : 'bg-sandoro-work text-sandoro-bg'
+            }`}
+            title={settings.language === 'ja' ? '作業を終了し、休憩を開始' : 'End work and start break'}
+          >
+            End Work
+          </button>
+        ) : (
+          <button
+            onClick={skip}
+            className="px-3 py-1 text-xs border border-sandoro-secondary rounded hover:bg-sandoro-secondary/20 transition-colors"
+          >
+            Skip
+          </button>
+        )}
+        {/* Snooze button - only show during break when snooze is enabled */}
+        {state !== 'work' && settings.breakSnoozeEnabled && (
+          <button
+            onClick={handleSnooze}
+            className="px-3 py-1 text-xs border border-sandoro-short-break text-sandoro-short-break rounded hover:bg-sandoro-short-break/20 transition-colors"
+            title={`Extend break by ${Math.floor(currentBreakDuration / 60)} min`}
+          >
+            +{Math.floor(currentBreakDuration / 60)}m
+          </button>
+        )}
       </div>
 
       {/* Session Info */}
@@ -237,6 +306,15 @@ export function Timer({
       <div className="text-sm italic" style={{ color: 'var(--sandoro-fg)', opacity: 0.7 }}>
         {contextMessage}
       </div>
+
+      {/* Sound notice */}
+      {settings.soundEnabled && (
+        <div className="text-xs text-sandoro-secondary mt-2">
+          {settings.language === 'ja'
+            ? '* タイマー終了時に音が鳴ります'
+            : '* Sound will play when timer ends'}
+        </div>
+      )}
     </div>
   );
 }

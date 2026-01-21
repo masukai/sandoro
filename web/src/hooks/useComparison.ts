@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useSessionStorage } from './useSessionStorage';
+import { useSessionStorage } from './useSupabaseSession';
 
 export interface PeriodStats {
   totalWorkSeconds: number;

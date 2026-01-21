@@ -1,10 +1,9 @@
 import { useState, useCallback, useMemo } from 'react';
-import { useSessionStorage, DailyStats, Session } from '../hooks/useSessionStorage';
+import { useSessionStorage, type DailyStats, type Session } from '../hooks/useSupabaseSession';
 import { useGoalProgress, hasGoalsEnabled } from '../hooks/useGoalProgress';
 import { useComparison, ComparisonData } from '../hooks/useComparison';
-import { useSettings } from '../hooks/useSettings';
+import { useSettings, useTags, type Tag } from '../hooks/useSupabaseSettings';
 import { useTheme } from '../hooks/useTheme';
-import { useTags, Tag } from '../hooks/useTags';
 import { useAuth } from '../hooks/useAuth';
 import { Heatmap } from './Heatmap';
 import { ShareModal } from './ShareModal';
@@ -34,16 +33,13 @@ function StatsCard({
       className="p-4 rounded-lg border border-sandoro-secondary"
       style={{ backgroundColor: 'var(--sandoro-bg)' }}
     >
-      <h3 className="text-sm text-sandoro-secondary mb-2">{title}</h3>
-      <div className="space-y-2">
-        <div className="flex justify-between">
-          <span>Total time</span>
-          <span className="font-mono">{formatDuration(stats.totalWorkSeconds)}</span>
-        </div>
-        <div className="flex justify-between">
-          <span>Sessions</span>
-          <span className="font-mono">{stats.sessionsCompleted}</span>
-        </div>
+      <h3 className="text-sm text-sandoro-secondary mb-3">{title}</h3>
+      {/* Time prominently displayed as primary metric */}
+      <div className="text-2xl font-mono font-semibold mb-2" style={{ color: 'var(--sandoro-primary)' }}>
+        {formatDuration(stats.totalWorkSeconds)}
+      </div>
+      <div className="text-sm text-sandoro-secondary">
+        {stats.sessionsCompleted} sessions
       </div>
     </div>
   );
@@ -63,11 +59,14 @@ function DailyBreakdown({ days }: { days: DailyStats[] }) {
         {days.map((day) => (
           <div
             key={day.date}
-            className="flex justify-between text-sm font-mono py-1 border-b border-sandoro-secondary/30"
+            className="flex justify-between items-center text-sm font-mono py-1 border-b border-sandoro-secondary/30"
           >
-            <span>{day.date}</span>
-            <span>{formatDuration(day.totalWorkSeconds)}</span>
-            <span>{day.sessionsCompleted} sessions</span>
+            <span className="text-sandoro-secondary">{day.date}</span>
+            {/* Time is the primary metric, displayed prominently */}
+            <span className="font-semibold" style={{ color: 'var(--sandoro-primary)' }}>
+              {formatDuration(day.totalWorkSeconds)}
+            </span>
+            <span className="text-sandoro-secondary text-xs">{day.sessionsCompleted} sessions</span>
           </div>
         ))}
       </div>
@@ -128,10 +127,19 @@ function GoalProgress() {
     >
       <h3 className="text-sm font-semibold text-sandoro-secondary">Goals</h3>
 
-      {/* Daily Goals */}
+      {/* Daily Goals - Time first (primary metric) */}
       {(settings.goals.dailySessionsGoal > 0 || settings.goals.dailyMinutesGoal > 0) && (
         <div className="space-y-2">
           <div className="text-xs text-sandoro-secondary/70">Daily</div>
+          {/* Time goal shown first as primary metric */}
+          <GoalBar
+            label="Time"
+            current={progress.daily.minutes.current}
+            goal={progress.daily.minutes.goal}
+            percentage={progress.daily.minutes.percentage}
+            unit="min"
+            isRainbow={isRainbow}
+          />
           <GoalBar
             label="Sessions"
             current={progress.daily.sessions.current}
@@ -140,35 +148,28 @@ function GoalProgress() {
             unit=""
             isRainbow={isRainbow}
           />
-          <GoalBar
-            label="Minutes"
-            current={progress.daily.minutes.current}
-            goal={progress.daily.minutes.goal}
-            percentage={progress.daily.minutes.percentage}
-            unit="min"
-            isRainbow={isRainbow}
-          />
         </div>
       )}
 
-      {/* Weekly Goals */}
+      {/* Weekly Goals - Time first (primary metric) */}
       {(settings.goals.weeklySessionsGoal > 0 || settings.goals.weeklyMinutesGoal > 0) && (
         <div className="space-y-2">
           <div className="text-xs text-sandoro-secondary/70">Weekly</div>
+          {/* Time goal shown first as primary metric */}
+          <GoalBar
+            label="Time"
+            current={progress.weekly.minutes.current}
+            goal={progress.weekly.minutes.goal}
+            percentage={progress.weekly.minutes.percentage}
+            unit="min"
+            isRainbow={isRainbow}
+          />
           <GoalBar
             label="Sessions"
             current={progress.weekly.sessions.current}
             goal={progress.weekly.sessions.goal}
             percentage={progress.weekly.sessions.percentage}
             unit=""
-            isRainbow={isRainbow}
-          />
-          <GoalBar
-            label="Minutes"
-            current={progress.weekly.minutes.current}
-            goal={progress.weekly.minutes.goal}
-            percentage={progress.weekly.minutes.percentage}
-            unit="min"
             isRainbow={isRainbow}
           />
         </div>
@@ -210,6 +211,18 @@ function ComparisonCard({ title, data }: ComparisonCardProps) {
     >
       <h3 className="text-sm text-sandoro-secondary mb-3">{title}</h3>
       <div className="space-y-2 text-sm">
+        {/* Time shown first as primary metric */}
+        <div className="flex justify-between items-center">
+          <span className="font-semibold">Time</span>
+          <div className="flex items-center gap-2">
+            <span className="font-mono font-semibold" style={{ color: 'var(--sandoro-primary)' }}>
+              {formatDuration(data.current.totalWorkSeconds)}
+              <span className="text-sandoro-secondary text-xs mx-1 font-normal">vs</span>
+              <span className="text-sandoro-secondary font-normal">{formatDuration(data.previous.totalWorkSeconds)}</span>
+            </span>
+            <ChangeIndicator value={data.change.totalWorkSeconds} />
+          </div>
+        </div>
         <div className="flex justify-between items-center">
           <span>Sessions</span>
           <div className="flex items-center gap-2">
@@ -219,17 +232,6 @@ function ComparisonCard({ title, data }: ComparisonCardProps) {
               {data.previous.sessionsCompleted}
             </span>
             <ChangeIndicator value={data.change.sessionsCompleted} />
-          </div>
-        </div>
-        <div className="flex justify-between items-center">
-          <span>Total time</span>
-          <div className="flex items-center gap-2">
-            <span className="font-mono">
-              {formatDuration(data.current.totalWorkSeconds)}
-              <span className="text-sandoro-secondary text-xs mx-1">vs</span>
-              {formatDuration(data.previous.totalWorkSeconds)}
-            </span>
-            <ChangeIndicator value={data.change.totalWorkSeconds} />
           </div>
         </div>
         <div className="flex justify-between items-center">
@@ -389,6 +391,79 @@ function SessionHistory({
   );
 }
 
+// Preview component for unauthenticated users
+function StatsPreview() {
+  const { accentColor } = useTheme();
+  const isRainbow = accentColor === 'rainbow';
+
+  return (
+    <div className="space-y-6 select-none">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Statistics</h2>
+        <div className="flex gap-2">
+          <div className="px-2 py-1 text-xs rounded bg-sandoro-secondary/20">Share</div>
+          <div className="px-2 py-1 text-xs rounded bg-sandoro-secondary/20">JSON</div>
+        </div>
+      </div>
+
+      {/* Streak Display */}
+      <div
+        className="flex gap-4 p-3 rounded-lg border border-sandoro-secondary"
+        style={{ backgroundColor: 'var(--sandoro-bg)' }}
+      >
+        <div className="flex-1 text-center">
+          <div className={`text-2xl font-mono ${isRainbow ? 'rainbow-gradient' : 'text-sandoro-primary'}`}>
+            7
+          </div>
+          <div className="text-xs text-sandoro-secondary">Current Streak</div>
+        </div>
+        <div className="w-px bg-sandoro-secondary/30" />
+        <div className="flex-1 text-center">
+          <div className="text-2xl font-mono" style={{ color: 'var(--sandoro-fg)' }}>
+            14
+          </div>
+          <div className="text-xs text-sandoro-secondary">Longest Streak</div>
+        </div>
+      </div>
+
+      {/* Mock Stats Card - Time prominently displayed */}
+      <div
+        className="p-4 rounded-lg border border-sandoro-secondary"
+        style={{ backgroundColor: 'var(--sandoro-bg)' }}
+      >
+        <h3 className="text-sm text-sandoro-secondary mb-3">Today</h3>
+        <div className={`text-2xl font-mono font-semibold mb-2 ${isRainbow ? 'rainbow-gradient' : 'text-sandoro-primary'}`}>
+          2h 30m
+        </div>
+        <div className="text-sm text-sandoro-secondary">
+          5 sessions
+        </div>
+      </div>
+
+      {/* Mock Heatmap */}
+      <div className="pt-4 border-t border-sandoro-secondary/30">
+        <h3 className="text-sm text-sandoro-secondary mb-3">Activity</h3>
+        <div className="flex gap-1">
+          {Array.from({ length: 8 }).map((_, weekIdx) => (
+            <div key={weekIdx} className="flex flex-col gap-1">
+              {Array.from({ length: 7 }).map((_, dayIdx) => (
+                <div
+                  key={dayIdx}
+                  className="w-3 h-3 rounded-sm"
+                  style={{
+                    backgroundColor: `rgba(var(--sandoro-primary-rgb, 34, 211, 238), ${Math.random() * 0.8 + 0.1})`,
+                  }}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function Stats() {
   const { user, loading } = useAuth();
   const [view, setView] = useState<StatsView>('today');
@@ -467,14 +542,24 @@ export function Stats() {
   if (!user) {
     return (
       <LoginRequired
-        title="Sign in to view stats"
-        description="Track your focus sessions, view streaks, and analyze your productivity."
+        title="Track your progress"
+        titleJa="進捗を記録しよう"
+        description="See your focus sessions, build streaks, and understand your productivity patterns."
+        descriptionJa="集中セッションを確認し、連続記録を伸ばし、生産性パターンを把握しましょう。"
+        icon="📊"
         features={[
-          'Session history and daily breakdown',
-          'Streak tracking',
-          'Activity heatmap',
-          'Export to JSON/CSV',
+          'Daily, weekly, and monthly insights',
+          'Streak tracking to stay motivated',
+          'Activity heatmap visualization',
+          'Export your data anytime',
         ]}
+        featuresJa={[
+          '日・週・月ごとの統計',
+          'モチベーションを保つ連続記録',
+          'アクティビティヒートマップ',
+          'いつでもデータをエクスポート',
+        ]}
+        previewContent={<StatsPreview />}
       />
     );
   }
@@ -620,7 +705,7 @@ export function Stats() {
         />
       </div>
 
-      {/* Tag Stats */}
+      {/* Tag Stats - Time focused */}
       {tagStatsArray.length > 0 && (
         <div className="pt-4 border-t border-sandoro-secondary/30">
           <h3 className="text-sm font-semibold text-sandoro-secondary mb-3">Stats by Tag (Last 30 days)</h3>
@@ -636,9 +721,12 @@ export function Stats() {
                 <span className={stat.tagId ? '' : 'text-sandoro-secondary'}>
                   {stat.tagName}
                 </span>
-                <div className="flex gap-4">
-                  <span>{formatDuration(stat.totalSeconds)}</span>
-                  <span className="text-sandoro-secondary">{stat.sessionsCount} sessions</span>
+                <div className="flex items-center gap-4">
+                  {/* Time prominently displayed */}
+                  <span className="font-semibold" style={{ color: 'var(--sandoro-primary)' }}>
+                    {formatDuration(stat.totalSeconds)}
+                  </span>
+                  <span className="text-sandoro-secondary text-xs">{stat.sessionsCount} sessions</span>
                 </div>
               </div>
             ))}

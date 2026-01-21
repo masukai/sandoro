@@ -6,6 +6,41 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
+/// Focus mode type
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum FocusMode {
+    #[default]
+    Classic,
+    Flowtime,
+}
+
+impl FocusMode {
+    #[allow(dead_code)]
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            FocusMode::Classic => "classic",
+            FocusMode::Flowtime => "flowtime",
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn from_str(s: &str) -> Self {
+        match s.to_lowercase().as_str() {
+            "flowtime" => FocusMode::Flowtime,
+            _ => FocusMode::Classic,
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn description(&self) -> &'static str {
+        match self {
+            FocusMode::Classic => "Classic Pomodoro: fixed work/break intervals",
+            FocusMode::Flowtime => "Flowtime: work as long as you want, break = work time / 5",
+        }
+    }
+}
+
 /// Application configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
@@ -17,6 +52,8 @@ pub struct Config {
     pub notifications: NotificationsConfig,
     #[serde(default)]
     pub goals: GoalConfig,
+    #[serde(default)]
+    pub focus: FocusConfig,
     #[serde(default)]
     pub account: AccountConfig,
 }
@@ -68,6 +105,14 @@ pub struct NotificationsConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FocusConfig {
+    #[serde(default)]
+    pub mode: FocusMode,
+    #[serde(default)]
+    pub break_snooze_enabled: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AccountConfig {
     #[serde(default)]
     pub license_key: String,
@@ -113,6 +158,7 @@ impl Default for Config {
             appearance: AppearanceConfig::default(),
             notifications: NotificationsConfig::default(),
             goals: GoalConfig::default(),
+            focus: FocusConfig::default(),
             account: AccountConfig::default(),
         }
     }
@@ -158,6 +204,16 @@ impl Default for NotificationsConfig {
         Self {
             sound: default_true(),
             desktop: default_true(),
+        }
+    }
+}
+
+#[allow(clippy::derivable_impls)]
+impl Default for FocusConfig {
+    fn default() -> Self {
+        Self {
+            mode: FocusMode::default(),
+            break_snooze_enabled: false,
         }
     }
 }

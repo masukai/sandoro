@@ -15,6 +15,93 @@ pub fn render_tomato_with_direction(
     animation_frame: u8,
     is_break: bool,
 ) -> Vec<String> {
+    render_tomato_with_options(percent, animation_frame, is_break, false)
+}
+
+/// Render tomato with all options including flowtime support
+pub fn render_tomato_with_options(
+    percent: f32,
+    animation_frame: u8,
+    is_break: bool,
+    is_flowtime_work: bool,
+) -> Vec<String> {
+    // Flowtime work mode: show pulsing tomatoes animation
+    if is_flowtime_work {
+        let pulse_frame = animation_frame % 2;
+        let fill = if pulse_frame == 0 {
+            "▓▓▓▓"
+        } else {
+            "░░░░"
+        };
+        let base_tomatoes = vec![
+            "      |              |    ".to_string(),
+            "    \\ | /          \\ | /  ".to_string(),
+            "   \\ \\|/ /        \\ \\|/ / ".to_string(),
+            format!("  /::{}::\\     /::{}::\\  ", fill, fill),
+            format!(
+                " /::{}::\\   /::{}::\\ ",
+                if pulse_frame == 0 {
+                    "▓▓▓▓▓▓"
+                } else {
+                    "░░░░░░"
+                },
+                if pulse_frame == 0 {
+                    "▓▓▓▓▓▓"
+                } else {
+                    "░░░░░░"
+                }
+            ),
+            format!(
+                "|::{}::| |::{}::|",
+                if pulse_frame == 0 {
+                    "▓▓▓▓▓▓▓▓"
+                } else {
+                    "░░░░░░░░"
+                },
+                if pulse_frame == 0 {
+                    "▓▓▓▓▓▓▓▓"
+                } else {
+                    "░░░░░░░░"
+                }
+            ),
+            format!(
+                "|::{}::| |::{}::|",
+                if pulse_frame == 0 {
+                    "▓▓▓▓▓▓▓▓"
+                } else {
+                    "░░░░░░░░"
+                },
+                if pulse_frame == 0 {
+                    "▓▓▓▓▓▓▓▓"
+                } else {
+                    "░░░░░░░░"
+                }
+            ),
+            format!(
+                " \\::{}::/   \\::{}::/ ",
+                if pulse_frame == 0 {
+                    "▓▓▓▓▓▓"
+                } else {
+                    "░░░░░░"
+                },
+                if pulse_frame == 0 {
+                    "▓▓▓▓▓▓"
+                } else {
+                    "░░░░░░"
+                }
+            ),
+            format!("  \\::{}::/     \\::{}::/  ", fill, fill),
+            "    \\::::/         \\::::/   ".to_string(),
+        ];
+        let flow_indicator = if pulse_frame == 0 {
+            "∞ FLOW ∞"
+        } else {
+            " ∞ FLOW "
+        };
+        let mut result = vec![format!("~~~~════{}════~~~~", flow_indicator)];
+        result.extend(base_tomatoes);
+        return result;
+    }
     // During break, progress shows recovery (0→100 means empty→full)
     let effective_progress = if is_break { 100.0 - percent } else { percent };
 

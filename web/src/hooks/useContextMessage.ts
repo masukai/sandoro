@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Language } from './useSettings';
+import { type Language } from './useSupabaseSettings';
 
 export type TimerState = 'work' | 'shortBreak' | 'longBreak';
 
