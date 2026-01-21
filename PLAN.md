@@ -2269,25 +2269,126 @@ sandoro/
   - カスタムテーマ作成（背景、テキスト、アクセント色）
   - インポート/エクスポート（他ユーザーとの共有）
 
-### Phase 5: ダッシュボード・拡張機能
+### Phase 5: 計測・分析基盤
+
+**目的**: ユーザー行動を理解し、改善につなげる
 
 | タスク | 詳細 | ステータス |
 |--------|------|----------|
-| サイドパネル追加 | 常駐ダッシュボード | ⏳ 待機中 |
-| 天気API連携 | OpenWeatherMap等 | ⏳ 待機中 |
-| Google Calendar連携 | OAuth認証 | ⏳ 待機中 |
-| Spotify連携 | 再生中の曲表示 | ⏳ 待機中 |
-| GitHub連携 | 今日のコミット数 | ⏳ 待機中 |
+| Google Analytics 4 導入 | ページビュー、イベント計測 | ⏳ 待機中 |
+| カスタムイベント設計 | セッション開始/完了、Pro購入、機能使用率 | ⏳ 待機中 |
+| コンバージョン計測 | Free→Pro 転換率、解約率 | ⏳ 待機中 |
+| Mixpanel/PostHog 検討 | より詳細なファネル分析 | ⏳ 待機中 |
+| CLI 匿名利用統計 | opt-in で基本統計のみ | ⏳ 待機中 |
 
-### Phase 6: 配布・マーケティング
+**計測すべき指標**:
+- DAU/WAU/MAU
+- セッション完了率
+- Free→Pro 転換率
+- 機能別利用率（アイコン、テーマ、Focus Mode）
+- 離脱ポイント
+
+### Phase 6: ランディングページ・配布
+
+**目的**: 認知獲得のための土台を整える
+
+#### 6.1 ランディングページ（LP）
 
 | タスク | 詳細 | ステータス |
 |--------|------|----------|
-| Product Hunt準備 | アセット作成 | ⏳ 待機中 |
-| デモGIF作成 | アニメーションの魅力を伝える | ⏳ 待機中 |
-| ランディングページ | sandoro.app | ⏳ 待機中 |
-| Homebrew Formula | brew install sandoro | ⏳ 待機中 |
-| Zenn/Qiita記事 | 技術記事でPR | ⏳ 待機中 |
+| ドメイン取得 | sandoro.app or getsandoro.com | ⏳ 待機中 |
+| LP デザイン | ヒーロー、機能紹介、価格、CTA | ⏳ 待機中 |
+| デモ GIF 作成 | アニメーションの魅力を伝える | ⏳ 待機中 |
+| OGP 設定 | SNS シェア時のプレビュー最適化 | ⏳ 待機中 |
+| SEO 基礎 | メタタグ、構造化データ | ⏳ 待機中 |
+
+**LP 構成案**:
+```
+1. ヒーロー: 「Focus with ASCII Art」+ デモ GIF
+2. 問題提起: 「集中できない」「ポモドーロは退屈」
+3. 解決策: sandoro の特徴（アニメーション、CLI/Web両対応）
+4. 機能紹介: アイコン、テーマ、Focus Mode
+5. 価格: Free vs Pro 比較表
+6. CTA: 「Try Free」「Get Pro」
+7. フッター: プライバシー、利用規約
+```
+
+#### 6.2 配布チャネル
+
+| タスク | 詳細 | ステータス |
+|--------|------|----------|
+| Homebrew Formula | `brew install sandoro` | ⏳ 待機中 |
+| crates.io 公開 | `cargo install sandoro` | ⏳ 待機中 |
+| GitHub Releases | バイナリ配布、自動リリース | ⏳ 待機中 |
+| VS Code 拡張 | ステータスバー統合（将来） | ⏳ 待機中 |
+
+### Phase 7: マーケティング・認知獲得
+
+**5W1H で整理**:
+- **Who**: 開発者、リモートワーカー、学生
+- **What**: ASCII アートのポモドーロタイマー
+- **Where**: Product Hunt, Indie Hackers, Reddit, X, Zenn/Qiita
+- **When**: LP 完成後、週末ローンチ
+- **Why**: 既存ツールより「眺めていたくなる」体験
+- **How**: コミュニティファースト、技術記事、SNS
+
+#### 7.1 コミュニティ戦略（ローンチ前 4-6 週間）
+
+| タスク | 詳細 | ステータス |
+|--------|------|----------|
+| Reddit 参加 | r/productivity, r/commandline で価値提供 | ⏳ 待機中 |
+| Indie Hackers 参加 | 開発過程を共有、フィードバック収集 | ⏳ 待機中 |
+| X (Twitter) 開発ログ | #buildinpublic で週次更新 | ⏳ 待機中 |
+| Discord/Slack 参加 | 開発者コミュニティで認知 | ⏳ 待機中 |
+
+**90/10 ルール**: 90% は価値提供、10% で自然に言及
+
+#### 7.2 ローンチ戦略
+
+| タスク | 詳細 | ステータス |
+|--------|------|----------|
+| Product Hunt 準備 | アセット作成、ハンター依頼 | ⏳ 待機中 |
+| Product Hunt ローンチ | 週末（土曜）狙い、366+ upvote 目標 | ⏳ 待機中 |
+| Indie Hackers 投稿 | ローンチストーリー共有 | ⏳ 待機中 |
+| Hacker News Show HN | 技術的な切り口で投稿 | ⏳ 待機中 |
+
+**注意**: 2024年以降 Product Hunt の掲載率は 10% 程度に低下。Indie Hackers の方が転換率が高い（23% vs 3%）
+
+参考:
+- [How to Launch on Product Hunt: A 2025 Guide](https://screencharm.com/blog/how-to-launch-on-product-hunt)
+- [Indie App Marketing Strategies 2025](https://rapidappstore.com/blog/indie-app-marketing-strategies)
+- [Indie Hackers vs Product Hunt](https://awesome-directories.com/blog/indie-hackers-launch-strategy-guide-2025/)
+
+#### 7.3 コンテンツマーケティング
+
+| タスク | 詳細 | ステータス |
+|--------|------|----------|
+| Zenn 技術記事 | Rust + TUI 開発記、Supabase 連携 | ⏳ 待機中 |
+| Qiita 記事 | ポモドーロ × 開発者向け | ⏳ 待機中 |
+| DEV.to 記事 | 英語圏向け、ASCII アート × CLI | ⏳ 待機中 |
+| YouTube デモ動画 | 1-2 分のショート動画 | ⏳ 待機中 |
+
+#### 7.4 ディレクトリ登録
+
+| ディレクトリ | 目的 | ステータス |
+|-------------|------|----------|
+| AlternativeTo | 「Pomofocus の代替」として | ⏳ 待機中 |
+| BetaList | 早期ユーザー獲得 | ⏳ 待機中 |
+| SaaSHub | SaaS ディレクトリ | ⏳ 待機中 |
+| Awesome CLI Apps | GitHub リスト | ⏳ 待機中 |
+| Awesome Rust | GitHub リスト | ⏳ 待機中 |
+
+### Phase 8: 拡張機能（将来）
+
+| タスク | 詳細 | 優先度 |
+|--------|------|--------|
+| サイドパネル追加 | 常駐ダッシュボード | P3 |
+| 天気 API 連携 | OpenWeatherMap 等 | P3 |
+| Google Calendar 連携 | 予定表示 | P3 |
+| Spotify 連携 | 再生中の曲表示 | P3 |
+| GitHub 連携 | 今日のコミット数 | P3 |
+| Notion 連携 | タスク同期 | P3 |
+| Slack 連携 | ステータス更新 | P3 |
 
 ---
 
@@ -2298,8 +2399,9 @@ sandoro/
 1. ~~**Phase 2.7**: UX強化・タグ機能~~ ← **完了**
 2. ~~**Phase 2.8**: 完成度向上~~ ← **完了**
 3. ~~**Phase 2.5**: Webデプロイ（Vercel）~~ ← **完了**
-4. **Phase 3**: CLI/Web統合（データ共有） ← **進行中（Step 1完了、Step 2進行中）**
-5. **Phase 4-6**: 課金、拡張機能、マーケティング
+4. ~~**Phase 3**: CLI/Web統合（データ共有）~~ ← **完了**
+5. **Phase 4**: 課金機能・カスタマイズ ← **次のフェーズ**
+6. **Phase 5-6**: 拡張機能、マーケティング
 
 ### 差別化を意識した開発
 
