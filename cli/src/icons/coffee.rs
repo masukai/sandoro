@@ -14,6 +14,50 @@ pub fn render_coffee_with_direction(
     animation_frame: u8,
     is_break: bool,
 ) -> Vec<String> {
+    render_coffee_with_options(percent, animation_frame, is_break, false)
+}
+
+/// Render coffee with all options including flowtime support
+pub fn render_coffee_with_options(
+    percent: f32,
+    animation_frame: u8,
+    is_break: bool,
+    is_flowtime_work: bool,
+) -> Vec<String> {
+    // Flowtime work mode: show infinite steam animation
+    if is_flowtime_work {
+        let work_frame = animation_frame % 4;
+        let (steam0, steam1, steam2) = match work_frame {
+            0 => ("    ∞  ～  ∞    ", "  ～      ～    ", "～            ～"),
+            1 => ("  ～      ～    ", "～     ∞      ～", "      ～～      "),
+            2 => ("～    ∞       ～", "      ～～      ", "       ~~       "),
+            _ => ("      ～～      ", "       ~~       ", "   ∞        ∞   "),
+        };
+        // Full cup with gradient fill
+        let fill = vec![
+            "░░░░░░░░░░░░░░░░".to_string(),
+            "▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒".to_string(),
+            "▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓".to_string(),
+            "▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓".to_string(),
+            "▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓".to_string(),
+            "▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓".to_string(),
+        ];
+        return vec![
+            format!("  {}  ", steam0),
+            format!("  {}  ", steam1),
+            format!("  {}  ", steam2),
+            " ╭────────────────╮   ".to_string(),
+            format!(" │{}├──╮", fill[0]),
+            format!(" │{}│  │", fill[1]),
+            format!(" │{}│  │", fill[2]),
+            format!(" │{}├──╯", fill[3]),
+            format!(" │{}│   ", fill[4]),
+            format!(" │{}│   ", fill[5]),
+            " ╰────────────────╯   ".to_string(),
+            "     ══════════       ".to_string(),
+            " ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔ ".to_string(),
+        ];
+    }
     const ROWS: usize = 6; // 元の高さを維持（滑らかな進捗表示）
     const MAX_LEVEL: usize = 18;
     const W: usize = 16; // 8から16に拡大（横長のマグカップ）

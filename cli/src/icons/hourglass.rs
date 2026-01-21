@@ -20,6 +20,54 @@ pub fn render_hourglass_with_direction(
     animation_frame: u8,
     is_break: bool,
 ) -> Vec<String> {
+    render_hourglass_with_options(percent, animation_frame, is_break, false)
+}
+
+/// Render hourglass with all options including flowtime support
+pub fn render_hourglass_with_options(
+    percent: f32,
+    animation_frame: u8,
+    is_break: bool,
+    is_flowtime_work: bool,
+) -> Vec<String> {
+    // Flowtime work mode: show special infinite animation
+    if is_flowtime_work {
+        let frame = animation_frame % 4;
+        let (flow1, flow2) = match frame {
+            0 => ("∞", "·"),
+            1 => ("·", "∞"),
+            2 => ("∞", "·"),
+            _ => ("·", "∞"),
+        };
+        let (neck1, neck2) = match frame {
+            0 => ("▓", "░"),
+            1 => ("░", "▒"),
+            2 => ("▒", "▓"),
+            _ => ("▓", "▒"),
+        };
+        return vec![
+            " ╔══════════╗ ".to_string(),
+            " ║▄▄▄▄▄▄▄▄▄▄║ ".to_string(),
+            " ║░░░░░░░░░░║ ".to_string(),
+            " ║░░░░░░░░░░║ ".to_string(),
+            " ║░░░░░░░░░░║ ".to_string(),
+            " ║░░░░░░░░░░║ ".to_string(),
+            "  ╲░░░░░░░░╱  ".to_string(),
+            "   ╲░░░░░░╱   ".to_string(),
+            format!("    ╲ {}{} ╱    ", flow1, flow2),
+            format!("     ╲{}{}╱     ", neck1, neck2),
+            format!("     ╱{}{}╲     ", neck2, neck1),
+            format!("    ╱ {}{} ╲    ", flow2, flow1),
+            "   ╱      ╲   ".to_string(),
+            "  ╱        ╲  ".to_string(),
+            " ║          ║ ".to_string(),
+            " ║          ║ ".to_string(),
+            " ║          ║ ".to_string(),
+            " ║          ║ ".to_string(),
+            " ║▀▀▀▀▀▀▀▀▀▀║ ".to_string(),
+            " ╚══════════╝ ".to_string(),
+        ];
+    }
     const ROWS: usize = 6;
     const MAX_LEVEL: usize = 18; // 6 rows × 3 gradient steps
     const W: usize = 10;

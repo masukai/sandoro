@@ -14,6 +14,32 @@ pub fn render_progress_with_direction(
     animation_frame: u8,
     is_break: bool,
 ) -> Vec<String> {
+    render_progress_with_options(percent, animation_frame, is_break, false)
+}
+
+/// Render progress bar with all options including flowtime support
+pub fn render_progress_with_options(
+    percent: f32,
+    animation_frame: u8,
+    is_break: bool,
+    is_flowtime_work: bool,
+) -> Vec<String> {
+    // Flowtime work mode: show wave animation (no progress)
+    if is_flowtime_work {
+        let wave_patterns = [
+            "▓█▓▒░░░░░░░░░░░░░░░░",
+            "░▓█▓▒░░░░░░░░░░░░░░░",
+            "░░▓█▓▒░░░░░░░░░░░░░░",
+            "░░░▓█▓▒░░░░░░░░░░░░░",
+            "░░░░▓█▓▒░░░░░░░░░░░░",
+            "░░░░░▓█▓▒░░░░░░░░░░░",
+            "░░░░░░▓█▓▒░░░░░░░░░░",
+            "░░░░░░░▓█▓▒░░░░░░░░░",
+        ];
+        let pattern = wave_patterns[(animation_frame as usize) % 8];
+        let bar = format!("[{}]", pattern);
+        return vec![bar, "∞ FLOW".to_string()];
+    }
     let width = 20;
 
     // During break, progress shows refill (0→100 means empty→full)
