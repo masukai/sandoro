@@ -88,28 +88,160 @@ impl SettingsItem {
     pub fn label_with_lang(&self, lang: &str) -> &'static str {
         let is_ja = lang == "ja";
         match self {
-            Self::Theme => if is_ja { "テーマ" } else { "Theme" },
-            Self::AccentColor => if is_ja { "アクセントカラー" } else { "Accent Color" },
-            Self::Icon => if is_ja { "アイコン" } else { "Icon" },
-            Self::WorkDuration => if is_ja { "作業時間" } else { "Work Duration" },
-            Self::ShortBreak => if is_ja { "短い休憩" } else { "Short Break" },
-            Self::LongBreak => if is_ja { "長い休憩" } else { "Long Break" },
-            Self::AutoStart => if is_ja { "自動開始" } else { "Auto Start" },
-            Self::FocusMode => if is_ja { "フォーカスモード" } else { "Focus Mode" },
-            Self::BreakSnooze => if is_ja { "休憩延長" } else { "Break Snooze" },
-            Self::SoundEnabled => if is_ja { "サウンド" } else { "Sound" },
-            Self::DesktopNotification => if is_ja { "デスクトップ通知" } else { "Desktop Notification" },
-            Self::DailySessionsGoal => if is_ja { "1日のセッション目標" } else { "Daily Sessions Goal" },
-            Self::DailyMinutesGoal => if is_ja { "1日の作業時間目標" } else { "Daily Minutes Goal" },
-            Self::WeeklySessionsGoal => if is_ja { "週間セッション目標" } else { "Weekly Sessions Goal" },
-            Self::WeeklyMinutesGoal => if is_ja { "週間作業時間目標" } else { "Weekly Minutes Goal" },
-            Self::TagsHeader => if is_ja { "── タグ ──" } else { "── Tags ──" },
-            Self::AddTag => if is_ja { "新しいタグを追加" } else { "Add New Tag" },
-            Self::DeleteTag => if is_ja { "タグを削除" } else { "Delete Tag" },
-            Self::SessionsHeader => if is_ja { "── セッション履歴 ──" } else { "── Session History ──" },
-            Self::EditSessionTag => if is_ja { "セッションのタグを変更" } else { "Change Session Tag" },
-            Self::DeleteSession => if is_ja { "セッションを削除" } else { "Delete Session" },
-            Self::Back => if is_ja { "← タイマーに戻る" } else { "← Back to Timer" },
+            Self::Theme => {
+                if is_ja {
+                    "テーマ"
+                } else {
+                    "Theme"
+                }
+            }
+            Self::AccentColor => {
+                if is_ja {
+                    "アクセントカラー"
+                } else {
+                    "Accent Color"
+                }
+            }
+            Self::Icon => {
+                if is_ja {
+                    "アイコン"
+                } else {
+                    "Icon"
+                }
+            }
+            Self::WorkDuration => {
+                if is_ja {
+                    "作業時間"
+                } else {
+                    "Work Duration"
+                }
+            }
+            Self::ShortBreak => {
+                if is_ja {
+                    "短い休憩"
+                } else {
+                    "Short Break"
+                }
+            }
+            Self::LongBreak => {
+                if is_ja {
+                    "長い休憩"
+                } else {
+                    "Long Break"
+                }
+            }
+            Self::AutoStart => {
+                if is_ja {
+                    "自動開始"
+                } else {
+                    "Auto Start"
+                }
+            }
+            Self::FocusMode => {
+                if is_ja {
+                    "フォーカスモード"
+                } else {
+                    "Focus Mode"
+                }
+            }
+            Self::BreakSnooze => {
+                if is_ja {
+                    "休憩延長"
+                } else {
+                    "Break Snooze"
+                }
+            }
+            Self::SoundEnabled => {
+                if is_ja {
+                    "サウンド"
+                } else {
+                    "Sound"
+                }
+            }
+            Self::DesktopNotification => {
+                if is_ja {
+                    "デスクトップ通知"
+                } else {
+                    "Desktop Notification"
+                }
+            }
+            Self::DailySessionsGoal => {
+                if is_ja {
+                    "1日のセッション目標"
+                } else {
+                    "Daily Sessions Goal"
+                }
+            }
+            Self::DailyMinutesGoal => {
+                if is_ja {
+                    "1日の作業時間目標"
+                } else {
+                    "Daily Minutes Goal"
+                }
+            }
+            Self::WeeklySessionsGoal => {
+                if is_ja {
+                    "週間セッション目標"
+                } else {
+                    "Weekly Sessions Goal"
+                }
+            }
+            Self::WeeklyMinutesGoal => {
+                if is_ja {
+                    "週間作業時間目標"
+                } else {
+                    "Weekly Minutes Goal"
+                }
+            }
+            Self::TagsHeader => {
+                if is_ja {
+                    "── タグ ──"
+                } else {
+                    "── Tags ──"
+                }
+            }
+            Self::AddTag => {
+                if is_ja {
+                    "新しいタグを追加"
+                } else {
+                    "Add New Tag"
+                }
+            }
+            Self::DeleteTag => {
+                if is_ja {
+                    "タグを削除"
+                } else {
+                    "Delete Tag"
+                }
+            }
+            Self::SessionsHeader => {
+                if is_ja {
+                    "── セッション履歴 ──"
+                } else {
+                    "── Session History ──"
+                }
+            }
+            Self::EditSessionTag => {
+                if is_ja {
+                    "セッションのタグを変更"
+                } else {
+                    "Change Session Tag"
+                }
+            }
+            Self::DeleteSession => {
+                if is_ja {
+                    "セッションを削除"
+                } else {
+                    "Delete Session"
+                }
+            }
+            Self::Back => {
+                if is_ja {
+                    "← タイマーに戻る"
+                } else {
+                    "← Back to Timer"
+                }
+            }
         }
     }
 
@@ -454,7 +586,8 @@ impl App {
             _ => FocusMode::Flowtime,
         };
         // Update timer flowtime mode
-        self.timer.set_flowtime(self.config.focus.mode == FocusMode::Flowtime);
+        self.timer
+            .set_flowtime(self.config.focus.mode == FocusMode::Flowtime);
         // Save config
         let _ = self.config.save();
     }
@@ -724,10 +857,12 @@ impl App {
                         _ => FocusMode::Flowtime,
                     };
                     // Update timer flowtime mode
-                    self.timer.set_flowtime(self.config.focus.mode == FocusMode::Flowtime);
+                    self.timer
+                        .set_flowtime(self.config.focus.mode == FocusMode::Flowtime);
                 }
                 SettingsItem::BreakSnooze => {
-                    self.config.focus.break_snooze_enabled = !self.config.focus.break_snooze_enabled;
+                    self.config.focus.break_snooze_enabled =
+                        !self.config.focus.break_snooze_enabled;
                 }
                 SettingsItem::SoundEnabled => {
                     self.config.notifications.sound = !self.config.notifications.sound;
@@ -838,10 +973,12 @@ impl App {
                         _ => FocusMode::Flowtime,
                     };
                     // Update timer flowtime mode
-                    self.timer.set_flowtime(self.config.focus.mode == FocusMode::Flowtime);
+                    self.timer
+                        .set_flowtime(self.config.focus.mode == FocusMode::Flowtime);
                 }
                 SettingsItem::BreakSnooze => {
-                    self.config.focus.break_snooze_enabled = !self.config.focus.break_snooze_enabled;
+                    self.config.focus.break_snooze_enabled =
+                        !self.config.focus.break_snooze_enabled;
                 }
                 SettingsItem::SoundEnabled => {
                     self.config.notifications.sound = !self.config.notifications.sound;

@@ -66,7 +66,11 @@ fn draw_settings_view(f: &mut Frame, app: &App) {
         .split(f.area());
 
     // Header
-    let header_text = if app.config.appearance.language == "ja" { "設定" } else { "Settings" };
+    let header_text = if app.config.appearance.language == "ja" {
+        "設定"
+    } else {
+        "Settings"
+    };
     let header = Paragraph::new(Line::from(vec![
         Span::styled("  ", Style::default()),
         Span::styled(
@@ -269,7 +273,13 @@ fn draw_settings_view(f: &mut Frame, app: &App) {
             } else if value.is_empty() {
                 format!("{}{}", prefix, item.label_with_lang(lang))
             } else {
-                format!("{}{}: {}{}", prefix, item.label_with_lang(lang), value, edit_indicator)
+                format!(
+                    "{}{}: {}{}",
+                    prefix,
+                    item.label_with_lang(lang),
+                    value,
+                    edit_indicator
+                )
             };
 
             let style = if is_selected {
@@ -412,7 +422,11 @@ fn draw_main_content(f: &mut Frame, area: Rect, app: &App) {
 
     // Draw status (chunks[3])
     let lang = &app.config.appearance.language;
-    let paused_text = if lang == "ja" { "一時停止" } else { "PAUSED" };
+    let paused_text = if lang == "ja" {
+        "一時停止"
+    } else {
+        "PAUSED"
+    };
     let (status_color, status_text) = match app.timer.state {
         TimerState::Work => {
             let color = if app.timer.is_paused {
@@ -421,7 +435,11 @@ fn draw_main_content(f: &mut Frame, area: Rect, app: &App) {
                 work_color
             };
             let text = if app.timer.is_paused {
-                format!("[ {} - {} ]", app.timer.state.label_with_lang(lang), paused_text)
+                format!(
+                    "[ {} - {} ]",
+                    app.timer.state.label_with_lang(lang),
+                    paused_text
+                )
             } else {
                 format!("[ {} ]", app.timer.state.label_with_lang(lang))
             };
@@ -434,7 +452,11 @@ fn draw_main_content(f: &mut Frame, area: Rect, app: &App) {
                 short_break_color
             };
             let text = if app.timer.is_paused {
-                format!("[ {} - {} ]", app.timer.state.label_with_lang(lang), paused_text)
+                format!(
+                    "[ {} - {} ]",
+                    app.timer.state.label_with_lang(lang),
+                    paused_text
+                )
             } else {
                 format!("[ {} ]", app.timer.state.label_with_lang(lang))
             };
@@ -447,7 +469,11 @@ fn draw_main_content(f: &mut Frame, area: Rect, app: &App) {
                 long_break_color
             };
             let text = if app.timer.is_paused {
-                format!("[ {} - {} ]", app.timer.state.label_with_lang(lang), paused_text)
+                format!(
+                    "[ {} - {} ]",
+                    app.timer.state.label_with_lang(lang),
+                    paused_text
+                )
             } else {
                 format!("[ {} ]", app.timer.state.label_with_lang(lang))
             };
@@ -480,7 +506,11 @@ fn draw_main_content(f: &mut Frame, area: Rect, app: &App) {
     // Time-first layout: Today's time prominently, then session count
     let session_info = Paragraph::new(format!(
         "Today: {}  ({} sessions)    Round: {}/{}{}",
-        today_display, app.today_sessions, app.timer.session_count, app.timer.sessions_until_long_break, tag_display
+        today_display,
+        app.today_sessions,
+        app.timer.session_count,
+        app.timer.sessions_until_long_break,
+        tag_display
     ))
     .style(Style::default().fg(secondary))
     .alignment(Alignment::Center)
@@ -528,7 +558,10 @@ fn draw_footer(f: &mut Frame, area: Rect, app: &App, is_settings: bool) {
         }
     } else {
         // Timer view - show different help based on state
-        let is_break = matches!(app.timer.state, TimerState::ShortBreak | TimerState::LongBreak);
+        let is_break = matches!(
+            app.timer.state,
+            TimerState::ShortBreak | TimerState::LongBreak
+        );
         let snooze_enabled = app.config.focus.break_snooze_enabled;
 
         if is_break && snooze_enabled {

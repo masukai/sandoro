@@ -18,9 +18,27 @@ impl TimerState {
     pub fn label_with_lang(&self, lang: &str) -> &'static str {
         let is_ja = lang == "ja";
         match self {
-            TimerState::Work => if is_ja { "作業中" } else { "WORKING" },
-            TimerState::ShortBreak => if is_ja { "短い休憩" } else { "SHORT BREAK" },
-            TimerState::LongBreak => if is_ja { "長い休憩" } else { "LONG BREAK" },
+            TimerState::Work => {
+                if is_ja {
+                    "作業中"
+                } else {
+                    "WORKING"
+                }
+            }
+            TimerState::ShortBreak => {
+                if is_ja {
+                    "短い休憩"
+                } else {
+                    "SHORT BREAK"
+                }
+            }
+            TimerState::LongBreak => {
+                if is_ja {
+                    "長い休憩"
+                } else {
+                    "LONG BREAK"
+                }
+            }
         }
     }
 }
