@@ -28,20 +28,76 @@ pub fn render_tomato_with_options(
     // Flowtime work mode: show pulsing tomatoes animation
     if is_flowtime_work {
         let pulse_frame = animation_frame % 2;
-        let fill = if pulse_frame == 0 { "▓▓▓▓" } else { "░░░░" };
+        let fill = if pulse_frame == 0 {
+            "▓▓▓▓"
+        } else {
+            "░░░░"
+        };
         let base_tomatoes = vec![
             "      |              |    ".to_string(),
             "    \\ | /          \\ | /  ".to_string(),
             "   \\ \\|/ /        \\ \\|/ / ".to_string(),
             format!("  /::{}::\\     /::{}::\\  ", fill, fill),
-            format!(" /::{}::\\   /::{}::\\ ", if pulse_frame == 0 { "▓▓▓▓▓▓" } else { "░░░░░░" }, if pulse_frame == 0 { "▓▓▓▓▓▓" } else { "░░░░░░" }),
-            format!("|::{}::| |::{}::|", if pulse_frame == 0 { "▓▓▓▓▓▓▓▓" } else { "░░░░░░░░" }, if pulse_frame == 0 { "▓▓▓▓▓▓▓▓" } else { "░░░░░░░░" }),
-            format!("|::{}::| |::{}::|", if pulse_frame == 0 { "▓▓▓▓▓▓▓▓" } else { "░░░░░░░░" }, if pulse_frame == 0 { "▓▓▓▓▓▓▓▓" } else { "░░░░░░░░" }),
-            format!(" \\::{}::/   \\::{}::/ ", if pulse_frame == 0 { "▓▓▓▓▓▓" } else { "░░░░░░" }, if pulse_frame == 0 { "▓▓▓▓▓▓" } else { "░░░░░░" }),
+            format!(
+                " /::{}::\\   /::{}::\\ ",
+                if pulse_frame == 0 {
+                    "▓▓▓▓▓▓"
+                } else {
+                    "░░░░░░"
+                },
+                if pulse_frame == 0 {
+                    "▓▓▓▓▓▓"
+                } else {
+                    "░░░░░░"
+                }
+            ),
+            format!(
+                "|::{}::| |::{}::|",
+                if pulse_frame == 0 {
+                    "▓▓▓▓▓▓▓▓"
+                } else {
+                    "░░░░░░░░"
+                },
+                if pulse_frame == 0 {
+                    "▓▓▓▓▓▓▓▓"
+                } else {
+                    "░░░░░░░░"
+                }
+            ),
+            format!(
+                "|::{}::| |::{}::|",
+                if pulse_frame == 0 {
+                    "▓▓▓▓▓▓▓▓"
+                } else {
+                    "░░░░░░░░"
+                },
+                if pulse_frame == 0 {
+                    "▓▓▓▓▓▓▓▓"
+                } else {
+                    "░░░░░░░░"
+                }
+            ),
+            format!(
+                " \\::{}::/   \\::{}::/ ",
+                if pulse_frame == 0 {
+                    "▓▓▓▓▓▓"
+                } else {
+                    "░░░░░░"
+                },
+                if pulse_frame == 0 {
+                    "▓▓▓▓▓▓"
+                } else {
+                    "░░░░░░"
+                }
+            ),
             format!("  \\::{}::/     \\::{}::/  ", fill, fill),
             "    \\::::/         \\::::/   ".to_string(),
         ];
-        let flow_indicator = if pulse_frame == 0 { "∞ FLOW ∞" } else { " ∞ FLOW " };
+        let flow_indicator = if pulse_frame == 0 {
+            "∞ FLOW ∞"
+        } else {
+            " ∞ FLOW "
+        };
         let mut result = vec![format!("~~~~════{}════~~~~", flow_indicator)];
         result.extend(base_tomatoes);
         return result;

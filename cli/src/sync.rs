@@ -192,7 +192,9 @@ pub fn sync(conn: &Connection) -> Result<SyncResult> {
     let creds = match auth::load_credentials()? {
         Some(c) => c,
         None => {
-            result.errors.push("Not logged in. Run 'sandoro login' first.".to_string());
+            result
+                .errors
+                .push("Not logged in. Run 'sandoro login' first.".to_string());
             return Ok(result);
         }
     };
@@ -204,7 +206,9 @@ pub fn sync(conn: &Connection) -> Result<SyncResult> {
     let client = match SupabaseClient::new()? {
         Some(c) => c,
         None => {
-            result.errors.push("Failed to create Supabase client".to_string());
+            result
+                .errors
+                .push("Failed to create Supabase client".to_string());
             return Ok(result);
         }
     };
@@ -234,7 +238,9 @@ pub fn sync(conn: &Connection) -> Result<SyncResult> {
                     result.uploaded += 1;
                 }
                 Err(e) => {
-                    result.errors.push(format!("Failed to upload session {}: {}", local.id, e));
+                    result
+                        .errors
+                        .push(format!("Failed to upload session {}: {}", local.id, e));
                 }
             }
         }
@@ -263,7 +269,9 @@ pub fn sync(conn: &Connection) -> Result<SyncResult> {
             match insert_cloud_session(conn, session) {
                 Ok(_) => result.downloaded += 1,
                 Err(e) => {
-                    result.errors.push(format!("Failed to insert session: {}", e));
+                    result
+                        .errors
+                        .push(format!("Failed to insert session: {}", e));
                 }
             }
         }
@@ -429,8 +437,12 @@ pub fn get_sync_status(conn: &Connection) -> Result<String> {
             )
             .unwrap_or(0)
         } else {
-            conn.query_row("SELECT COUNT(*) FROM sessions WHERE completed = 1", [], |row| row.get(0))
-                .unwrap_or(0)
+            conn.query_row(
+                "SELECT COUNT(*) FROM sessions WHERE completed = 1",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap_or(0)
         }
     };
 
@@ -448,7 +460,10 @@ pub fn get_sync_status(conn: &Connection) -> Result<String> {
     }
 
     if let Some(sync_time) = last_sync {
-        status.push_str(&format!("Last sync: {}\n", sync_time.format("%Y-%m-%d %H:%M:%S UTC")));
+        status.push_str(&format!(
+            "Last sync: {}\n",
+            sync_time.format("%Y-%m-%d %H:%M:%S UTC")
+        ));
     } else {
         status.push_str("Never synced\n");
     }

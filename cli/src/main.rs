@@ -352,20 +352,14 @@ fn show_stats(
         let stats = db.get_date_stats(&date_str)?;
         println!("  📅 {}", stats.date);
         println!();
-        println!(
-            "     ⏱  {}",
-            format_duration(stats.total_work_seconds)
-        );
+        println!("     ⏱  {}", format_duration(stats.total_work_seconds));
         println!("     📊 {} sessions", stats.sessions_completed);
     } else if month {
         // Monthly stats (last 30 days)
         let stats = db.get_month_stats()?;
         println!("  📅 Last 30 Days");
         println!();
-        println!(
-            "     ⏱  {}",
-            format_duration(stats.total_work_seconds)
-        );
+        println!("     ⏱  {}", format_duration(stats.total_work_seconds));
         println!("     📊 {} sessions", stats.sessions_completed);
         println!();
 
@@ -390,10 +384,7 @@ fn show_stats(
         let stats = db.get_week_stats()?;
         println!("  📅 Last 7 Days");
         println!();
-        println!(
-            "     ⏱  {}",
-            format_duration(stats.total_work_seconds)
-        );
+        println!("     ⏱  {}", format_duration(stats.total_work_seconds));
         println!("     📊 {} sessions", stats.sessions_completed);
         println!();
 
@@ -415,10 +406,7 @@ fn show_stats(
         let stats = db.get_today_stats()?;
         println!("  📅 Today ({})", stats.date);
         println!();
-        println!(
-            "     ⏱  {}",
-            format_duration(stats.total_work_seconds)
-        );
+        println!("     ⏱  {}", format_duration(stats.total_work_seconds));
         println!("     📊 {} sessions", stats.sessions_completed);
     }
 
@@ -1131,14 +1119,20 @@ fn handle_login(provider: &str) -> Result<()> {
     // Validate provider
     let provider = provider.to_lowercase();
     if provider != "google" && provider != "github" {
-        println!("Error: Invalid provider '{}'. Use 'google' or 'github'.", provider);
+        println!(
+            "Error: Invalid provider '{}'. Use 'google' or 'github'.",
+            provider
+        );
         return Ok(());
     }
 
     // Check if already logged in
     if auth::is_logged_in() {
         if let Ok(Some((user_id, email))) = auth::get_current_user() {
-            println!("Already logged in as: {}", email.as_deref().unwrap_or(&user_id));
+            println!(
+                "Already logged in as: {}",
+                email.as_deref().unwrap_or(&user_id)
+            );
             println!("Use 'sandoro logout' to log out first.");
             return Ok(());
         }
@@ -1151,7 +1145,10 @@ fn handle_login(provider: &str) -> Result<()> {
         Ok(creds) => {
             println!();
             println!("✓ Successfully logged in!");
-            println!("  User: {}", creds.email.as_deref().unwrap_or(&creds.user_id));
+            println!(
+                "  User: {}",
+                creds.email.as_deref().unwrap_or(&creds.user_id)
+            );
             println!();
             println!("Your sessions will now sync with the cloud.");
             println!("Run 'sandoro sync' to sync existing sessions.");
@@ -1171,9 +1168,7 @@ fn handle_logout() -> Result<()> {
     }
 
     // Get user info before logout
-    let user_info = auth::get_current_user()?.map(|(id, email)| {
-        email.unwrap_or(id)
-    });
+    let user_info = auth::get_current_user()?.map(|(id, email)| email.unwrap_or(id));
 
     auth::delete_credentials()?;
 

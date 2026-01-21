@@ -109,7 +109,10 @@ fn refresh_token(creds: &Credentials) -> Result<Option<Credentials>> {
     let client = reqwest::blocking::Client::new();
 
     let response = client
-        .post(format!("{}/auth/v1/token?grant_type=refresh_token", SUPABASE_URL))
+        .post(format!(
+            "{}/auth/v1/token?grant_type=refresh_token",
+            SUPABASE_URL
+        ))
         .header("apikey", SUPABASE_ANON_KEY)
         .header("Content-Type", "application/json")
         .json(&serde_json::json!({
@@ -125,9 +128,9 @@ fn refresh_token(creds: &Credentials) -> Result<Option<Credentials>> {
 
     let session: AuthSession = response.json()?;
     let now = chrono::Utc::now().timestamp();
-    let expires_at = session.expires_at.unwrap_or_else(|| {
-        now + session.expires_in.unwrap_or(3600)
-    });
+    let expires_at = session
+        .expires_at
+        .unwrap_or_else(|| now + session.expires_in.unwrap_or(3600));
 
     let new_creds = Credentials {
         access_token: session.access_token,
@@ -163,7 +166,10 @@ pub fn login(provider: &str) -> Result<Credentials> {
 
     // Open browser
     if let Err(e) = open::that(&auth_url) {
-        eprintln!("Failed to open browser: {}. Please open the URL manually.", e);
+        eprintln!(
+            "Failed to open browser: {}. Please open the URL manually.",
+            e
+        );
     }
 
     println!("\nWaiting for authentication...");
@@ -206,16 +212,17 @@ fn wait_for_callback(server: &Server) -> Result<(String, String)> {
                     // First try query params
                     let params: std::collections::HashMap<_, _> = url.query_pairs().collect();
 
-                    if let (Some(access), Some(refresh)) = (
-                        params.get("access_token"),
-                        params.get("refresh_token")
-                    ) {
+                    if let (Some(access), Some(refresh)) =
+                        (params.get("access_token"), params.get("refresh_token"))
+                    {
                         // Send success page with proper Content-Type
-                        let response = Response::from_string(success_html())
-                            .with_header(tiny_http::Header::from_bytes(
+                        let response = Response::from_string(success_html()).with_header(
+                            tiny_http::Header::from_bytes(
                                 &b"Content-Type"[..],
                                 &b"text/html; charset=utf-8"[..],
-                            ).unwrap());
+                            )
+                            .unwrap(),
+                        );
                         let _ = request.respond(response);
 
                         return Ok((access.to_string(), refresh.to_string()));
@@ -223,11 +230,10 @@ fn wait_for_callback(server: &Server) -> Result<(String, String)> {
 
                     // If no tokens in query, send page that extracts from fragment
                     let html = fragment_extractor_html();
-                    let response = Response::from_string(html)
-                        .with_header(tiny_http::Header::from_bytes(
-                            &b"Content-Type"[..],
-                            &b"text/html"[..],
-                        ).unwrap());
+                    let response = Response::from_string(html).with_header(
+                        tiny_http::Header::from_bytes(&b"Content-Type"[..], &b"text/html"[..])
+                            .unwrap(),
+                    );
                     let _ = request.respond(response);
                     continue;
                 }
@@ -236,16 +242,17 @@ fn wait_for_callback(server: &Server) -> Result<(String, String)> {
                 if url.path() == "/token" {
                     let params: std::collections::HashMap<_, _> = url.query_pairs().collect();
 
-                    if let (Some(access), Some(refresh)) = (
-                        params.get("access_token"),
-                        params.get("refresh_token")
-                    ) {
+                    if let (Some(access), Some(refresh)) =
+                        (params.get("access_token"), params.get("refresh_token"))
+                    {
                         // Send final success page with proper Content-Type
-                        let response = Response::from_string(success_html())
-                            .with_header(tiny_http::Header::from_bytes(
+                        let response = Response::from_string(success_html()).with_header(
+                            tiny_http::Header::from_bytes(
                                 &b"Content-Type"[..],
                                 &b"text/html; charset=utf-8"[..],
-                            ).unwrap());
+                            )
+                            .unwrap(),
+                        );
                         let _ = request.respond(response);
 
                         return Ok((access.to_string(), refresh.to_string()));
@@ -330,7 +337,8 @@ fn success_html() -> String {
         <p>You can close this window and return to the terminal.</p>
     </div>
 </body>
-</html>"#.to_string()
+</html>"#
+        .to_string()
 }
 
 /// HTML page that extracts tokens from URL fragment
