@@ -351,29 +351,31 @@ fn show_stats(
         // Specific date stats
         let stats = db.get_date_stats(&date_str)?;
         println!("  📅 {}", stats.date);
+        println!();
         println!(
-            "     Total time:  {}",
+            "     ⏱  {}",
             format_duration(stats.total_work_seconds)
         );
-        println!("     Sessions:    {}", stats.sessions_completed);
+        println!("     📊 {} sessions", stats.sessions_completed);
     } else if month {
         // Monthly stats (last 30 days)
         let stats = db.get_month_stats()?;
         println!("  📅 Last 30 Days");
+        println!();
         println!(
-            "     Total time:  {}",
+            "     ⏱  {}",
             format_duration(stats.total_work_seconds)
         );
-        println!("     Sessions:    {}", stats.sessions_completed);
+        println!("     📊 {} sessions", stats.sessions_completed);
         println!();
 
-        // Daily breakdown
+        // Daily breakdown (time-focused)
         let daily = db.get_daily_stats(30)?;
         if !daily.is_empty() {
             println!("  Daily breakdown:");
             for s in daily.iter().take(10) {
                 println!(
-                    "     {} │ {} │ {} sessions",
+                    "     {} │ {:>8} │ {} sessions",
                     s.date,
                     format_duration(s.total_work_seconds),
                     s.sessions_completed
@@ -387,20 +389,21 @@ fn show_stats(
         // Weekly stats (last 7 days)
         let stats = db.get_week_stats()?;
         println!("  📅 Last 7 Days");
+        println!();
         println!(
-            "     Total time:  {}",
+            "     ⏱  {}",
             format_duration(stats.total_work_seconds)
         );
-        println!("     Sessions:    {}", stats.sessions_completed);
+        println!("     📊 {} sessions", stats.sessions_completed);
         println!();
 
-        // Daily breakdown
+        // Daily breakdown (time-focused)
         let daily = db.get_daily_stats(7)?;
         if !daily.is_empty() {
             println!("  Daily breakdown:");
             for s in &daily {
                 println!(
-                    "     {} │ {} │ {} sessions",
+                    "     {} │ {:>8} │ {} sessions",
                     s.date,
                     format_duration(s.total_work_seconds),
                     s.sessions_completed
@@ -408,14 +411,15 @@ fn show_stats(
             }
         }
     } else {
-        // Default: Today's stats (day flag or no flag)
+        // Default: Today's stats (day flag or no flag) - time prominently displayed
         let stats = db.get_today_stats()?;
         println!("  📅 Today ({})", stats.date);
+        println!();
         println!(
-            "     Total time:  {}",
+            "     ⏱  {}",
             format_duration(stats.total_work_seconds)
         );
-        println!("     Sessions:    {}", stats.sessions_completed);
+        println!("     📊 {} sessions", stats.sessions_completed);
     }
 
     // Show goal progress if requested or if goals are set
@@ -495,7 +499,7 @@ fn calculate_change(current: i32, previous: i32) -> String {
     }
 }
 
-/// Show goal progress
+/// Show goal progress (time-focused: minutes goals shown first)
 fn show_goal_progress(db: &db::Database, config: &Config) -> Result<()> {
     let today_stats = db.get_today_stats()?;
     let week_stats = db.get_week_stats()?;
@@ -516,6 +520,24 @@ fn show_goal_progress(db: &db::Database, config: &Config) -> Result<()> {
         println!();
         println!("  📅 Daily");
 
+        // Time goal first (primary metric)
+        if config.goals.daily_minutes > 0 {
+            let today_minutes = today_stats.total_work_seconds / 60;
+            let progress = (today_minutes as f64 / config.goals.daily_minutes as f64 * 100.0)
+                .min(100.0) as u32;
+            let bar = if is_rainbow && progress < 100 {
+                create_rainbow_progress_bar(progress, 20)
+            } else {
+                create_progress_bar(progress, 20)
+            };
+            let check = if progress >= 100 { "✓" } else { " " };
+            println!(
+                "     ⏱  Time:     {} {}m/{}m [{}] {}%",
+                check, today_minutes, config.goals.daily_minutes, bar, progress
+            );
+        }
+
+        // Sessions goal second (secondary metric)
         if config.goals.daily_sessions > 0 {
             let progress = (today_stats.sessions_completed as f64
                 / config.goals.daily_sessions as f64
@@ -528,24 +550,8 @@ fn show_goal_progress(db: &db::Database, config: &Config) -> Result<()> {
             };
             let check = if progress >= 100 { "✓" } else { " " };
             println!(
-                "     Sessions: {} {}/{} [{}] {}%",
+                "     📊 Sessions: {} {}/{} [{}] {}%",
                 check, today_stats.sessions_completed, config.goals.daily_sessions, bar, progress
-            );
-        }
-
-        if config.goals.daily_minutes > 0 {
-            let today_minutes = today_stats.total_work_seconds / 60;
-            let progress = (today_minutes as f64 / config.goals.daily_minutes as f64 * 100.0)
-                .min(100.0) as u32;
-            let bar = if is_rainbow && progress < 100 {
-                create_rainbow_progress_bar(progress, 20)
-            } else {
-                create_progress_bar(progress, 20)
-            };
-            let check = if progress >= 100 { "✓" } else { " " };
-            println!(
-                "     Minutes:  {} {}/{} [{}] {}%",
-                check, today_minutes, config.goals.daily_minutes, bar, progress
             );
         }
     }
@@ -554,6 +560,24 @@ fn show_goal_progress(db: &db::Database, config: &Config) -> Result<()> {
         println!();
         println!("  📅 Weekly");
 
+        // Time goal first (primary metric)
+        if config.goals.weekly_minutes > 0 {
+            let week_minutes = week_stats.total_work_seconds / 60;
+            let progress = (week_minutes as f64 / config.goals.weekly_minutes as f64 * 100.0)
+                .min(100.0) as u32;
+            let bar = if is_rainbow && progress < 100 {
+                create_rainbow_progress_bar(progress, 20)
+            } else {
+                create_progress_bar(progress, 20)
+            };
+            let check = if progress >= 100 { "✓" } else { " " };
+            println!(
+                "     ⏱  Time:     {} {}m/{}m [{}] {}%",
+                check, week_minutes, config.goals.weekly_minutes, bar, progress
+            );
+        }
+
+        // Sessions goal second (secondary metric)
         if config.goals.weekly_sessions > 0 {
             let progress = (week_stats.sessions_completed as f64
                 / config.goals.weekly_sessions as f64
@@ -566,24 +590,8 @@ fn show_goal_progress(db: &db::Database, config: &Config) -> Result<()> {
             };
             let check = if progress >= 100 { "✓" } else { " " };
             println!(
-                "     Sessions: {} {}/{} [{}] {}%",
+                "     📊 Sessions: {} {}/{} [{}] {}%",
                 check, week_stats.sessions_completed, config.goals.weekly_sessions, bar, progress
-            );
-        }
-
-        if config.goals.weekly_minutes > 0 {
-            let week_minutes = week_stats.total_work_seconds / 60;
-            let progress = (week_minutes as f64 / config.goals.weekly_minutes as f64 * 100.0)
-                .min(100.0) as u32;
-            let bar = if is_rainbow && progress < 100 {
-                create_rainbow_progress_bar(progress, 20)
-            } else {
-                create_progress_bar(progress, 20)
-            };
-            let check = if progress >= 100 { "✓" } else { " " };
-            println!(
-                "     Minutes:  {} {}/{} [{}] {}%",
-                check, week_minutes, config.goals.weekly_minutes, bar, progress
             );
         }
     }
@@ -624,25 +632,25 @@ fn create_rainbow_progress_bar(percent: u32, width: usize) -> String {
     result
 }
 
-/// Show comparison with previous period
+/// Show comparison with previous period (time-focused display)
 fn show_comparison(db: &db::Database) -> Result<()> {
     println!("  📈 Comparison");
     println!("  ─────────────");
     println!();
 
-    // This week vs last week
+    // This week vs last week (time is primary metric)
     let this_week = db.get_week_stats()?;
     let last_week = db.get_previous_week_stats()?;
 
     println!("  📅 This Week vs Last Week");
     println!(
-        "     Time:     {} vs {} ({})",
+        "     ⏱  {} vs {} ({})",
         format_duration(this_week.total_work_seconds),
         format_duration(last_week.total_work_seconds),
         calculate_change(this_week.total_work_seconds, last_week.total_work_seconds)
     );
     println!(
-        "     Sessions: {} vs {} ({})",
+        "     📊 {} vs {} sessions ({})",
         this_week.sessions_completed,
         last_week.sessions_completed,
         calculate_change(this_week.sessions_completed, last_week.sessions_completed)
@@ -650,19 +658,19 @@ fn show_comparison(db: &db::Database) -> Result<()> {
 
     println!();
 
-    // This month vs last month
+    // This month vs last month (time is primary metric)
     let this_month = db.get_month_stats()?;
     let last_month = db.get_previous_month_stats()?;
 
     println!("  📅 This Month vs Last Month");
     println!(
-        "     Time:     {} vs {} ({})",
+        "     ⏱  {} vs {} ({})",
         format_duration(this_month.total_work_seconds),
         format_duration(last_month.total_work_seconds),
         calculate_change(this_month.total_work_seconds, last_month.total_work_seconds)
     );
     println!(
-        "     Sessions: {} vs {} ({})",
+        "     📊 {} vs {} sessions ({})",
         this_month.sessions_completed,
         last_month.sessions_completed,
         calculate_change(this_month.sessions_completed, last_month.sessions_completed)

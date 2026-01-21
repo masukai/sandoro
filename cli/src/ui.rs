@@ -66,10 +66,11 @@ fn draw_settings_view(f: &mut Frame, app: &App) {
         .split(f.area());
 
     // Header
+    let header_text = if app.config.appearance.language == "ja" { "設定" } else { "Settings" };
     let header = Paragraph::new(Line::from(vec![
         Span::styled("  ", Style::default()),
         Span::styled(
-            "Settings",
+            header_text,
             Style::default().add_modifier(Modifier::BOLD).fg(fg),
         ),
     ]))
@@ -102,6 +103,20 @@ fn draw_settings_view(f: &mut Frame, app: &App) {
                 SettingsItem::LongBreak => format!("{} min", app.config.timer.long_break),
                 SettingsItem::AutoStart => {
                     if app.config.timer.auto_start {
+                        "ON".to_string()
+                    } else {
+                        "OFF".to_string()
+                    }
+                }
+                SettingsItem::FocusMode => {
+                    let modes = [
+                        "🍅 Classic (fixed intervals)",
+                        "🌊 Flowtime (work as long as you want)",
+                    ];
+                    modes[app.focus_mode_index].to_string()
+                }
+                SettingsItem::BreakSnooze => {
+                    if app.config.focus.break_snooze_enabled {
                         "ON".to_string()
                     } else {
                         "OFF".to_string()
@@ -244,16 +259,17 @@ fn draw_settings_view(f: &mut Frame, app: &App) {
                 ""
             };
 
+            let lang = &app.config.appearance.language;
             let content = if matches!(
                 item,
                 SettingsItem::TagsHeader | SettingsItem::SessionsHeader
             ) {
                 // Header: show label on left, value on right without ":"
-                format!("{}{} {}", prefix, item.label(), value)
+                format!("{}{} {}", prefix, item.label_with_lang(lang), value)
             } else if value.is_empty() {
-                format!("{}{}", prefix, item.label())
+                format!("{}{}", prefix, item.label_with_lang(lang))
             } else {
-                format!("{}{}: {}{}", prefix, item.label(), value, edit_indicator)
+                format!("{}{}: {}{}", prefix, item.label_with_lang(lang), value, edit_indicator)
             };
 
             let style = if is_selected {
@@ -336,6 +352,8 @@ fn draw_main_content(f: &mut Frame, area: Rect, app: &App) {
         icon_state.percent = progress;
         icon_state.animation_frame = app.animation_frame;
         icon_state.is_animating = !app.timer.is_paused;
+        // Flowtime work mode: timer is flowtime and in work state
+        icon_state.is_flowtime_work = app.timer.is_flowtime && !is_break;
         icon_state.render_with_direction(is_break)
     };
 
@@ -386,13 +404,15 @@ fn draw_main_content(f: &mut Frame, area: Rect, app: &App) {
     f.render_widget(spacer, chunks[1]);
 
     // Draw timer (chunks[2])
-    let timer_text = Paragraph::new(app.timer.formatted_time())
+    let timer_text = Paragraph::new(app.timer.formatted_display_time())
         .style(Style::default().add_modifier(Modifier::BOLD))
         .alignment(Alignment::Center)
         .block(Block::default().borders(Borders::LEFT | Borders::RIGHT));
     f.render_widget(timer_text, chunks[2]);
 
     // Draw status (chunks[3])
+    let lang = &app.config.appearance.language;
+    let paused_text = if lang == "ja" { "一時停止" } else { "PAUSED" };
     let (status_color, status_text) = match app.timer.state {
         TimerState::Work => {
             let color = if app.timer.is_paused {
@@ -401,9 +421,9 @@ fn draw_main_content(f: &mut Frame, area: Rect, app: &App) {
                 work_color
             };
             let text = if app.timer.is_paused {
-                format!("[ {} - PAUSED ]", app.timer.state.label())
+                format!("[ {} - {} ]", app.timer.state.label_with_lang(lang), paused_text)
             } else {
-                format!("[ {} ]", app.timer.state.label())
+                format!("[ {} ]", app.timer.state.label_with_lang(lang))
             };
             (color, text)
         }
@@ -414,9 +434,9 @@ fn draw_main_content(f: &mut Frame, area: Rect, app: &App) {
                 short_break_color
             };
             let text = if app.timer.is_paused {
-                format!("[ {} - PAUSED ]", app.timer.state.label())
+                format!("[ {} - {} ]", app.timer.state.label_with_lang(lang), paused_text)
             } else {
-                format!("[ {} ]", app.timer.state.label())
+                format!("[ {} ]", app.timer.state.label_with_lang(lang))
             };
             (color, text)
         }
@@ -427,9 +447,9 @@ fn draw_main_content(f: &mut Frame, area: Rect, app: &App) {
                 long_break_color
             };
             let text = if app.timer.is_paused {
-                format!("[ {} - PAUSED ]", app.timer.state.label())
+                format!("[ {} - {} ]", app.timer.state.label_with_lang(lang), paused_text)
             } else {
-                format!("[ {} ]", app.timer.state.label())
+                format!("[ {} ]", app.timer.state.label_with_lang(lang))
             };
             (color, text)
         }
@@ -441,7 +461,7 @@ fn draw_main_content(f: &mut Frame, area: Rect, app: &App) {
         .block(Block::default().borders(Borders::LEFT | Borders::RIGHT));
     f.render_widget(status, chunks[3]);
 
-    // Draw session info (chunks[4])
+    // Draw session info (chunks[4]) - prioritize time display
     let hours = app.today_work_seconds / 3600;
     let minutes = (app.today_work_seconds % 3600) / 60;
     let today_display = if hours > 0 {
@@ -457,9 +477,10 @@ fn draw_main_content(f: &mut Frame, area: Rect, app: &App) {
     } else {
         String::new()
     };
+    // Time-first layout: Today's time prominently, then session count
     let session_info = Paragraph::new(format!(
-        "Session: {}/{}    Today: {}{}",
-        app.timer.session_count, app.timer.sessions_until_long_break, today_display, tag_display
+        "Today: {}  ({} sessions)    Round: {}/{}{}",
+        today_display, app.today_sessions, app.timer.session_count, app.timer.sessions_until_long_break, tag_display
     ))
     .style(Style::default().fg(secondary))
     .alignment(Alignment::Center)
@@ -505,10 +526,18 @@ fn draw_footer(f: &mut Frame, area: Rect, app: &App, is_settings: bool) {
         } else {
             "  [↑↓/jk] Navigate  [Enter] Select  [Tab] Back  [q] Quit"
         }
-    } else if !app.available_tags.is_empty() {
-        "  [Space] Start/Pause  [r] Reset  [s] Skip  [t] Tag  [Tab] Settings  [q] Quit"
     } else {
-        "  [Space] Start/Pause  [r] Reset  [R] Full Reset  [s] Skip  [Tab] Settings  [q] Quit"
+        // Timer view - show different help based on state
+        let is_break = matches!(app.timer.state, TimerState::ShortBreak | TimerState::LongBreak);
+        let snooze_enabled = app.config.focus.break_snooze_enabled;
+
+        if is_break && snooze_enabled {
+            "  [Space] Pause  [r] Reset  [s] Skip  [m] Mode  [z] Snooze  [Tab] Settings  [q] Quit"
+        } else if !app.available_tags.is_empty() {
+            "  [Space] Pause  [r] Reset  [s] Skip  [t] Tag  [m] Mode  [Tab] Settings  [q] Quit"
+        } else {
+            "  [Space] Pause  [r] Reset  [s] Skip  [m] Mode  [Tab] Settings  [q] Quit"
+        }
     };
 
     let footer = Paragraph::new(help_text)
