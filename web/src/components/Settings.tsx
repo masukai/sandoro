@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTheme, ThemeMode, ACCENT_COLORS } from '../hooks/useTheme';
-import { useSettings, useTags, type IconType, type Language } from '../hooks/useSupabaseSettings';
+import { useSettings, useTags, type IconType, type Language, type FocusMode } from '../hooks/useSupabaseSettings';
 import { useNotification } from '../hooks/useNotification';
 import { useSound, SOUND_PATTERN_OPTIONS } from '../hooks/useSound';
 import { useAuth } from '../hooks/useAuth';
@@ -23,6 +23,11 @@ const ICON_OPTIONS: { value: IconType; label: string; icon: string }[] = [
   { value: 'hourglass', label: 'Glass', icon: '⏳' },
   { value: 'tomato', label: 'Tomato', icon: '🍅' },
   { value: 'coffee', label: 'Coffee', icon: '☕' },
+];
+
+const FOCUS_MODE_OPTIONS: { value: FocusMode; label: string; icon: string; descriptionEn: string; descriptionJa: string }[] = [
+  { value: 'classic', label: 'Classic', icon: '🍅', descriptionEn: 'Classic Pomodoro: fixed work/break intervals', descriptionJa: 'クラシック：固定の作業/休憩時間' },
+  { value: 'flowtime', label: 'Flow', icon: '🌊', descriptionEn: 'Flowtime: work until you want to stop, break = work time / 5', descriptionJa: 'フロー：好きなだけ作業、休憩 = 作業時間 ÷ 5' },
 ];
 
 interface NumberInputProps {
@@ -240,13 +245,17 @@ export function Settings() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="text-base font-bold">Settings</h2>
+      <h2 className="text-base font-bold">{settings.language === 'ja' ? '設定' : 'Settings'}</h2>
 
       {/* Theme Section */}
       <div className="flex flex-col gap-2">
-        <h3 className="text-xs font-semibold" style={{ color: 'var(--sandoro-secondary)' }}>Appearance</h3>
+        <h3 className="text-xs font-semibold" style={{ color: 'var(--sandoro-secondary)' }}>
+          {settings.language === 'ja' ? '外観' : 'Appearance'}
+        </h3>
         <div className="flex items-center gap-2">
-          <span className="text-xs w-12" style={{ color: 'var(--sandoro-fg)' }}>Mode:</span>
+          <span className="text-xs w-12" style={{ color: 'var(--sandoro-fg)' }}>
+            {settings.language === 'ja' ? 'モード:' : 'Mode:'}
+          </span>
           <div className="flex gap-0.5 rounded-lg p-0.5 bg-sandoro-secondary/20">
             {THEME_OPTIONS.map((option) => {
               const isSelected = mode === option.value;
@@ -272,7 +281,9 @@ export function Settings() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs w-12" style={{ color: 'var(--sandoro-fg)' }}>Accent:</span>
+          <span className="text-xs w-12" style={{ color: 'var(--sandoro-fg)' }}>
+            {settings.language === 'ja' ? 'カラー:' : 'Accent:'}
+          </span>
           <div className="flex gap-0.5 flex-wrap rounded-lg p-0.5 bg-sandoro-secondary/20">
             {ACCENT_COLORS.map((accent) => {
               const isSelected = accentColor === accent.value;
@@ -304,7 +315,9 @@ export function Settings() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs w-12" style={{ color: 'var(--sandoro-fg)' }}>Icon:</span>
+          <span className="text-xs w-12" style={{ color: 'var(--sandoro-fg)' }}>
+            {settings.language === 'ja' ? 'アイコン:' : 'Icon:'}
+          </span>
           <div className="flex gap-0.5 rounded-lg p-0.5 bg-sandoro-secondary/20">
             {ICON_OPTIONS.map((option) => {
               const isSelected = settings.icon === option.value;
@@ -330,7 +343,9 @@ export function Settings() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs w-12" style={{ color: 'var(--sandoro-fg)' }}>Lang:</span>
+          <span className="text-xs w-12" style={{ color: 'var(--sandoro-fg)' }}>
+            {settings.language === 'ja' ? '言語:' : 'Lang:'}
+          </span>
           <div className="flex gap-0.5 rounded-lg p-0.5 bg-sandoro-secondary/20">
             {LANGUAGE_OPTIONS.map((option) => {
               const isSelected = settings.language === option.value;
@@ -359,10 +374,12 @@ export function Settings() {
 
       {/* Notifications & Sound Section */}
       <div className="flex flex-col gap-2">
-        <h3 className="text-xs font-semibold text-sandoro-secondary">Notifications & Sound</h3>
+        <h3 className="text-xs font-semibold text-sandoro-secondary">
+          {settings.language === 'ja' ? '通知とサウンド' : 'Notifications & Sound'}
+        </h3>
         <div className="flex flex-col gap-2 bg-sandoro-secondary/10 rounded-lg p-3">
           <ToggleButton
-            label="Notifications"
+            label={settings.language === 'ja' ? '通知' : 'Notifications'}
             enabled={settings.notificationsEnabled && permission === 'granted'}
             onToggle={handleNotificationToggle}
             isRainbow={isRainbow}
@@ -375,7 +392,7 @@ export function Settings() {
             }
           />
           <ToggleButton
-            label="Sound"
+            label={settings.language === 'ja' ? 'サウンド' : 'Sound'}
             enabled={settings.soundEnabled}
             onToggle={handleSoundToggle}
             isRainbow={isRainbow}
@@ -386,7 +403,7 @@ export function Settings() {
                   className="px-2 py-0.5 text-xs rounded border border-sandoro-secondary/50 hover:border-sandoro-primary transition-colors"
                   style={{ color: 'var(--sandoro-secondary)' }}
                 >
-                  Test
+                  {settings.language === 'ja' ? 'テスト' : 'Test'}
                 </button>
               )
             }
@@ -394,7 +411,9 @@ export function Settings() {
           {settings.soundEnabled && (
             <>
               <div className="flex items-center justify-between">
-                <span className="text-xs" style={{ color: 'var(--sandoro-fg)' }}>Volume</span>
+                <span className="text-xs" style={{ color: 'var(--sandoro-fg)' }}>
+                  {settings.language === 'ja' ? '音量' : 'Volume'}
+                </span>
                 <div className="flex items-center gap-1.5">
                   <input
                     type="range"
@@ -409,7 +428,9 @@ export function Settings() {
                 </div>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs" style={{ color: 'var(--sandoro-fg)' }}>Sound Type</span>
+                <span className="text-xs" style={{ color: 'var(--sandoro-fg)' }}>
+                  {settings.language === 'ja' ? 'サウンドの種類' : 'Sound Type'}
+                </span>
                 <div className="flex gap-0.5 flex-wrap rounded-lg p-0.5 bg-sandoro-secondary/20">
                   {SOUND_PATTERN_OPTIONS.map((option) => {
                     const isSelected = settings.soundPattern === option.value;
@@ -444,40 +465,44 @@ export function Settings() {
 
       {/* Timer Section */}
       <div className="flex flex-col gap-2">
-        <h3 className="text-xs font-semibold text-sandoro-secondary">Timer</h3>
+        <h3 className="text-xs font-semibold text-sandoro-secondary">
+          {settings.language === 'ja' ? 'タイマー' : 'Timer'}
+        </h3>
         <p className="text-xs text-sandoro-secondary/70">
-          * Changing timer settings will reset the current session
+          {settings.language === 'ja'
+            ? '* タイマー設定を変更すると現在のセッションがリセットされます'
+            : '* Changing timer settings will reset the current session'}
         </p>
         <div className="flex flex-col gap-2 bg-sandoro-secondary/10 rounded-lg p-3">
           <NumberInput
-            label="Work Duration"
+            label={settings.language === 'ja' ? '作業時間' : 'Work Duration'}
             value={settings.workDuration}
             min={5}
             max={60}
             step={5}
-            unit="min"
+            unit={settings.language === 'ja' ? '分' : 'min'}
             onChange={(v) => setSettings({ workDuration: v })}
           />
           <NumberInput
-            label="Short Break"
+            label={settings.language === 'ja' ? '短い休憩' : 'Short Break'}
             value={settings.shortBreak}
             min={1}
             max={30}
             step={1}
-            unit="min"
+            unit={settings.language === 'ja' ? '分' : 'min'}
             onChange={(v) => setSettings({ shortBreak: v })}
           />
           <NumberInput
-            label="Long Break"
+            label={settings.language === 'ja' ? '長い休憩' : 'Long Break'}
             value={settings.longBreak}
             min={5}
             max={60}
             step={5}
-            unit="min"
+            unit={settings.language === 'ja' ? '分' : 'min'}
             onChange={(v) => setSettings({ longBreak: v })}
           />
           <NumberInput
-            label="Sessions until long break"
+            label={settings.language === 'ja' ? '長い休憩までのセッション数' : 'Sessions until long break'}
             value={settings.sessionsUntilLongBreak}
             min={2}
             max={8}
@@ -486,7 +511,7 @@ export function Settings() {
             onChange={(v) => setSettings({ sessionsUntilLongBreak: v })}
           />
           <ToggleButton
-            label="Auto Start"
+            label={settings.language === 'ja' ? '自動開始' : 'Auto Start'}
             enabled={settings.autoStart}
             onToggle={() => setSettings({ autoStart: !settings.autoStart })}
             isRainbow={isRainbow}
@@ -494,15 +519,80 @@ export function Settings() {
         </div>
       </div>
 
+      {/* Focus Mode Section */}
+      <div className="flex flex-col gap-2">
+        <h3 className="text-xs font-semibold text-sandoro-secondary">
+          {settings.language === 'ja' ? 'フォーカスモード' : 'Focus Mode'}
+        </h3>
+        <p className="text-xs text-sandoro-secondary/70">
+          {settings.language === 'ja'
+            ? '* 新しいセッションのデフォルトモード。タイマーでも変更できます。'
+            : '* Default mode for new sessions. You can also change this in the timer.'}
+        </p>
+        <div className="flex flex-col gap-3 bg-sandoro-secondary/10 rounded-lg p-3">
+          <div className="flex flex-col gap-2">
+            <span className="text-xs" style={{ color: 'var(--sandoro-fg)' }}>
+              {settings.language === 'ja' ? 'デフォルトモード:' : 'Default Mode:'}
+            </span>
+            <div className="flex gap-0.5 rounded-lg p-0.5 bg-sandoro-secondary/20">
+              {FOCUS_MODE_OPTIONS.map((option) => {
+                const isSelected = settings.focusMode === option.value;
+                const description = settings.language === 'ja' ? option.descriptionJa : option.descriptionEn;
+                return (
+                  <button
+                    key={option.value}
+                    onClick={() => setSettings({ focusMode: option.value })}
+                    className={`px-2 py-0.5 text-xs rounded transition-colors ${
+                      isSelected && isRainbow ? 'rainbow-gradient-bg' : ''
+                    }`}
+                    style={{
+                      backgroundColor: isSelected && !isRainbow ? 'var(--sandoro-primary)' : !isSelected ? 'transparent' : undefined,
+                      color: isSelected && !isRainbow ? 'var(--sandoro-bg)' : !isSelected ? 'var(--sandoro-fg)' : undefined,
+                      fontWeight: isSelected ? 'bold' : 'normal',
+                    }}
+                    title={description}
+                  >
+                    <span className="mr-0.5">{option.icon}</span>
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+            {/* Mode description */}
+            <p className="text-xs text-sandoro-secondary/70 pl-1">
+              {(() => {
+                const option = FOCUS_MODE_OPTIONS.find(o => o.value === settings.focusMode);
+                return settings.language === 'ja' ? option?.descriptionJa : option?.descriptionEn;
+              })()}
+            </p>
+          </div>
+          <ToggleButton
+            label={settings.language === 'ja' ? '休憩延長' : 'Break Snooze'}
+            enabled={settings.breakSnoozeEnabled}
+            onToggle={() => setSettings({ breakSnoozeEnabled: !settings.breakSnoozeEnabled })}
+            isRainbow={isRainbow}
+            extra={
+              <span className="text-xs text-sandoro-secondary/70 mr-2">
+                {settings.language === 'ja' ? 'ONにすると休憩中に延長ボタンが表示されます' : 'Shows extend button during breaks when ON'}
+              </span>
+            }
+          />
+        </div>
+      </div>
+
       {/* Goals Section */}
       <div className="flex flex-col gap-2">
-        <h3 className="text-xs font-semibold text-sandoro-secondary">Goals</h3>
+        <h3 className="text-xs font-semibold text-sandoro-secondary">
+          {settings.language === 'ja' ? '目標' : 'Goals'}
+        </h3>
         <p className="text-xs text-sandoro-secondary/70">
-          * Set to 0 to disable a goal. Daily changes auto-update weekly (×7).
+          {settings.language === 'ja'
+            ? '* 0に設定すると無効。日次変更は週次(×7)に自動反映されます。'
+            : '* Set to 0 to disable a goal. Daily changes auto-update weekly (×7).'}
         </p>
         <div className="flex flex-col gap-2 bg-sandoro-secondary/10 rounded-lg p-3">
           <NumberInput
-            label="Daily Sessions"
+            label={settings.language === 'ja' ? '1日のセッション数' : 'Daily Sessions'}
             value={settings.goals.dailySessionsGoal}
             min={0}
             max={20}
@@ -517,12 +607,12 @@ export function Settings() {
             })}
           />
           <NumberInput
-            label="Daily Minutes"
+            label={settings.language === 'ja' ? '1日の作業時間' : 'Daily Minutes'}
             value={settings.goals.dailyMinutesGoal}
             min={0}
             max={480}
             step={30}
-            unit="min"
+            unit={settings.language === 'ja' ? '分' : 'min'}
             onChange={(v) => setSettings({
               goals: {
                 ...settings.goals,
@@ -532,7 +622,7 @@ export function Settings() {
             })}
           />
           <NumberInput
-            label="Weekly Sessions"
+            label={settings.language === 'ja' ? '週間セッション数' : 'Weekly Sessions'}
             value={settings.goals.weeklySessionsGoal}
             min={0}
             max={140}
@@ -541,12 +631,12 @@ export function Settings() {
             onChange={(v) => setSettings({ goals: { ...settings.goals, weeklySessionsGoal: v } })}
           />
           <NumberInput
-            label="Weekly Minutes"
+            label={settings.language === 'ja' ? '週間作業時間' : 'Weekly Minutes'}
             value={settings.goals.weeklyMinutesGoal}
             min={0}
             max={3360}
             step={30}
-            unit="min"
+            unit={settings.language === 'ja' ? '分' : 'min'}
             onChange={(v) => setSettings({ goals: { ...settings.goals, weeklyMinutesGoal: v } })}
           />
         </div>
@@ -554,9 +644,13 @@ export function Settings() {
 
       {/* Tags Section */}
       <div className="flex flex-col gap-2">
-        <h3 className="text-xs font-semibold text-sandoro-secondary">Tags</h3>
+        <h3 className="text-xs font-semibold text-sandoro-secondary">
+          {settings.language === 'ja' ? 'タグ' : 'Tags'}
+        </h3>
         <p className="text-xs text-sandoro-secondary/70">
-          * Tags help categorize your work sessions
+          {settings.language === 'ja'
+            ? '* タグで作業セッションを分類できます'
+            : '* Tags help categorize your work sessions'}
         </p>
         <div className="flex flex-col gap-2 bg-sandoro-secondary/10 rounded-lg p-3">
           {/* Add new tag */}
@@ -565,7 +659,7 @@ export function Settings() {
               type="text"
               value={newTagName}
               onChange={(e) => setNewTagName(e.target.value)}
-              placeholder="New tag name..."
+              placeholder={settings.language === 'ja' ? '新しいタグ名...' : 'New tag name...'}
               className="flex-1 px-3 py-1.5 text-sm rounded border border-sandoro-secondary/50 bg-transparent focus:outline-none focus:border-sandoro-primary transition-colors"
               style={{ color: 'var(--sandoro-fg)' }}
               onKeyDown={(e) => {
@@ -591,14 +685,14 @@ export function Settings() {
                   : 'bg-sandoro-secondary/30 text-sandoro-secondary cursor-not-allowed'
               }`}
             >
-              Add
+              {settings.language === 'ja' ? '追加' : 'Add'}
             </button>
           </div>
 
           {/* Tag list */}
           {tags.length === 0 ? (
             <p className="text-sm text-sandoro-secondary text-center py-2">
-              No tags yet. Add one above!
+              {settings.language === 'ja' ? 'タグがありません。上から追加してください！' : 'No tags yet. Add one above!'}
             </p>
           ) : (
             <div className="flex flex-col gap-2">
@@ -665,7 +759,7 @@ export function Settings() {
         onClick={resetSettings}
         className="self-start px-3 py-1 text-xs text-sandoro-secondary hover:text-sandoro-fg border border-sandoro-secondary/30 rounded hover:border-sandoro-secondary transition-colors"
       >
-        Reset to defaults
+        {settings.language === 'ja' ? 'デフォルトに戻す' : 'Reset to defaults'}
       </button>
     </div>
   );

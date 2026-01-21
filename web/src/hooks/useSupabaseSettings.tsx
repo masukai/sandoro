@@ -5,6 +5,8 @@ import { useAuth } from './useAuth';
 export type IconType = 'none' | 'progress' | 'hourglass' | 'tomato' | 'coffee';
 export type SoundPattern = 'chime' | 'bell' | 'digital' | 'gentle';
 export type Language = 'ja' | 'en';
+export type FocusMode = 'classic' | 'flowtime';
+export type AccentColor = 'red' | 'orange' | 'green' | 'blue' | 'purple';
 
 export interface GoalSettings {
   dailySessionsGoal: number;
@@ -26,6 +28,8 @@ export interface TimerSettings {
   soundPattern: SoundPattern;
   goals: GoalSettings;
   language: Language;
+  focusMode: FocusMode;
+  breakSnoozeEnabled: boolean;
 }
 
 export interface Tag {
@@ -61,6 +65,8 @@ const DEFAULT_SETTINGS: TimerSettings = {
   soundPattern: 'chime',
   goals: DEFAULT_GOALS,
   language: detectBrowserLanguage(),
+  focusMode: 'classic',
+  breakSnoozeEnabled: false,
 };
 
 const DEFAULT_TAGS: Tag[] = [
@@ -98,6 +104,8 @@ function fromSupabase(
     sound_volume: number;
     sound_pattern?: string;
     language?: string;
+    focus_mode?: string;
+    break_snooze_enabled?: boolean;
     tags: string[];
   },
   goals?: {
@@ -120,6 +128,8 @@ function fromSupabase(
       soundVolume: Math.round(data.sound_volume * 100), // Convert 0-1 to 0-100
       soundPattern: (data.sound_pattern as TimerSettings['soundPattern']) || 'chime',
       language: (data.language as Language) || detectBrowserLanguage(),
+      focusMode: (data.focus_mode as FocusMode) || 'classic',
+      breakSnoozeEnabled: data.break_snooze_enabled ?? false,
       goals: goals
         ? {
             dailySessionsGoal: goals.daily_sessions ?? 0,
@@ -150,6 +160,8 @@ function toSupabase(settings: TimerSettings, tags: Tag[]) {
     sound_volume: settings.soundVolume / 100, // Convert 0-100 to 0-1
     sound_pattern: settings.soundPattern,
     language: settings.language,
+    focus_mode: settings.focusMode,
+    break_snooze_enabled: settings.breakSnoozeEnabled,
     tags: tags.map((t) => t.name),
   };
 }
@@ -204,7 +216,10 @@ export function SupabaseSettingsProvider({ children }: { children: ReactNode }) 
     };
 
     fetchSettings();
-  }, [user, authLoading]);
+    // Only re-fetch when user ID changes, not on every user object reference change
+    // (e.g., token refresh creates new user object with same ID)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, authLoading]);
 
   // Save settings to Supabase (debounced)
   const saveToSupabase = useCallback(
