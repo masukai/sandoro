@@ -16,6 +16,7 @@ pub enum FocusMode {
 }
 
 impl FocusMode {
+    #[allow(dead_code)]
     pub fn as_str(&self) -> &'static str {
         match self {
             FocusMode::Classic => "classic",
@@ -23,6 +24,7 @@ impl FocusMode {
         }
     }
 
+    #[allow(dead_code)]
     pub fn from_str(s: &str) -> Self {
         match s.to_lowercase().as_str() {
             "flowtime" => FocusMode::Flowtime,
@@ -30,6 +32,7 @@ impl FocusMode {
         }
     }
 
+    #[allow(dead_code)]
     pub fn description(&self) -> &'static str {
         match self {
             FocusMode::Classic => "Classic Pomodoro: fixed work/break intervals",

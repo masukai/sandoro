@@ -81,6 +81,7 @@ impl SettingsItem {
         ]
     }
 
+    #[allow(dead_code)]
     pub fn label(&self) -> &'static str {
         self.label_with_lang("en")
     }

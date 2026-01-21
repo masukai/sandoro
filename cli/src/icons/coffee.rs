@@ -34,7 +34,7 @@ pub fn render_coffee_with_options(
             _ => ("      ～～      ", "       ~~       ", "   ∞        ∞   "),
         };
         // Full cup with gradient fill
-        let fill = vec![
+        let fill = [
             "░░░░░░░░░░░░░░░░".to_string(),
             "▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒".to_string(),
             "▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓".to_string(),

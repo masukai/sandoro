@@ -11,6 +11,7 @@ pub enum TimerState {
 }
 
 impl TimerState {
+    #[allow(dead_code)]
     pub fn label(&self) -> &'static str {
         self.label_with_lang("en")
     }
@@ -139,10 +140,8 @@ impl Timer {
         }
 
         // Check for completion (only in countdown mode)
-        if !self.is_flowtime || self.state != TimerState::Work {
-            if self.remaining_seconds == 0 {
-                self.transition_to_next_state();
-            }
+        if (!self.is_flowtime || self.state != TimerState::Work) && self.remaining_seconds == 0 {
+            self.transition_to_next_state();
         }
     }
 
@@ -236,6 +235,7 @@ impl Timer {
     }
 
     /// Get formatted remaining time string
+    #[allow(dead_code)]
     pub fn formatted_time(&self) -> String {
         let (min, sec) = self.remaining_time();
         format!("{:02}:{:02}", min, sec)
