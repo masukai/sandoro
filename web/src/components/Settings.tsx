@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme, ThemeMode, ACCENT_COLORS } from '../hooks/useTheme';
 import { useSettings, useTags, type IconType, type Language, type FocusMode } from '../hooks/useSupabaseSettings';
 import { useNotification } from '../hooks/useNotification';
 import { useSound, SOUND_PATTERN_OPTIONS } from '../hooks/useSound';
 import { useAuth } from '../hooks/useAuth';
+import { useSubscription } from '../hooks/useSubscription';
 import { LoginRequired } from './LoginRequired';
 
 const LANGUAGE_OPTIONS: { value: Language; label: string; icon: string }[] = [
@@ -188,9 +189,31 @@ export function Settings() {
   const { permission, isSupported, requestPermission } = useNotification();
   const { testSound, testSoundWithPattern } = useSound();
   const { tags, addTag, removeTag, updateTag } = useTags();
+  const { getInfo, createCheckout, openPortal, loading: subscriptionLoading } = useSubscription();
   const [newTagName, setNewTagName] = useState('');
   const [editingTagId, setEditingTagId] = useState<string | null>(null);
   const [editingTagName, setEditingTagName] = useState('');
+  const [upgradeLoading, setUpgradeLoading] = useState(false);
+  const [upgradeError, setUpgradeError] = useState<string | null>(null);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+
+  // Check URL params for success/canceled
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('success') === 'true') {
+      setShowSuccessMessage(true);
+      // Clean up URL
+      window.history.replaceState({}, '', window.location.pathname);
+      // Hide message after 5 seconds
+      setTimeout(() => setShowSuccessMessage(false), 5000);
+    }
+    if (params.get('canceled') === 'true') {
+      // Clean up URL
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+
+  const subscriptionInfo = getInfo();
 
   // Show login required screen if not authenticated
   if (loading) {
@@ -750,6 +773,148 @@ export function Settings() {
                 </div>
               ))}
             </div>
+          )}
+        </div>
+      </div>
+
+      {/* Pro Subscription Section */}
+      <div className="flex flex-col gap-2">
+        <h3 className="text-xs font-semibold text-sandoro-secondary">
+          {settings.language === 'ja' ? 'サブスクリプション' : 'Subscription'}
+        </h3>
+
+        {/* Success message */}
+        {showSuccessMessage && (
+          <div className="p-3 rounded-lg bg-green-500/20 border border-green-500/50">
+            <p className="text-sm text-green-400">
+              {settings.language === 'ja'
+                ? '🎉 Pro プランへのアップグレードありがとうございます！'
+                : '🎉 Thank you for upgrading to Pro!'}
+            </p>
+          </div>
+        )}
+
+        {/* Error message */}
+        {upgradeError && (
+          <div className="p-3 rounded-lg bg-red-500/20 border border-red-500/50">
+            <p className="text-sm text-red-400">{upgradeError}</p>
+          </div>
+        )}
+
+        <div className="flex flex-col gap-3 bg-sandoro-secondary/10 rounded-lg p-3">
+          {subscriptionLoading ? (
+            <p className="text-sm text-sandoro-secondary">Loading...</p>
+          ) : subscriptionInfo.isPro ? (
+            /* Pro user view */
+            <>
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 text-xs rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold">
+                  PRO
+                </span>
+                <span className="text-sm" style={{ color: 'var(--sandoro-fg)' }}>
+                  {settings.language === 'ja' ? 'Pro プラン有効' : 'Pro Plan Active'}
+                </span>
+              </div>
+              {subscriptionInfo.currentPeriodEnd && (
+                <p className="text-xs text-sandoro-secondary">
+                  {subscriptionInfo.cancelAtPeriodEnd
+                    ? settings.language === 'ja'
+                      ? `${subscriptionInfo.currentPeriodEnd.toLocaleDateString()} に終了予定`
+                      : `Ends on ${subscriptionInfo.currentPeriodEnd.toLocaleDateString()}`
+                    : settings.language === 'ja'
+                    ? `次回更新: ${subscriptionInfo.currentPeriodEnd.toLocaleDateString()}`
+                    : `Renews on ${subscriptionInfo.currentPeriodEnd.toLocaleDateString()}`}
+                </p>
+              )}
+              <button
+                onClick={async () => {
+                  try {
+                    setUpgradeError(null);
+                    await openPortal();
+                  } catch (err) {
+                    setUpgradeError(err instanceof Error ? err.message : 'Failed to open portal');
+                  }
+                }}
+                className="px-4 py-2 text-sm rounded border border-sandoro-secondary/50 hover:border-sandoro-primary transition-colors"
+                style={{ color: 'var(--sandoro-fg)' }}
+              >
+                {settings.language === 'ja' ? '購読を管理' : 'Manage Subscription'}
+              </button>
+            </>
+          ) : (
+            /* Free user view */
+            <>
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 text-xs rounded-full bg-sandoro-secondary/50 text-sandoro-fg font-bold">
+                  FREE
+                </span>
+                <span className="text-sm" style={{ color: 'var(--sandoro-fg)' }}>
+                  {settings.language === 'ja' ? '無料プラン' : 'Free Plan'}
+                </span>
+              </div>
+              <div className="flex flex-col gap-1 text-xs text-sandoro-secondary">
+                <p className="font-semibold" style={{ color: 'var(--sandoro-fg)' }}>
+                  {settings.language === 'ja' ? 'Pro で解放される機能:' : 'Unlock with Pro:'}
+                </p>
+                <ul className="list-disc list-inside pl-2 space-y-0.5">
+                  <li>{settings.language === 'ja' ? '🍅 トマト、🐱 猫などの Pro アイコン' : '🍅 Tomato, 🐱 Cat, and more Pro icons'}</li>
+                  <li>{settings.language === 'ja' ? '🌈 全10色 + レインボー + カスタムカラー' : '🌈 All 10 colors + rainbow + custom'}</li>
+                  <li>{settings.language === 'ja' ? '📊 CSV エクスポート' : '📊 CSV export'}</li>
+                  <li>{settings.language === 'ja' ? '🚫 広告なし' : '🚫 Ad-free experience'}</li>
+                </ul>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={async () => {
+                    try {
+                      setUpgradeLoading(true);
+                      setUpgradeError(null);
+                      await createCheckout(import.meta.env.VITE_STRIPE_PRICE_MONTHLY || '');
+                    } catch (err) {
+                      setUpgradeError(err instanceof Error ? err.message : 'Failed to start checkout');
+                    } finally {
+                      setUpgradeLoading(false);
+                    }
+                  }}
+                  disabled={upgradeLoading}
+                  className={`px-4 py-2 text-sm rounded font-bold transition-colors ${
+                    isRainbow ? 'rainbow-gradient-bg' : ''
+                  }`}
+                  style={{
+                    backgroundColor: !isRainbow ? 'var(--sandoro-primary)' : undefined,
+                    color: !isRainbow ? 'var(--sandoro-bg)' : undefined,
+                    opacity: upgradeLoading ? 0.5 : 1,
+                  }}
+                >
+                  {upgradeLoading
+                    ? '...'
+                    : settings.language === 'ja'
+                    ? '$1.99/月'
+                    : '$1.99/mo'}
+                </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      setUpgradeLoading(true);
+                      setUpgradeError(null);
+                      await createCheckout(import.meta.env.VITE_STRIPE_PRICE_YEARLY || '');
+                    } catch (err) {
+                      setUpgradeError(err instanceof Error ? err.message : 'Failed to start checkout');
+                    } finally {
+                      setUpgradeLoading(false);
+                    }
+                  }}
+                  disabled={upgradeLoading}
+                  className="px-4 py-2 text-sm rounded border border-sandoro-primary/50 hover:border-sandoro-primary transition-colors"
+                  style={{
+                    color: 'var(--sandoro-primary)',
+                    opacity: upgradeLoading ? 0.5 : 1,
+                  }}
+                >
+                  {settings.language === 'ja' ? '$12/年 (50% OFF)' : '$12/yr (50% OFF)'}
+                </button>
+              </div>
+            </>
           )}
         </div>
       </div>
