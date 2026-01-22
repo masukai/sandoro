@@ -48,6 +48,29 @@ serve(async (req) => {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
+
+        // Check if this is a donation
+        if (session.metadata?.is_donation === 'true') {
+          // Handle donation payment
+          const userId = session.metadata.supabase_user_id;
+          const donationType = session.metadata.donation_type;
+
+          if (userId && donationType) {
+            // Update donation record to completed
+            await supabaseAdmin
+              .from('donations')
+              .update({
+                status: 'completed',
+                stripe_payment_intent_id: session.payment_intent as string,
+              })
+              .eq('stripe_checkout_session_id', session.id);
+
+            console.log(`Donation completed: user=${userId}, type=${donationType}`);
+          }
+          break;
+        }
+
+        // Handle subscription checkout
         const userId = session.subscription
           ? (await stripe.subscriptions.retrieve(session.subscription as string))
               .metadata.supabase_user_id

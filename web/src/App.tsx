@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useCallback } from 'react';
 import { Timer } from './components/Timer/Timer';
 import { Settings } from './components/Settings';
 import { Stats } from './components/Stats';
+import { Support } from './components/Support';
 import { IconPreview } from './components/IconPreview';
 import { Footer } from './components/Footer';
 import { PrivacyPolicy } from './components/PrivacyPolicy';
@@ -10,7 +11,7 @@ import { useTheme } from './hooks/useTheme';
 import { useSettings } from './hooks/useSupabaseSettings';
 import { useClock } from './hooks/useClock';
 
-type ViewType = 'timer' | 'stats' | 'settings' | 'privacy';
+type ViewType = 'timer' | 'stats' | 'settings' | 'support' | 'privacy';
 
 function App() {
   const [view, setView] = useState<ViewType>('timer');
@@ -73,6 +74,7 @@ function App() {
             </div>
             {view === 'stats' && <Stats />}
             {view === 'settings' && <Settings />}
+            {view === 'support' && <Support />}
             {view === 'privacy' && <PrivacyPolicy />}
           </>
         )}
@@ -132,6 +134,16 @@ function App() {
             }`}
           >
             Settings
+          </button>
+          <button
+            onClick={() => navigateTo('support')}
+            className={`px-3 py-1 text-sm ${
+              view === 'support'
+                ? isRainbow ? 'rainbow-gradient' : 'text-sandoro-primary'
+                : 'text-sandoro-secondary'
+            }`}
+          >
+            Support
           </button>
         </nav>
       )}

@@ -8,7 +8,23 @@ sandoro の Pro プラン決済機能を有効化するための手順です。
 |--------|------|------|
 | **月額** | $1.99/月 | 手軽に始められる |
 | **年額** | $9.99/年 | 2ヶ月分お得（実質$0.83/月） |
-| **Lifetime** | $29.99（一回払い） | 永久利用、早期サポーター向け |
+
+### ドネーション「開発者に休憩を奢る」
+
+サブスクリプションとは別に、開発者への応援として少額から支援できるドネーション機能です。
+
+| アイテム | 価格 | 説明 |
+|---------|------|------|
+| ☕ 5分休憩 | $0.99 | ちょっと深呼吸してね |
+| 🍵 15分休憩 | $2.99 | お茶でも飲んでゆっくり！ |
+| 😴 昼寝タイム | $5.99 | たまにはがっつり休んで |
+| 🛏️ ぐっすり睡眠 | $9.99 | 明日も頑張ってね |
+
+**特典**: 累計ドネーションが **$29.99 以上** になると、**Pro 機能が永久解放**されます！
+
+> 例: $9.99 × 3回 = $29.97 → あと $0.99 で Pro 解放！
+
+> **注**: サブスクリプションの支払い額とドネーション額は別カウントです。
 
 ### 無料トライアル
 
@@ -23,7 +39,17 @@ sandoro の Pro プラン決済機能を有効化するための手順です。
 |------|-------------|--------|
 | $1.99/月 | $0.37 | $1.62/月 |
 | $9.99/年 | $0.66 | $9.33/年 |
-| $29.99/回 | $1.38 | $28.61/回 |
+
+**ドネーション**
+
+| 収益 | Stripe手数料 | 実収益 |
+|------|-------------|--------|
+| $0.99 | $0.33 | $0.66 |
+| $2.99 | $0.39 | $2.60 |
+| $5.99 | $0.48 | $5.51 |
+| $9.99 | $0.60 | $9.39 |
+
+> 注: Stripe 手数料は 2.9% + $0.30/回
 
 ## 1. Stripe アカウント作成
 
@@ -57,18 +83,23 @@ sandoro の Pro プラン決済機能を有効化するための手順です。
 - Billing period: Yearly
 - **Price ID をメモ**
 
-#### sandoro Pro Lifetime（一回払い）
+#### ドネーション「開発者に休憩を奢る」
 
 | 項目 | 値 |
 |------|-----|
-| Name | sandoro Pro Lifetime |
-| Description | ASCII art pomodoro timer - Pro features (lifetime) |
+| Name | sandoro Donation |
+| Description | Support the developer with a break! |
 
-**Price: One-time**
-- Pricing model: Standard pricing
-- Price: $29.99 USD
-- One time
-- **Price ID をメモ**
+以下の4つの Price を作成（すべて One-time）:
+
+| Price 名 | 価格 | メタデータ |
+|---------|------|-----------|
+| 5分休憩 | $0.99 USD | `donation_type: break_5min` |
+| 15分休憩 | $2.99 USD | `donation_type: break_15min` |
+| 昼寝タイム | $5.99 USD | `donation_type: nap` |
+| ぐっすり睡眠 | $9.99 USD | `donation_type: sleep` |
+
+> **重要**: 各 Price の **Price ID をメモ**しておく
 
 ## 3. Webhook 設定
 
@@ -110,9 +141,16 @@ sandoro の Pro プラン決済機能を有効化するための手順です。
 ```bash
 # web/.env.local
 VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...
+
+# Pro subscription prices
 VITE_STRIPE_PRICE_MONTHLY=price_...
 VITE_STRIPE_PRICE_YEARLY=price_...
-VITE_STRIPE_PRICE_LIFETIME=price_...
+
+# Donation prices
+VITE_STRIPE_PRICE_DONATION_5MIN=price_...
+VITE_STRIPE_PRICE_DONATION_15MIN=price_...
+VITE_STRIPE_PRICE_DONATION_NAP=price_...
+VITE_STRIPE_PRICE_DONATION_SLEEP=price_...
 ```
 
 ### Vercel 本番環境
@@ -128,6 +166,7 @@ npx supabase login
 
 # Functions をデプロイ
 npx supabase functions deploy create-checkout --project-ref <your-project-ref>
+npx supabase functions deploy create-donation-checkout --project-ref <your-project-ref>
 npx supabase functions deploy stripe-webhook --project-ref <your-project-ref>
 npx supabase functions deploy customer-portal --project-ref <your-project-ref>
 ```
