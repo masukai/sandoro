@@ -15,6 +15,8 @@ CREATE TABLE public.subscriptions (
     current_period_start TIMESTAMPTZ,
     current_period_end TIMESTAMPTZ,
     cancel_at_period_end BOOLEAN NOT NULL DEFAULT false,
+    -- Card-less trial support
+    trial_ends_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -45,8 +47,9 @@ BEGIN
     INSERT INTO public.goals (user_id)
     VALUES (NEW.id);
 
-    INSERT INTO public.subscriptions (user_id, status)
-    VALUES (NEW.id, 'free');
+    -- Start 7-day card-less trial for new users
+    INSERT INTO public.subscriptions (user_id, status, trial_ends_at)
+    VALUES (NEW.id, 'trialing', NOW() + INTERVAL '7 days');
 
     RETURN NEW;
 END;
@@ -56,6 +59,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- ==========================================
 -- Helper function to check Pro status
+-- Handles both paid subscriptions and card-less trials
 -- ==========================================
 CREATE OR REPLACE FUNCTION public.is_pro_user(check_user_id UUID)
 RETURNS BOOLEAN AS $$
@@ -63,8 +67,13 @@ BEGIN
     RETURN EXISTS (
         SELECT 1 FROM public.subscriptions
         WHERE user_id = check_user_id
-        AND status IN ('active', 'trialing')
-        AND (current_period_end IS NULL OR current_period_end > NOW())
+        AND (
+            -- Paid subscription (active or Stripe trialing)
+            (status = 'active' AND (current_period_end IS NULL OR current_period_end > NOW()))
+            OR
+            -- Card-less trial (status = trialing with trial_ends_at)
+            (status = 'trialing' AND trial_ends_at IS NOT NULL AND trial_ends_at > NOW())
+        )
     );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

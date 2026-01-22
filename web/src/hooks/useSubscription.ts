@@ -13,6 +13,10 @@ export interface SubscriptionInfo {
   currentPeriodEnd: Date | null;
   cancelAtPeriodEnd: boolean;
   stripeCustomerId: string | null;
+  // Card-less trial info
+  isTrialing: boolean;
+  trialEndsAt: Date | null;
+  trialDaysRemaining: number | null;
 }
 
 export function useSubscription() {
@@ -88,13 +92,39 @@ export function useSubscription() {
         currentPeriodEnd: null,
         cancelAtPeriodEnd: false,
         stripeCustomerId: null,
+        isTrialing: false,
+        trialEndsAt: null,
+        trialDaysRemaining: null,
       };
     }
 
-    const isPro =
-      (subscription.status === 'active' || subscription.status === 'trialing') &&
+    const now = new Date();
+
+    // Check card-less trial
+    const trialEndsAt = subscription.trial_ends_at
+      ? new Date(subscription.trial_ends_at)
+      : null;
+    const isCardlessTrial = Boolean(
+      subscription.status === 'trialing' &&
+      trialEndsAt &&
+      trialEndsAt > now
+    );
+
+    // Calculate trial days remaining
+    let trialDaysRemaining: number | null = null;
+    if (isCardlessTrial && trialEndsAt) {
+      trialDaysRemaining = Math.ceil(
+        (trialEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+      );
+    }
+
+    // Check paid subscription
+    const isPaidActive =
+      subscription.status === 'active' &&
       (!subscription.current_period_end ||
-        new Date(subscription.current_period_end) > new Date());
+        new Date(subscription.current_period_end) > now);
+
+    const isPro = isCardlessTrial || isPaidActive;
 
     return {
       status: subscription.status,
@@ -104,6 +134,9 @@ export function useSubscription() {
         : null,
       cancelAtPeriodEnd: subscription.cancel_at_period_end,
       stripeCustomerId: subscription.stripe_customer_id,
+      isTrialing: isCardlessTrial,
+      trialEndsAt,
+      trialDaysRemaining,
     };
   }, [subscription]);
 

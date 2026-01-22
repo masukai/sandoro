@@ -804,8 +804,74 @@ export function Settings() {
         <div className="flex flex-col gap-3 bg-sandoro-secondary/10 rounded-lg p-3">
           {subscriptionLoading ? (
             <p className="text-sm text-sandoro-secondary">Loading...</p>
+          ) : subscriptionInfo.isTrialing ? (
+            /* Trial user view */
+            <>
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 text-xs rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-bold">
+                  TRIAL
+                </span>
+                <span className="text-sm" style={{ color: 'var(--sandoro-fg)' }}>
+                  {settings.language === 'ja' ? '無料トライアル中' : 'Free Trial Active'}
+                </span>
+              </div>
+              <p className="text-xs text-sandoro-secondary">
+                {settings.language === 'ja'
+                  ? `残り ${subscriptionInfo.trialDaysRemaining} 日 - すべての Pro 機能が利用可能`
+                  : `${subscriptionInfo.trialDaysRemaining} days left - All Pro features unlocked`}
+              </p>
+              <div className="flex flex-col gap-1 text-xs text-sandoro-secondary">
+                <p className="font-semibold" style={{ color: 'var(--sandoro-fg)' }}>
+                  {settings.language === 'ja' ? 'トライアル後も Pro を継続:' : 'Continue Pro after trial:'}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={async () => {
+                    try {
+                      setUpgradeLoading(true);
+                      setUpgradeError(null);
+                      await createCheckout(import.meta.env.VITE_STRIPE_PRICE_MONTHLY || '');
+                    } catch (err) {
+                      setUpgradeError(err instanceof Error ? err.message : 'Failed to start checkout');
+                    } finally {
+                      setUpgradeLoading(false);
+                    }
+                  }}
+                  disabled={upgradeLoading}
+                  className={`px-4 py-2 text-sm rounded font-bold transition-colors ${
+                    isRainbow ? 'rainbow-gradient-bg' : ''
+                  }`}
+                  style={{
+                    backgroundColor: !isRainbow ? 'var(--sandoro-primary)' : undefined,
+                    color: !isRainbow ? 'var(--sandoro-bg)' : undefined,
+                    opacity: upgradeLoading ? 0.5 : 1,
+                  }}
+                >
+                  {upgradeLoading ? '...' : settings.language === 'ja' ? '$1.99/月' : '$1.99/mo'}
+                </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      setUpgradeLoading(true);
+                      setUpgradeError(null);
+                      await createCheckout(import.meta.env.VITE_STRIPE_PRICE_YEARLY || '');
+                    } catch (err) {
+                      setUpgradeError(err instanceof Error ? err.message : 'Failed to start checkout');
+                    } finally {
+                      setUpgradeLoading(false);
+                    }
+                  }}
+                  disabled={upgradeLoading}
+                  className="px-4 py-2 text-sm rounded border border-sandoro-secondary/50 hover:border-sandoro-primary transition-colors"
+                  style={{ color: 'var(--sandoro-fg)', opacity: upgradeLoading ? 0.5 : 1 }}
+                >
+                  {settings.language === 'ja' ? '$9.99/年（2ヶ月分お得）' : '$9.99/yr (Save 2 mo)'}
+                </button>
+              </div>
+            </>
           ) : subscriptionInfo.isPro ? (
-            /* Pro user view */
+            /* Paid Pro user view */
             <>
               <div className="flex items-center gap-2">
                 <span className="px-2 py-0.5 text-xs rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold">
@@ -911,7 +977,7 @@ export function Settings() {
                     opacity: upgradeLoading ? 0.5 : 1,
                   }}
                 >
-                  {settings.language === 'ja' ? '$12/年 (50% OFF)' : '$12/yr (50% OFF)'}
+                  {settings.language === 'ja' ? '$9.99/年（2ヶ月分お得）' : '$9.99/yr (Save 2 mo)'}
                 </button>
               </div>
             </>
