@@ -74,6 +74,87 @@ export type Database = {
         }
         Relationships: []
       }
+      subscriptions: {
+        Row: {
+          id: string
+          user_id: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          status: 'free' | 'active' | 'canceled' | 'past_due' | 'trialing'
+          price_id: string | null
+          current_period_start: string | null
+          current_period_end: string | null
+          cancel_at_period_end: boolean
+          trial_ends_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          status?: 'free' | 'active' | 'canceled' | 'past_due' | 'trialing'
+          price_id?: string | null
+          current_period_start?: string | null
+          current_period_end?: string | null
+          cancel_at_period_end?: boolean
+          trial_ends_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          status?: 'free' | 'active' | 'canceled' | 'past_due' | 'trialing'
+          price_id?: string | null
+          current_period_start?: string | null
+          current_period_end?: string | null
+          cancel_at_period_end?: boolean
+          trial_ends_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      donations: {
+        Row: {
+          id: string
+          user_id: string
+          stripe_payment_intent_id: string | null
+          stripe_checkout_session_id: string | null
+          amount_cents: number
+          currency: string
+          donation_type: 'break_5min' | 'break_15min' | 'nap' | 'sleep'
+          status: 'pending' | 'completed' | 'failed' | 'refunded'
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          stripe_payment_intent_id?: string | null
+          stripe_checkout_session_id?: string | null
+          amount_cents: number
+          currency?: string
+          donation_type: 'break_5min' | 'break_15min' | 'nap' | 'sleep'
+          status?: 'pending' | 'completed' | 'failed' | 'refunded'
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          stripe_payment_intent_id?: string | null
+          stripe_checkout_session_id?: string | null
+          amount_cents?: number
+          currency?: string
+          donation_type?: 'break_5min' | 'break_15min' | 'nap' | 'sleep'
+          status?: 'pending' | 'completed' | 'failed' | 'refunded'
+          created_at?: string
+        }
+        Relationships: []
+      }
       user_settings: {
         Row: {
           accent_color: string
@@ -145,7 +226,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_pro_user: {
+        Args: {
+          check_user_id: string
+        }
+        Returns: boolean
+      }
+      get_total_donations: {
+        Args: {
+          check_user_id: string
+        }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never

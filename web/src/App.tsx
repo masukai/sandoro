@@ -1,7 +1,8 @@
-import { useState, useMemo, useRef, useCallback } from 'react';
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { Timer } from './components/Timer/Timer';
 import { Settings } from './components/Settings';
 import { Stats } from './components/Stats';
+import { Support } from './components/Support';
 import { IconPreview } from './components/IconPreview';
 import { Footer } from './components/Footer';
 import { PrivacyPolicy } from './components/PrivacyPolicy';
@@ -10,10 +11,20 @@ import { useTheme } from './hooks/useTheme';
 import { useSettings } from './hooks/useSupabaseSettings';
 import { useClock } from './hooks/useClock';
 
-type ViewType = 'timer' | 'stats' | 'settings' | 'privacy';
+type ViewType = 'timer' | 'stats' | 'settings' | 'support' | 'privacy';
+
+// Check for donation redirect from Stripe
+function getInitialView(): ViewType {
+  if (typeof window === 'undefined') return 'timer';
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('donation') === 'success' || params.get('donation') === 'canceled') {
+    return 'support';
+  }
+  return 'timer';
+}
 
 function App() {
-  const [view, setView] = useState<ViewType>('timer');
+  const [view, setView] = useState<ViewType>(getInitialView);
   const previousViewRef = useRef<ViewType>('timer');
 
   // Track previous view for "back" navigation
@@ -73,6 +84,7 @@ function App() {
             </div>
             {view === 'stats' && <Stats />}
             {view === 'settings' && <Settings />}
+            {view === 'support' && <Support />}
             {view === 'privacy' && <PrivacyPolicy />}
           </>
         )}
@@ -132,6 +144,16 @@ function App() {
             }`}
           >
             Settings
+          </button>
+          <button
+            onClick={() => navigateTo('support')}
+            className={`px-3 py-1 text-sm ${
+              view === 'support'
+                ? isRainbow ? 'rainbow-gradient' : 'text-sandoro-primary'
+                : 'text-sandoro-secondary'
+            }`}
+          >
+            Support
           </button>
         </nav>
       )}
