@@ -3,7 +3,7 @@
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import Stripe from 'https://esm.sh/stripe@14.14.0?target=deno';
+import Stripe from 'https://esm.sh/stripe@13.10.0?target=deno&deno-std=0.177.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -57,19 +57,30 @@ serve(async (req) => {
       });
     }
 
-    // Check if user already has a Stripe customer
+    // Initialize Supabase admin client
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    const { data: subscription } = await supabaseAdmin
+    // Check if user already has an active subscription
+    const { data: existingSub } = await supabaseAdmin
       .from('subscriptions')
-      .select('stripe_customer_id')
+      .select('status, stripe_customer_id')
       .eq('user_id', user.id)
       .single();
 
-    let customerId = subscription?.stripe_customer_id;
+    if (existingSub?.status === 'active' || existingSub?.status === 'trialing') {
+      return new Response(
+        JSON.stringify({ error: 'You already have an active subscription. Please cancel your current plan first.' }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    let customerId = existingSub?.stripe_customer_id;
 
     // Create Stripe customer if doesn't exist
     if (!customerId) {

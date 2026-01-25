@@ -2,8 +2,8 @@
 // Deno Deploy runtime
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import Stripe from 'https://esm.sh/stripe@14.14.0?target=deno';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import Stripe from 'https://esm.sh/stripe@13.10.0?target=deno&deno-std=0.177.0';
 
 const cryptoProvider = Stripe.createSubtleCryptoProvider();
 
@@ -57,15 +57,40 @@ serve(async (req) => {
 
           if (userId && donationType) {
             // Update donation record to completed
-            await supabaseAdmin
+            const { data: updateData, error: updateError } = await supabaseAdmin
               .from('donations')
               .update({
                 status: 'completed',
                 stripe_payment_intent_id: session.payment_intent as string,
               })
-              .eq('stripe_checkout_session_id', session.id);
+              .eq('stripe_checkout_session_id', session.id)
+              .select();
 
-            console.log(`Donation completed: user=${userId}, type=${donationType}`);
+            if (updateError) {
+              console.error(`Failed to update donation: ${updateError.message}`);
+            } else if (!updateData || updateData.length === 0) {
+              console.error(`No donation found for session: ${session.id}`);
+              // Try to insert the donation record if it doesn't exist
+              const amountCents = session.amount_total || 0;
+              const { error: insertError } = await supabaseAdmin
+                .from('donations')
+                .insert({
+                  user_id: userId,
+                  stripe_checkout_session_id: session.id,
+                  stripe_payment_intent_id: session.payment_intent as string,
+                  amount_cents: amountCents,
+                  currency: session.currency || 'usd',
+                  donation_type: donationType,
+                  status: 'completed',
+                });
+              if (insertError) {
+                console.error(`Failed to insert donation: ${insertError.message}`);
+              } else {
+                console.log(`Donation inserted: user=${userId}, type=${donationType}, amount=${amountCents}`);
+              }
+            } else {
+              console.log(`Donation updated: user=${userId}, type=${donationType}`);
+            }
           }
           break;
         }

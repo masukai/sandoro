@@ -198,8 +198,8 @@ export function useDonation() {
           body: JSON.stringify({
             priceId: item.priceId,
             donationType: item.type,
-            successUrl: `${window.location.origin}/settings?donation=success`,
-            cancelUrl: `${window.location.origin}/settings?donation=canceled`,
+            successUrl: `${window.location.origin}/?donation=success`,
+            cancelUrl: `${window.location.origin}/?donation=canceled`,
           }),
         }
       );

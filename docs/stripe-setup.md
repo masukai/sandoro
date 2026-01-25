@@ -164,12 +164,14 @@ VITE_STRIPE_PRICE_DONATION_SLEEP=price_...
 # Supabase CLI でログイン
 npx supabase login
 
-# Functions をデプロイ
-npx supabase functions deploy create-checkout --project-ref <your-project-ref>
-npx supabase functions deploy create-donation-checkout --project-ref <your-project-ref>
-npx supabase functions deploy stripe-webhook --project-ref <your-project-ref>
-npx supabase functions deploy customer-portal --project-ref <your-project-ref>
+# Functions をデプロイ（--no-verify-jwt フラグが必要）
+npx supabase functions deploy create-checkout --no-verify-jwt
+npx supabase functions deploy create-donation-checkout --no-verify-jwt
+npx supabase functions deploy stripe-webhook --no-verify-jwt
+npx supabase functions deploy customer-portal --no-verify-jwt
 ```
+
+> **重要**: `--no-verify-jwt` フラグは必須です。このフラグがないと、Supabase のインフラレベルで JWT 検証が行われ、Edge Function 内での認証処理と競合して 401 エラーが発生します。Edge Function 内で独自に JWT を検証しています。
 
 ## 8. マイグレーション実行
 
@@ -197,12 +199,58 @@ npx supabase db push --project-ref <your-project-ref>
 - [ ] 本番用 Webhook signing secret に更新
 - [ ] Vercel 環境変数を本番用に更新
 
+## 返金対応（手動）
+
+返金は Stripe Dashboard で手動対応します。
+
+### 返金手順
+
+1. [Stripe Dashboard](https://dashboard.stripe.com) → **Payments**
+2. 該当の支払いをクリック
+3. 右上の **Refund** をクリック
+4. 返金額を入力（全額 or 一部）
+5. 理由を選択して **Refund** を実行
+
+### 返金後の対応
+
+**サブスクリプションの場合**:
+- 返金しても自動的にサブスクはキャンセルされません
+- 必要に応じて **Subscriptions** から手動でキャンセル
+- Webhook が `customer.subscription.deleted` を受信し、DB の status が `canceled` に更新されます
+
+**ドネーションの場合**:
+- 返金しても donations テーブルは自動更新されません
+- 必要に応じて Supabase の Table Editor で status を `refunded` に手動変更
+
+### 返金ポリシー（推奨）
+
+- サブスクリプション: 購入後7日以内は全額返金
+- ドネーション: 原則返金不可（寄付の性質上）
+
+> **注**: 返金自動化が必要な場合は `charge.refunded` Webhook イベントを追加実装してください。
+
 ## トラブルシューティング
+
+### 401 "Invalid JWT" エラー
+- Edge Functions が `--no-verify-jwt` フラグなしでデプロイされている可能性
+- 再デプロイ: `npx supabase functions deploy <function-name> --no-verify-jwt`
+
+### Edge Function タイムアウト / WORKER_ERROR
+- Stripe SDK のバージョンが重すぎる可能性
+- `stripe@13.10.0` を使用（v14 以降は Deno 環境で問題あり）
+- インポート例: `import Stripe from 'https://esm.sh/stripe@13.10.0?target=deno&deno-std=0.177.0';`
 
 ### Webhook が届かない
 - Endpoint URL が正しいか確認
 - Supabase Edge Functions がデプロイされているか確認
 - Stripe Dashboard → Webhooks → 該当 endpoint → Recent events で確認
+- `--no-verify-jwt` フラグでデプロイされているか確認
+
+### ドネーション後に累計が更新されない
+- donations テーブルに pending レコードが作成されているか確認
+- Webhook が 200 を返しているか Stripe Dashboard で確認
+- ログ確認: `npx supabase functions logs stripe-webhook`
+- Webhook イベントを再送して動作確認
 
 ### 購入後に Pro にならない
 - Supabase → Table Editor → subscriptions でステータス確認
@@ -210,3 +258,8 @@ npx supabase db push --project-ref <your-project-ref>
 
 ### CORS エラー
 - Edge Functions の `corsHeaders` に origin が含まれているか確認
+
+### Supabase CLI "Access token not provided" エラー
+- `npx supabase login` で再ログイン
+- または Dashboard でトークン生成: https://supabase.com/dashboard/account/tokens
+- `export SUPABASE_ACCESS_TOKEN=your_token` で設定

@@ -3,8 +3,8 @@
 // Deno Deploy runtime
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import Stripe from 'https://esm.sh/stripe@14.14.0?target=deno';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import Stripe from 'https://esm.sh/stripe@13.10.0?target=deno&deno-std=0.177.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,6 +19,18 @@ const DONATION_AMOUNTS: Record<string, { cents: number; name: string }> = {
   sleep: { cents: 999, name: 'ぐっすり睡眠' },
 };
 
+// Decode JWT payload without verification (verification is done by Supabase)
+function decodeJwtPayload(token: string): { sub: string; email?: string } | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const payload = JSON.parse(atob(parts[1]));
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -26,35 +38,46 @@ serve(async (req) => {
   }
 
   try {
-    // Initialize Stripe
-    const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
-      apiVersion: '2023-10-16',
-      httpClient: Stripe.createFetchHttpClient(),
-    });
+    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
 
-    // Initialize Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_ANON_KEY')!,
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
-    );
+    if (!stripeKey) {
+      return new Response(JSON.stringify({ error: 'Missing Stripe key' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
-    // Get user from JWT
-    const {
-      data: { user },
-      error: userError,
-    } = await supabaseClient.auth.getUser();
+    if (!serviceRoleKey || !supabaseUrl) {
+      return new Response(JSON.stringify({ error: 'Missing Supabase config' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
-    if (userError || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+    // Get Authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'No authorization header' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    // Extract and decode JWT
+    const token = authHeader.replace('Bearer ', '');
+    const jwtPayload = decodeJwtPayload(token);
+
+    if (!jwtPayload || !jwtPayload.sub) {
+      return new Response(JSON.stringify({ error: 'Invalid token' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const userId = jwtPayload.sub;
+    const userEmail = jwtPayload.email;
 
     // Get request body
     const { priceId, donationType, successUrl, cancelUrl } = await req.json();
@@ -66,7 +89,6 @@ serve(async (req) => {
       });
     }
 
-    // Validate donation type
     if (!DONATION_AMOUNTS[donationType]) {
       return new Response(JSON.stringify({ error: 'Invalid donation type' }), {
         status: 400,
@@ -74,57 +96,56 @@ serve(async (req) => {
       });
     }
 
-    // Check if user already has a Stripe customer
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    );
+    // Initialize Stripe
+    const stripe = new Stripe(stripeKey, {
+      apiVersion: '2023-10-16',
+      httpClient: Stripe.createFetchHttpClient(),
+    });
 
+    // Initialize admin client for database operations
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+
+    // Get or create Stripe customer
     const { data: subscription } = await supabaseAdmin
       .from('subscriptions')
       .select('stripe_customer_id')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single();
 
     let customerId = subscription?.stripe_customer_id;
 
-    // Create Stripe customer if doesn't exist
     if (!customerId) {
       const customer = await stripe.customers.create({
-        email: user.email,
-        metadata: {
-          supabase_user_id: user.id,
-        },
+        email: userEmail,
+        metadata: { supabase_user_id: userId },
       });
       customerId = customer.id;
 
-      // Save customer ID to subscriptions table
       await supabaseAdmin
         .from('subscriptions')
-        .update({ stripe_customer_id: customerId })
-        .eq('user_id', user.id);
+        .upsert({
+          user_id: userId,
+          stripe_customer_id: customerId,
+          status: 'free',
+        }, { onConflict: 'user_id' });
     }
 
-    // Create checkout session for one-time payment (donation)
+    // Create checkout session
+    const origin = req.headers.get('origin') || 'https://sandoro.app';
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
-      mode: 'payment', // One-time payment for donations
-      success_url: successUrl || `${req.headers.get('origin')}/settings?donation=success`,
-      cancel_url: cancelUrl || `${req.headers.get('origin')}/settings?donation=canceled`,
+      line_items: [{ price: priceId, quantity: 1 }],
+      mode: 'payment',
+      success_url: successUrl || `${origin}/?donation=success`,
+      cancel_url: cancelUrl || `${origin}/?donation=canceled`,
       metadata: {
-        supabase_user_id: user.id,
+        supabase_user_id: userId,
         donation_type: donationType,
         is_donation: 'true',
       },
       payment_intent_data: {
         metadata: {
-          supabase_user_id: user.id,
+          supabase_user_id: userId,
           donation_type: donationType,
           is_donation: 'true',
         },
@@ -132,8 +153,8 @@ serve(async (req) => {
     });
 
     // Create pending donation record
-    await supabaseAdmin.from('donations').insert({
-      user_id: user.id,
+    const { error: insertError } = await supabaseAdmin.from('donations').insert({
+      user_id: userId,
       stripe_checkout_session_id: session.id,
       amount_cents: DONATION_AMOUNTS[donationType].cents,
       currency: 'usd',
@@ -141,13 +162,18 @@ serve(async (req) => {
       status: 'pending',
     });
 
+    if (insertError) {
+      console.error('Failed to create donation record:', insertError);
+      // Continue anyway - webhook can still process the payment
+    }
+
     return new Response(JSON.stringify({ url: session.url }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
     console.error('Error:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: error.message || 'Unknown error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

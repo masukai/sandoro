@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useCallback } from 'react';
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { Timer } from './components/Timer/Timer';
 import { Settings } from './components/Settings';
 import { Stats } from './components/Stats';
@@ -13,8 +13,18 @@ import { useClock } from './hooks/useClock';
 
 type ViewType = 'timer' | 'stats' | 'settings' | 'support' | 'privacy';
 
+// Check for donation redirect from Stripe
+function getInitialView(): ViewType {
+  if (typeof window === 'undefined') return 'timer';
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('donation') === 'success' || params.get('donation') === 'canceled') {
+    return 'support';
+  }
+  return 'timer';
+}
+
 function App() {
-  const [view, setView] = useState<ViewType>('timer');
+  const [view, setView] = useState<ViewType>(getInitialView);
   const previousViewRef = useRef<ViewType>('timer');
 
   // Track previous view for "back" navigation
