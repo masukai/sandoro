@@ -430,8 +430,8 @@ describe('useDonation', () => {
       const fetchCall = mockFetch.mock.calls[0];
       const body = JSON.parse(fetchCall[1].body);
 
-      expect(body.successUrl).toBe('http://localhost:3000/settings?donation=success');
-      expect(body.cancelUrl).toBe('http://localhost:3000/settings?donation=canceled');
+      expect(body.successUrl).toBe('http://localhost:3000/?donation=success');
+      expect(body.cancelUrl).toBe('http://localhost:3000/?donation=canceled');
       expect(body.donationType).toBe('break_5min');
     });
   });
