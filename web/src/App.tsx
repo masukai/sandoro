@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import { Timer } from './components/Timer/Timer';
 import { Settings } from './components/Settings';
 import { Stats } from './components/Stats';
