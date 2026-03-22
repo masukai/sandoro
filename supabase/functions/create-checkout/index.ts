@@ -2,7 +2,7 @@
 // Deno Deploy runtime
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import Stripe from 'https://esm.sh/stripe@13.10.0?target=deno&deno-std=0.177.0';
 
 const corsHeaders = {
@@ -17,30 +17,47 @@ serve(async (req) => {
   }
 
   try {
+    // Check Authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      console.error('Missing Authorization header');
+      return new Response(JSON.stringify({ error: 'Missing authorization header' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
       apiVersion: '2023-10-16',
       httpClient: Stripe.createFetchHttpClient(),
     });
 
+    // Extract JWT token from Authorization header
+    const token = authHeader.replace('Bearer ', '');
+
     // Initialize Supabase client
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_ANON_KEY')!,
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
+      Deno.env.get('SUPABASE_ANON_KEY')!
     );
 
-    // Get user from JWT
+    // Get user from JWT token
     const {
       data: { user },
       error: userError,
-    } = await supabaseClient.auth.getUser();
+    } = await supabaseClient.auth.getUser(token);
 
-    if (userError || !user) {
+    if (userError) {
+      console.error('Auth error:', userError.message);
+      return new Response(JSON.stringify({ error: 'Unauthorized', details: userError.message }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!user) {
+      console.error('No user found from token');
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -70,9 +87,10 @@ serve(async (req) => {
       .eq('user_id', user.id)
       .single();
 
-    if (existingSub?.status === 'active' || existingSub?.status === 'trialing') {
+    // Block only active paid subscriptions (allow trialing users to upgrade)
+    if (existingSub?.status === 'active') {
       return new Response(
-        JSON.stringify({ error: 'You already have an active subscription. Please cancel your current plan first.' }),
+        JSON.stringify({ error: 'You already have an active subscription. Please manage it from the Customer Portal.' }),
         {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
