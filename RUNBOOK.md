@@ -233,7 +233,45 @@ eval "$(mise activate bash)" && <your-command>
 - [ ] PWA マニフェストと Service Worker が正しく動作する
 - [ ] 影響範囲とロールバック手順を PR に記載し、レビュー済み
 
-## 8. セキュリティ・データ保護
+## 8. Stripe 決済設定
+
+詳細は [docs/stripe-setup.md](docs/stripe-setup.md) を参照。
+
+### クイックリファレンス
+
+**Supabase 環境変数（Edge Functions → Secrets）**:
+| Name | 説明 |
+|------|------|
+| `STRIPE_SECRET_KEY` | `sk_test_...` または `sk_live_...` |
+| `STRIPE_WEBHOOK_SECRET` | `whsec_...` |
+
+**Web 環境変数（.env.local / Vercel）**:
+```bash
+VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...
+VITE_STRIPE_PRICE_MONTHLY=price_...
+VITE_STRIPE_PRICE_YEARLY=price_...
+VITE_STRIPE_PRICE_DONATION_5MIN=price_...
+VITE_STRIPE_PRICE_DONATION_15MIN=price_...
+VITE_STRIPE_PRICE_DONATION_NAP=price_...
+VITE_STRIPE_PRICE_DONATION_SLEEP=price_...
+```
+
+**Edge Functions デプロイ**:
+```bash
+npx supabase login
+npx supabase functions deploy create-checkout --no-verify-jwt
+npx supabase functions deploy create-donation-checkout --no-verify-jwt
+npx supabase functions deploy stripe-webhook --no-verify-jwt
+npx supabase functions deploy customer-portal --no-verify-jwt
+```
+
+> **重要**: `--no-verify-jwt` フラグは必須。Stripe SDK は `v13.10.0` を使用。
+
+**Webhook 設定（Stripe Dashboard）**:
+- Endpoint: `https://<project-ref>.supabase.co/functions/v1/stripe-webhook`
+- Events: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`
+
+## 9. セキュリティ・データ保護
 - 秘密情報（鍵・トークン・個人情報）を Git に保存しない
 - 認証情報は環境変数で管理する
 - Supabase の認証情報は `.env.local` に保存し、`.gitignore` で除外
@@ -249,7 +287,7 @@ eval "$(mise activate bash)" && <your-command>
 | DB パスワード | **秘密** | パスワードマネージャー |
 | Access Token | **秘密** | 環境変数 or ローカル設定 |
 
-## 9. エスカレーション
+## 10. エスカレーション
 
 問題が発生した場合のエスカレーション先を定義します：
 
@@ -258,7 +296,8 @@ eval "$(mise activate bash)" && <your-command>
 - **セキュリティ関連**: プロジェクトオーナーに直接連絡
 - **決済関連**: 慎重に対応、必ず人間がレビュー
 
-## 10. 更新履歴
+## 11. 更新履歴
 
+- 2026-01-24: Stripe 決済設定のクイックリファレンスを追加
 - 2026-01-17: Supabase クラウド同期の設定手順を追加
 - 2025-01-04: sandoro プロジェクト用に初版作成
